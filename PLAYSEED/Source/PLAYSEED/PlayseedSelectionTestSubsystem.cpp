@@ -3,6 +3,7 @@
 #include "PlayseedRecordingSubsystem.h"
 #include "WindseedCharacter.h"
 #include "WindseedStage.h"
+#include "ThunderExpeditionSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "GameFramework/PlayerController.h"
 #include "InputKeyEventArgs.h"
@@ -40,14 +41,33 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
     auto* Player = Cast<AWindseedCharacter>(PC->GetPawn());
-    if (Step == 0 && Map == TEXT("StageSelect") && Elapsed > 3)
+    // 起動中は Tick が先に進む場合があるため、実際に選択画面を録画できてから入力します。
+    const auto* Recording = GetGameInstance()->GetSubsystem<UPlayseedRecordingSubsystem>();
+    auto* Expedition = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
+    if (Step == 0 && Map == TEXT("StageSelect") && Elapsed > 3 && Recording->GetCapturedFrameCount() > 15)
     {
         Tap(PC, EKeys::Two);
         Step = 1;
         UE_LOG(LogTemp, Display, TEXT("SELECTION TEST: pressed 2 to enter Thunder Meadow."));
     }
-    else if (Step == 1 && Map == TEXT("ThunderMeadow") && Player && Elapsed > 2)
+    else if (Step == 1 && Map == TEXT("MissionSelect") && Elapsed > 3)
     {
+        Tap(PC, bSecondMissionEntry ? EKeys::Two : EKeys::Six);
+        Step = 7;
+    }
+    else if (Step == 7 && Map == TEXT("ThunderMeadow") && Player && Elapsed > 2)
+    {
+        const int32 ExpectedMission = bSecondMissionEntry ? 2 : 6;
+        if (Expedition->GetSelectedMissionNumber() != ExpectedMission || Expedition->SelectMission(0) || Expedition->SelectMission(7)
+            || Expedition->GetSelectedMissionNumber() != ExpectedMission)
+        { Fail(TEXT("Mission selection did not survive travel or accepted an invalid number")); return; }
+        if (bSecondMissionEntry)
+        {
+            Tap(PC, EKeys::M);
+            Step = 8;
+            UE_LOG(LogTemp, Display, TEXT("SELECTION TEST: re-entry with mission 2 passed after mission 6."));
+            return;
+        }
         TArray<AActor*> Gardens;
         UGameplayStatics::GetAllActorsOfClass(CurrentMode, AWindseedStage::StaticClass(), Gardens);
         if (Gardens.Num() || FVector::Dist2D(Player->GetActorLocation(), FVector(-600, -600, 100)) > 5)
@@ -71,7 +91,8 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     }
     else if (Step == 3 && Elapsed > 1 && Player)
     {
-        if (FVector::Dist2D(Player->GetActorLocation(), FVector(-600, -600, 100)) > 5 || Player->RecoveryCount != 1)
+        if (FVector::Dist2D(Player->GetActorLocation(), FVector(-600, -600, 100)) > 5 || Player->RecoveryCount != 1
+            || Expedition->GetSelectedMissionNumber() != 6)
         { Fail(TEXT("Restart in the new stage failed")); return; }
         Tap(PC, EKeys::M);
         Step = 4;
@@ -79,13 +100,19 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     }
     else if (Step == 4 && Map == TEXT("StageSelect") && Elapsed > 3)
     {
+        bSecondMissionEntry = true;
+        Tap(PC, EKeys::Two);
+        Step = 1;
+    }
+    else if (Step == 8 && Map == TEXT("StageSelect") && Elapsed > 3)
+    {
         Tap(PC, EKeys::One);
         Step = 5;
     }
     else if (Step == 5 && Map == TEXT("WindseedGarden") && Player && Elapsed > 1)
     {
         Step = 6;
-        UE_LOG(LogTemp, Display, TEXT("SELECTION TEST PASS: menu -> Thunder -> menu -> Garden through 2/M/1 input."));
+        UE_LOG(LogTemp, Display, TEXT("SELECTION TEST PASS: mission 6, R, re-entry with mission 2, invalid numbers and Garden entry passed."));
     }
 }
 

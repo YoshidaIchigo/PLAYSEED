@@ -7,6 +7,7 @@ stages = (
     ("/Game/Windseed/WindseedGarden", "/Script/PLAYSEED.WindseedGameMode"),
     ("/Game/Playseed/StageSelect", "/Script/PLAYSEED.StageSelectionGameMode"),
     ("/Game/ThunderMeadow/ThunderMeadow", "/Script/PLAYSEED.ThunderMeadowGameMode"),
+    ("/Game/ThunderMeadow/MissionSelect", "/Script/PLAYSEED.ThunderMissionSelectionGameMode"),
 )
 for map_path, mode_path in stages:
     if unreal.EditorAssetLibrary.does_asset_exist(map_path):
@@ -19,7 +20,8 @@ for map_path, mode_path in stages:
         raise RuntimeError(f"Missing native class {mode_path}")
     # WorldSettings の GameMode を明示し、どのマップを直接開いても対応するルールにします。
     settings = editor.get_editor_world().get_world_settings()
-    settings.set_editor_property("default_game_mode", mode)
-    if not levels.save_current_level():
-        raise RuntimeError(f"Could not save {map_path}")
+    if settings.get_editor_property("default_game_mode") != mode:
+        settings.set_editor_property("default_game_mode", mode)
+        if not levels.save_current_level():
+            raise RuntimeError(f"Could not save {map_path}")
 unreal.log("PLAYSEED STAGES: each map has its own GameMode")

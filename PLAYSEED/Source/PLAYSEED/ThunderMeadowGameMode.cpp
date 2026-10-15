@@ -1,5 +1,7 @@
 #include "ThunderMeadowGameMode.h"
 #include "WindseedCharacter.h"
+#include "ThunderExpeditionSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkyLightComponent.h"
@@ -16,9 +18,13 @@ void AThunderMeadowHUD::DrawHUD()
 {
     Super::DrawHUD();
     if (!Canvas) return;
-    DrawRect(FLinearColor(.02f, .06f, .1f, .94f), 20, 20, 540, 110);
+    DrawRect(FLinearColor(.02f, .06f, .1f, .94f), 20, 20, FMath::Min(920.f, Canvas->SizeX - 40.f), 130);
     DrawText(TEXT("THUNDER MEADOW"), FLinearColor(.8f, .9f, 1), 38, 32, GEngine->GetMediumFont(), 1.7f);
-    DrawText(TEXT("New expedition - terrain under construction"), FLinearColor::White, 38, 78, GEngine->GetMediumFont(), 1.1f);
+    // HUD は現在選択された目的だけを表示します。選択しただけでは達成扱いにしません。
+    auto* Expedition = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
+    const int32 Mission = Expedition->GetSelectedMissionNumber();
+    DrawText(FString::Printf(TEXT("%d: %s"), Mission, UThunderExpeditionSubsystem::GetMissionTitle(Mission)), FLinearColor(1, .86f, .52f), 38, 78, GEngine->GetMediumFont(), 1.1f);
+    DrawText(UThunderExpeditionSubsystem::GetMissionGoal(Mission), FLinearColor::White, 38, 115, GEngine->GetMediumFont(), .85f);
     DrawText(TEXT("WASD: move   SPACE: jump   R: restart   M: stage selection"), FLinearColor::White, 30, Canvas->SizeY - 45, GEngine->GetMediumFont(), 1.2f);
 }
 
