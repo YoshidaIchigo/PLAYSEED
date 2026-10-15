@@ -134,6 +134,9 @@ void AWindseedCharacter::ReturnToTrail()
     // CharacterMovementComponent が管理する速度を止めてから、安全な開始位置へ移します。
     StopJumping();
     GetCharacterMovement()->StopMovementImmediately();
+    // 動く床の座標差を復帰後へ持ち越さないよう、CharacterMovement の立っている床を解除します。
+    // UE5.8 の新しい SetBase オーバーロードを選びます（Scene の Attach とは別の仕組みです）。
+    SetBase(static_cast<FMovementBaseInterfaceData*>(nullptr));
     // TeleportPhysics は復帰用の瞬間移動です。通常の探索やジャンプでは使いません。
     // 座標を Character 内へ固定しないことで、別のステージでも同じ移動コードを再利用できます。
     SetActorLocation(TrailStartLocation, false, nullptr, ETeleportType::TeleportPhysics);

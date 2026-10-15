@@ -47,6 +47,8 @@ Unreal Engine **5.8.1**とC++開発環境が必要です。`PLAYSEED/PLAYSEED.up
 
 草原の南西に木橋「THE TIMBER CROSSING」を追加しました。橋を歩いて渡り、中央の下を通常の身長で通れます。`-ThunderBridgeTest`をステージ往復検証へ追加すると、入口の段丘へジャンプ→橋上の徒歩→下の通路を歩く実ゲーム確認を行い、`ThunderBridge.png`へ記録します。
 
+草原の東寄りに往復足場「THE DRIFTLEAF LIFT」を追加しました。飛び乗って運ばれ、東の段丘へ跳び移れます。Rで足場の動きも初期位置へ戻ります。`-ThunderPlatformTest`で、通常ジャンプでの乗り込み、入力なしで運ばれること、足場上のR復帰、再乗り込みと端へのジャンプを検証し、`ThunderMovingPlatform.png`へ保存します。
+
 ## アセットの再生成
 
 `/Game/Playseed/StageSelect`から`-StageSelectionSmokeTest -GardenSmokeTest -GardenCapture`で起動すると、2→追加ステージの移動・ジャンプ・R→M→1→既存ステージ走破を連続検証します。録画はレベル移動をまたいで継続します。`-GardenCaptureTravelTest`は既存ステージを一度再読込して録画の寿命を確認する追加検証です。
