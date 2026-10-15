@@ -36,6 +36,7 @@ private:
     int32 RecoveryBefore = 0;
     float PhaseTime = 0;
     float PowerStartTime = 0;
+    float FastestSpeed = 0;
     float NormalFlySpeed = 0;
     float NormalAcceleration = 0;
     float NormalBraking = 0;

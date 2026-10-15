@@ -30,7 +30,7 @@ void UThunderFlightTestSubsystem::SetPhase(int32 Number)
 void UThunderFlightTestSubsystem::BeginTest(AWindseedCharacter* Player, AThunderMeadowStage* InStage)
 {
     Stage = InStage; Error.Reset(); Route.Reset(); SetPhase(0); OrbitPoint = 0;
-    bSlowVerified = bFlightScreenshot = false;
+    bSlowVerified = bFlightScreenshot = false; FastestSpeed = 0;
     auto* Power = Player->GetFlight();
     GrantsBefore = Power->GetPowerGrants(); StartsBefore = Power->GetFlightStarts(); ExpirationsBefore = Power->GetExpirations(); LandingsBefore = Power->GetFlightLandings();
     LaunchesBefore = Player->GetLaunch()->GetLaunchCount();
@@ -111,10 +111,12 @@ bool UThunderFlightTestSubsystem::UpdateTest(AWindseedCharacter* Player, float D
     }
     else if (Phase == 5)
     {
-        SteerTo(Player, FVector(-2600, 1500, 1150));
+        SteerTo(Player, FVector(-2600, -500, 1600));
+        FastestSpeed = FMath::Max(FastestSpeed, float(Player->GetVelocity().Size()));
         if (PhaseTime > 2)
         {
-            if (!Power->IsFlying() || Player->GetVelocity().Size() < 1000) { Error = TEXT("W input did not produce faster powered flight"); return false; }
+            if (!Power->IsFlying() || FastestSpeed < 1100) { Error = FString::Printf(TEXT("W flight failed: flying=%d peak speed %.1f current %.1f at %s pitch %.1f yaw %.1f"), Power->IsFlying(), FastestSpeed, Player->GetVelocity().Size(), *Player->GetActorLocation().ToString(), Power->GetFlightPitch(), Power->GetFlightYaw()); return false; }
+            UE_LOG(LogTemp, Display, TEXT("FLIGHT SPEED: W peak %.1f current %.1f at %s"), FastestSpeed, Player->GetVelocity().Size(), *Player->GetActorLocation().ToString());
             FlightKey(PC, EKeys::W, false); FlightKey(PC, EKeys::S, true); SetPhase(6);
         }
     }
