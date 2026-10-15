@@ -30,7 +30,7 @@ void AThunderMeadowHUD::DrawHUD()
         DrawText(FString::Printf(TEXT("VITALITY %d / %d%s"), Vitality->GetHealth(), Vitality->GetMaximumHealth(), Vitality->IsInvulnerable() ? TEXT("  !") : TEXT("")), Color, 30, 165, GEngine->GetMediumFont(), 1.1f);
     }
     DrawText(TEXT("WASD: move  SPACE: jump  CTRL/RB: dive  LMB/RT: strike"), FLinearColor::White, 30, Canvas->SizeY - 62, GEngine->GetMediumFont(), 1.05f);
-    DrawText(TEXT("E/X: lift/throw  F/Y: climb  R: restart  M: menu"), FLinearColor::White, 30, Canvas->SizeY - 38, GEngine->GetMediumFont(), 1.05f);
+    DrawText(TEXT("E/X: lift/throw  F/Y: climb  Q/DPAD UP: ride  R: restart  M: menu"), FLinearColor::White, 30, Canvas->SizeY - 38, GEngine->GetMediumFont(), 1.05f);
     if (auto* Mode = Cast<AThunderMeadowGameMode>(GetWorld()->GetAuthGameMode()))
     {
         const auto* Coins = Mode->GetCoinLedger();

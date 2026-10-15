@@ -2,6 +2,7 @@
 #include "PlayseedVitalityComponent.h"
 #include "PlayseedCarryComponent.h"
 #include "PlayseedCombatComponent.h"
+#include "PlayseedRideComponent.h"
 #include "WindseedCharacter.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -24,6 +25,7 @@ void UPlayseedActionComponent::BeginGroundPound()
     if (!Player || bGroundPounding || Player->GetVitality()->IsInvulnerable()) return;
     auto* Movement = Player->GetCharacterMovement();
     if (!Movement->IsFalling()) return; // 地上では開始しません。ジャンプ中か落下中だけ使えます。
+    Player->GetRide()->CancelRide();
     Player->GetCarry()->DropHeld();
     Player->GetCombat()->CancelMelee();
     PreviousGravity = Movement->GravityScale;
