@@ -52,8 +52,8 @@ bool UThunderStompTestSubsystem::UpdateTest(AWindseedCharacter* Player, float De
     auto Advance = [this](int32 Next) { Phase = Next; PhaseTime = 0; };
     if (Phase == 0)
     {
-        const FVector Goals[] = {FVector(600, -600, 82), FVector(600, -1500, 82)};
-        if (WalkToward(Player, Goals[ApproachLeg], DeltaSeconds) && ++ApproachLeg == 2) Advance(1);
+        const FVector StompApproachPoints[] = {FVector(600, -600, 82), FVector(600, -1500, 82)};
+        if (WalkToward(Player, StompApproachPoints[ApproachLeg], DeltaSeconds) && ++ApproachLeg == 2) Advance(1);
     }
     else if (Phase == 1)
     {
