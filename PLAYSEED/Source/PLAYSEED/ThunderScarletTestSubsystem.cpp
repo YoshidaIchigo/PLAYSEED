@@ -109,6 +109,8 @@ bool UThunderScarletTestSubsystem::UpdateTest(AWindseedCharacter* Player, float 
     }
     else if (Phase == 42 && PhaseTime > .3f)
     {
+        // 登り終わりは幹から94cm離れた縁です。頂上を普通に歩いて中央のコインへ触れます。
+        if (!Walk(Player, Trail->GetCoins()[0]->GetActorLocation() + FVector(0, 0, 20), DeltaSeconds, false)) return false;
         if (!CheckCount(1)) return false;
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir() / TEXT("Validation/ThunderScarletTree.png"), false, false);
         ScarletKey(PC, EKeys::SpaceBar, true); SetPhase(7);
