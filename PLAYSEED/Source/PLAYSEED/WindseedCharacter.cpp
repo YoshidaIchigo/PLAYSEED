@@ -154,6 +154,8 @@ void AWindseedCharacter::ReturnToTrail()
     // CharacterMovementComponent が管理する速度を止めてから、安全な開始位置へ移します。
     StopJumping();
     GetCharacterMovement()->StopMovementImmediately();
+    // 物理処理後に受けたLaunchは次の移動Tickまで保留されるため、現在の速度と別に消します。
+    GetCharacterMovement()->ClearAccumulatedForces();
     // 動く床の座標差を復帰後へ持ち越さないよう、CharacterMovement の立っている床を解除します。
     // UE5.8 の新しい SetBase オーバーロードを選びます（Scene の Attach とは別の仕組みです）。
     SetBase(static_cast<FMovementBaseInterfaceData*>(nullptr));

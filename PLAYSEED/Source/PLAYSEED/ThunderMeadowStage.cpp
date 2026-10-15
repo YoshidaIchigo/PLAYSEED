@@ -6,6 +6,7 @@
 #include "ThunderDamageThistle.h"
 #include "PlayseedCarryable.h"
 #include "PlayseedClimbTree.h"
+#include "PlayseedEnemyBase.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
@@ -210,6 +211,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (ShortcutGate) ShortcutGate->ResetGate();
     if (WarpPair) WarpPair->ResetWarps();
     if (CarryProp) CarryProp->ResetToSpawn();
+    if (PracticeEnemy) PracticeEnemy->ResetEnemy();
 }
 
 void AThunderMeadowStage::BuildWarpCaves()
@@ -255,6 +257,12 @@ void AThunderMeadowStage::BuildClimbTree()
 {
     ClimbTree = GetWorld()->SpawnActor<APlayseedClimbTree>(FVector(-1800, -500, 0), FRotator::ZeroRotator);
     AddSign(FVector(-1550, -650, 0), TEXT("THE HUSHBLOOM TREE\nF / Y: hold or release\nW / S: climb   SPACE: leap away"));
+}
+
+void AThunderMeadowStage::BuildPracticeEnemy()
+{
+    PracticeEnemy = GetWorld()->SpawnActor<APlayseedEnemyBase>(FVector(300, -1500, 0), FRotator::ZeroRotator);
+    AddSign(FVector(550, -1750, 0), TEXT("THE TUFTLING\nJump onto it; keep clear of its side"));
 }
 
 void AThunderMeadowStage::BuildShortcutGate()
@@ -311,6 +319,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildDamageThistle();
     BuildCarryProp();
     BuildClimbTree();
+    BuildPracticeEnemy();
     BuildSkyIsland();
     BuildLighting();
 }
