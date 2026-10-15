@@ -4,6 +4,8 @@
 #include "ThunderMeadowGameMode.h"
 #include "ThunderCoinLedger.h"
 #include "PlayseedCoin.h"
+#include "ThunderRollingBoulder.h"
+#include "PlayseedVitalityComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
@@ -136,7 +138,12 @@ bool UThunderTraversalTestSubsystem::UpdateRoute(AWindseedCharacter* Player, flo
         return false;
     }
     Player->AddMovementInput(Offset.GetSafeNormal2D());
-    if (bJumpForSteps && Waypoint < AutoJumpWaypointLimit && Offset.Z > 50 && Offset.Size2D() < 480 && Movement->IsMovingOnGround())
+    const auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(Player, AThunderMeadowStage::StaticClass()));
+    const auto* Boulder = Meadow ? Meadow->GetRollingBoulder() : nullptr;
+    const float Feet = Player->GetActorLocation().Z - Player->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+    const bool bAvoidBoulder = Boulder && !Boulder->IsWaiting() && FVector::Dist2D(Player->GetActorLocation(), Boulder->GetActorLocation()) < 450 &&
+        FMath::Abs(Feet - (Boulder->GetActorLocation().Z - 70)) < 160;
+    if (((bJumpForSteps && Waypoint < AutoJumpWaypointLimit && Offset.Z > 50 && Offset.Size2D() < 480) || bAvoidBoulder) && Movement->IsMovingOnGround())
     { Player->Jump(); ++JumpCount; }
     else if (Player->GetVelocity().Z < 0) Player->StopJumping();
     if (PC) PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(), FRotator(-23, Offset.Rotation().Yaw, 0), DeltaSeconds, 2));
@@ -147,7 +154,7 @@ bool UThunderTraversalTestSubsystem::VerifyCoinTrail(AWindseedCharacter* Player)
 {
     const auto* Mode = Cast<AThunderMeadowGameMode>(Player->GetWorld()->GetAuthGameMode());
     const auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(Player, AThunderMeadowStage::StaticClass()));
-    if (!Mode || !Meadow || Meadow->GetTrailCoins().Num() != 100 || Mode->GetCoinLedger()->GetTotal() != 100 || Mode->GetCoinLedger()->GetRedCount() != 0)
+    if (!Mode || !Meadow || Meadow->GetTrailCoins().Num() != 100 || Mode->GetCoinLedger()->GetTotal() != 100 || Mode->GetCoinLedger()->GetRedCount() != 0 || Player->GetVitality()->GetHealth() != 8)
     { Error = TEXT("Continuous walking route did not collect exactly 100 placed gold coins"); return false; }
     for (const APlayseedCoin* Coin : Meadow->GetTrailCoins())
         if (!Coin || !Coin->IsCollected()) { Error = TEXT("A placed trail coin was not reached by normal movement"); return false; }

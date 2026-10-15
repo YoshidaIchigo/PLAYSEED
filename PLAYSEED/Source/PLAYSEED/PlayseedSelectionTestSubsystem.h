@@ -21,6 +21,7 @@ private:
     void RunProgressTestOnce();
     int32 Step = 0;
     float Elapsed = 0;
+    int32 TrailRecoveryBeforeReset = 0;
     FVector InputStart = FVector::ZeroVector;
     bool bSecondMissionEntry = false;
     bool bProgressTestExecuted = false;

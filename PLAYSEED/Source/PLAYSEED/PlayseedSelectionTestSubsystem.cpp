@@ -18,6 +18,8 @@
 #include "ThunderCombatTestSubsystem.h"
 #include "ThunderCoinTestSubsystem.h"
 #include "ThunderBoxTestSubsystem.h"
+#include "ThunderBoulderTestSubsystem.h"
+#include "ThunderDamageThistle.h"
 #include "ThunderCoinLedger.h"
 #include "ThunderMeadowGameMode.h"
 #include "PlayseedCoin.h"
@@ -79,7 +81,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 10 || (Step >= 12 && Step <= 24) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 10 || (Step >= 12 && Step <= 26) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -108,7 +110,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         { Fail(TEXT("Mission selection did not survive travel or accepted an invalid number")); return; }
         if (bSecondMissionEntry)
         {
-            if (FParse::Param(FCommandLine::Get(), TEXT("ThunderCoinTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderCoinTrailTest")))
+            if (FParse::Param(FCommandLine::Get(), TEXT("ThunderCoinTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderCoinTrailTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderBoulderTest")))
             {
                 auto* MeadowMode = Cast<AThunderMeadowGameMode>(CurrentMode);
                 auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
@@ -169,6 +171,15 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             if (!Meadow || Meadow->GetMountainFootPath().Num() < 25) { Fail(TEXT("The mountain route was not created")); return; }
             GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>()->BeginMountainRoute(Player, Meadow->GetMountainFootPath(), bIslandTest);
             Step = 10;
+            Elapsed = 0;
+        }
+        else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderBoulderTest")))
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+            if (!Meadow || !Meadow->GetRollingBoulder() || !Meadow->GetDamageThistle() || Meadow->GetMountainFootPath().Num() != 27)
+            { Fail(TEXT("The rolling boulder and mountain path were not created")); return; }
+            GetGameInstance()->GetSubsystem<UThunderBoulderTestSubsystem>()->BeginTest(Player, Meadow->GetRollingBoulder(), Meadow->GetMountainFootPath(), Meadow->GetDamageThistle()->GetActorLocation());
+            Step = 25;
             Elapsed = 0;
         }
         else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderBoxTest")))
@@ -291,7 +302,8 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         {
             // 長い徒歩検証の時間を、次のメニュー遷移のタイムアウトへ持ち越しません。
             Elapsed = 0;
-            if (FParse::Param(FCommandLine::Get(), TEXT("ThunderCoinTrailTest"))) { Tap(PC, EKeys::R); Step = 24; }
+            if (FParse::Param(FCommandLine::Get(), TEXT("ThunderCoinTrailTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderBoulderTest")))
+            { TrailRecoveryBeforeReset = Player->RecoveryCount; Tap(PC, EKeys::R); Step = 24; }
             else { Tap(PC, EKeys::M); Step = 4; }
         }
     }
@@ -379,11 +391,26 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         if (!BoxTest->GetError().IsEmpty()) { Fail(BoxTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
     }
+    else if (Step == 25 && Player)
+    {
+        auto* BoulderTest = GetGameInstance()->GetSubsystem<UThunderBoulderTestSubsystem>();
+        const bool bComplete = BoulderTest->UpdateTest(Player, DeltaSeconds);
+        if (!BoulderTest->GetError().IsEmpty()) { Fail(BoulderTest->GetError()); return; }
+        if (bComplete) { Elapsed = 0; Tap(PC, EKeys::R); Step = 26; }
+    }
+    else if (Step == 26 && Player && Elapsed > .3f)
+    {
+        auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+        if (!Meadow) { Fail(TEXT("Coin trail regression stage missing")); return; }
+        GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>()->BeginCoinTrailRoute(Player, Meadow->GetMeadowCoinFootPath(), Meadow->GetMountainFootPath());
+        Elapsed = 0;
+        Step = 10;
+    }
     else if (Step == 24 && Player && Elapsed > .5f)
     {
         const auto* MeadowMode = Cast<AThunderMeadowGameMode>(CurrentMode);
         const auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
-        if (!MeadowMode || !Meadow || MeadowMode->GetCoinLedger()->GetTotal() != 0 || Player->RecoveryCount != 2)
+        if (!MeadowMode || !Meadow || MeadowMode->GetCoinLedger()->GetTotal() != 0 || Player->RecoveryCount != TrailRecoveryBeforeReset + 1)
         { Fail(TEXT("R after the hundred-coin trail did not clear totals and restore start")); return; }
         for (const APlayseedCoin* Coin : Meadow->GetTrailCoins())
             if (!Coin || Coin->IsCollected()) { Fail(TEXT("R did not restore a placed trail coin")); return; }
