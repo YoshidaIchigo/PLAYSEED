@@ -87,3 +87,6 @@ DerivedDataCache/*
 *.avi
 *.mp4
 *.webm
+
+# Reviewed gameplay evidence
+!Docs/Media/WindseedPlaythrough.mp4
