@@ -86,10 +86,16 @@ bool UThunderCarryTestSubsystem::UpdateTest(AWindseedCharacter* Player, float De
     }
     else if (Phase == 5 && PhaseTime > .3f)
     {
-        if (Prop->IsHeld() || Player->GetCarry()->GetHeldObject() || !Prop->GetBody()->IsSimulatingPhysics() || FVector::Dist2D(Prop->GetActorLocation(), ThrowStart) < 200 || Prop->GetThrowCount() != ThrowBaseline + 1)
-        { Error = TEXT("Throw did not detach and fly through physics"); return false; }
+        if (Prop->IsHeld() || Player->GetCarry()->GetHeldObject() || Prop->GetAttachParentActor() || !Prop->GetBody()->IsSimulatingPhysics() || Prop->GetThrowCount() != ThrowBaseline + 1)
+        {
+            Error = FString::Printf(TEXT("Throw state: held=%d component=%d attached=%d physics=%d count=%d distance=%.1f velocity=%s"), Prop->IsHeld(), Player->GetCarry()->GetHeldObject() != nullptr, Prop->GetAttachParentActor() != nullptr, Prop->GetBody()->IsSimulatingPhysics(), Prop->GetThrowCount(), FVector::Dist2D(Prop->GetActorLocation(), ThrowStart), *Prop->GetBody()->GetPhysicsLinearVelocity().ToString());
+            return false;
+        }
         if (Prop->GetThrownLandingCount() == LandingBaseline + 1)
         {
+            // Screenshotの読出しで長いフレームが発生しても、物理時間は上限で短く刻まれます。
+            // 壁時計の0.3秒だけで飛距離を判断せず、実際に飛んで着地した結果を確かめます。
+            if (FVector::Dist2D(Prop->GetActorLocation(), ThrowStart) < 200) { Error = TEXT("Physics throw landed without travelling 200 cm"); return false; }
             UE_LOG(LogTemp, Display, TEXT("CARRY TEST: real pickup, transport and physics throw landed once after %.1f cm."), FVector::Dist2D(Prop->GetActorLocation(), ThrowStart));
             CarryTap(PC, EKeys::R);
             Advance(6);
