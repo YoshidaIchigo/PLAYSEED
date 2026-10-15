@@ -31,10 +31,10 @@ bool UThunderWaterTestSubsystem::WalkToward(AWindseedCharacter* Player, FVector 
 
 bool UThunderWaterTestSubsystem::WalkApproach(AWindseedCharacter* Player, float DeltaSeconds)
 {
-    // 木の橋や傾く足場を横切らず、地上の西側から南の警告地点へ向かいます。
-    const FVector WaterApproachPoints[] = {FVector(-3000, -600, 82), FVector(-3000, -2900, 82), Bomb->GetActorLocation() + FVector(0, -300, 82)};
-    if (Waypoint < 3 && WalkToward(Player, WaterApproachPoints[Waypoint], DeltaSeconds)) ++Waypoint;
-    return Waypoint >= 3;
+    // 木橋・傾く足場・新しい塔を避け、塔の北と東の地上を回って警告地点へ向かいます。
+    const FVector WaterApproachPoints[] = {FVector(-3000, -600, 82), FVector(-3000, -1700, 82), FVector(-1700, -1700, 82), FVector(-1700, -2900, 82), Bomb->GetActorLocation() + FVector(0, -300, 82)};
+    if (Waypoint < 5 && WalkToward(Player, WaterApproachPoints[Waypoint], DeltaSeconds)) ++Waypoint;
+    return Waypoint >= 5;
 }
 
 bool UThunderWaterTestSubsystem::UpdateTest(AWindseedCharacter* Player, float DeltaSeconds)

@@ -16,4 +16,5 @@ public:
     UPROPERTY(SaveGame) TArray<int32> EarnedRewardNumbers;
     // 旧形式Version1を読み込む場合も、未保存の追加項目はfalseから始まります。
     UPROPERTY(SaveGame) bool bLauncherUnlocked = false;
+    UPROPERTY(SaveGame) bool bFlightUnlocked = false;
 };

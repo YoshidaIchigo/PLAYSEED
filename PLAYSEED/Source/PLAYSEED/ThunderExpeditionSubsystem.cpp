@@ -142,3 +142,18 @@ bool UThunderExpeditionSubsystem::TryUnlockLauncher()
     ProgressProblem.Reset();
     return true;
 }
+
+bool UThunderExpeditionSubsystem::IsFlightUnlocked() const { return Progress && Progress->bFlightUnlocked; }
+bool UThunderExpeditionSubsystem::TryUnlockFlight()
+{
+    if (!bCanWriteProgress || !Progress || Progress->bFlightUnlocked) return false;
+    Progress->bFlightUnlocked = true;
+    if (!UGameplayStatics::SaveGameToSlot(Progress, SaveSlotName, 0))
+    {
+        Progress->bFlightUnlocked = false;
+        ProgressProblem = TEXT("Leafwing progress could not be saved. Please try the switch again.");
+        return false;
+    }
+    ProgressProblem.Reset();
+    return true;
+}

@@ -27,6 +27,9 @@
 #include "ThunderGuideTestSubsystem.h"
 #include "ThunderLaunchTestSubsystem.h"
 #include "ThunderFlightTestSubsystem.h"
+#include "ThunderTowerTestSubsystem.h"
+#include "ThunderFlightSwitch.h"
+#include "ThunderFlightBloom.h"
 #include "ThunderLauncher.h"
 #include "ThunderDamageThistle.h"
 #include "ThunderCoinLedger.h"
@@ -90,7 +93,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 31 || Step == 33 || Step == 34 ? 300 : Step == 10 || (Step >= 12 && Step <= 32) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 31 || Step == 33 || Step == 34 || Step == 35 ? 300 : Step == 10 || (Step >= 12 && Step <= 32) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -119,7 +122,14 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         { Fail(TEXT("Mission selection did not survive travel or accepted an invalid number")); return; }
         if (bSecondMissionEntry)
         {
-            if (FParse::Param(FCommandLine::Get(), TEXT("ThunderGuideTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderGuideReadTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderLaunchTest")))
+            if (FParse::Param(FCommandLine::Get(), TEXT("ThunderTowerTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderTowerReadTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderFlightTest")))
+            {
+                auto* ReenteredTower = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+                if (!ReenteredTower || !Expedition->IsFlightUnlocked() || !ReenteredTower->GetFlightSwitch()->IsActivated() || !ReenteredTower->GetFlightBloom()->IsAvailable() || Expedition->GetEarnedRewardCount() != 0)
+                { Fail(TEXT("Re-entry lost switch and flower unlock")); return; }
+                UE_LOG(LogTemp, Display, TEXT("TOWER REENTRY TEST PASS: saved switch and flower restored in a new World, rewards zero."));
+            }
+            if (FParse::Param(FCommandLine::Get(), TEXT("ThunderGuideTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderGuideReadTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderLaunchTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderFlightTest")))
             {
                 auto* ReenteredMeadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
                 if (!ReenteredMeadow || !ReenteredMeadow->GetLauncher() || !ReenteredMeadow->GetLauncher()->IsOpen() || !Expedition->IsLauncherUnlocked() || Expedition->GetEarnedRewardCount() != 0)
@@ -187,6 +197,14 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             if (!Meadow || Meadow->GetMountainFootPath().Num() < 25) { Fail(TEXT("The mountain route was not created")); return; }
             GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>()->BeginMountainRoute(Player, Meadow->GetMountainFootPath(), bIslandTest);
             Step = 10;
+            Elapsed = 0;
+        }
+        else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderTowerTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderTowerReadTest")))
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+            if (!Meadow || !Meadow->GetFlightSwitch() || !Meadow->GetFlightBloom() || Meadow->GetWingTowerFootPath().Num() != 8) { Fail(TEXT("Wing tower was not created")); return; }
+            GetGameInstance()->GetSubsystem<UThunderTowerTestSubsystem>()->BeginTest(Player, Meadow, FParse::Param(FCommandLine::Get(), TEXT("ThunderTowerReadTest")));
+            Step = 35;
             Elapsed = 0;
         }
         else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderFlightTest")))
@@ -469,6 +487,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         auto* BoxTest = GetGameInstance()->GetSubsystem<UThunderBoxTestSubsystem>();
         const bool bComplete = BoxTest->UpdateTest(Player, DeltaSeconds);
         if (!BoxTest->GetError().IsEmpty()) { Fail(BoxTest->GetError()); return; }
+        if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
+    else if (Step == 35 && Player)
+    {
+        auto* TowerTest = GetGameInstance()->GetSubsystem<UThunderTowerTestSubsystem>();
+        const bool bComplete = TowerTest->UpdateTest(Player, DeltaSeconds);
+        if (!TowerTest->GetError().IsEmpty()) { Fail(TowerTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
     }
     else if (Step == 34 && Player)
