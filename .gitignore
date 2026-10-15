@@ -73,3 +73,20 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+# PLAYSEED nested Unreal project: generated and machine-specific files
+**/Binaries/
+**/Intermediate/
+**/Saved/
+**/DerivedDataCache/
+**/.vs/
+*.slnx
+*.vcxproj*
+**/Content/Developers/
+**/Content/Collections/
+*.avi
+*.mp4
+*.webm
+
+# Reviewed gameplay evidence
+!Docs/Media/WindseedPlaythrough.mp4

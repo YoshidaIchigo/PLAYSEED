@@ -1,0 +1,21 @@
+name: Repository checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  repository-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate project and committed files
+        run: python Tools/check_repository.py
+      - name: Check whitespace
+        run: git diff --check HEAD^ HEAD
