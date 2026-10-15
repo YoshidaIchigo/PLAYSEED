@@ -2,6 +2,7 @@
 #include "ThunderRollingBoulder.h"
 #include "PlayseedVitalityComponent.h"
 #include "WindseedCharacter.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "InputKeyEventArgs.h"
@@ -33,6 +34,14 @@ bool UThunderBoulderTestSubsystem::WalkRoute(AWindseedCharacter* Player, float D
     if (Offset.Size2D() < 25 && FMath::Abs(Offset.Z) < 65 && Player->GetCharacterMovement()->IsMovingOnGround())
     { ++Waypoint; Player->GetCharacterMovement()->StopMovementImmediately(); return Waypoint >= Route.Num(); }
     Player->AddMovementInput(Offset.GetSafeNormal2D());
+    if (Phase == 3)
+    {
+        // 下側の洞窟付近は中央を通るため、そこだけは通常ジャンプで近づく岩を避けます。
+        const float Feet = Player->GetActorLocation().Z - Player->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+        if (!Boulder->IsWaiting() && FVector::Dist2D(Player->GetActorLocation(), Boulder->GetActorLocation()) < 450 &&
+            FMath::Abs(Feet - (Boulder->GetActorLocation().Z - 70)) < 160 && Player->GetCharacterMovement()->IsMovingOnGround()) Player->Jump();
+        else if (Player->GetVelocity().Z < 0) Player->StopJumping();
+    }
     if (auto* PC = Cast<APlayerController>(Player->GetController())) PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(), FRotator(-18, Offset.Rotation().Yaw, 0), DeltaSeconds, 3));
     return false;
 }
@@ -114,9 +123,9 @@ bool UThunderBoulderTestSubsystem::UpdateTest(AWindseedCharacter* Player, float 
         const FVector MountainCenter(2200, 2100, 0);
         for (int32 Index = 0; Index <= 19; ++Index)
         {
-            // 道幅420cmの端を普通に歩きます。中央の岩球から150cm離して上へ進みます。
+            // 洞窟の側壁がある最初の区間は中央、その先は道幅420cmの外側を歩きます。
             const FVector Outward = (MountainPath[Index] - MountainCenter).GetSafeNormal2D();
-            Route.Add(MountainPath[Index] + Outward * 150 + FVector(0, 0, 82));
+            Route.Add(MountainPath[Index] + Outward * (Index < 4 ? 0 : 150) + FVector(0, 0, 82));
         }
         Waypoint = 0;
         UE_LOG(LogTemp, Display, TEXT("BOULDER TEST: real contact dealt two points and knockback; R restored health, start and path."));
