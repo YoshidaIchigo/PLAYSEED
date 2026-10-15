@@ -1,13 +1,13 @@
 #include "WindseedCharacter.h"
-#include "WindseedStage.h"
+#include "PlayseedGameModeBase.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "EngineUtils.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -142,8 +142,12 @@ void AWindseedCharacter::ReturnToTrail()
 }
 void AWindseedCharacter::RestartTrail()
 {
-    for (TActorIterator<AWindseedStage> It(GetWorld()); It; ++It) It->ResetTrail();
-    ReturnToTrail();
+    // 入力処理はステージ内の Actor を直接探しません。現在のルール担当へ依頼します。
+    // GetAuthGameMode はシングルプレイの World から GameMode を取得する UE の API です。
+    if (auto* Mode = Cast<APlayseedGameModeBase>(GetWorld()->GetAuthGameMode()))
+        Mode->RestartStage(this);
+    else
+        ReturnToTrail(); // 専用 GameMode がない確認用マップでも、プレイヤーの復帰は使えます。
 }
 void AWindseedCharacter::ReleasePointer()
 {

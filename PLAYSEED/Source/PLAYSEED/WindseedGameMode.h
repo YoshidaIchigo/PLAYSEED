@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/GameModeBase.h"
+#include "PlayseedGameModeBase.h"
 #include "GameFramework/HUD.h"
 #include "WindseedGameMode.generated.h"
 
@@ -17,12 +17,13 @@ public:
 };
 
 UCLASS()
-class PLAYSEED_API AWindseedGameMode : public AGameModeBase
+class PLAYSEED_API AWindseedGameMode : public APlayseedGameModeBase
 {
     GENERATED_BODY()
 public:
     AWindseedGameMode();
     virtual void StartPlay() override;
+    virtual void RestartStage(class AWindseedCharacter* Player) override;
     virtual void Tick(float DeltaSeconds) override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 private:

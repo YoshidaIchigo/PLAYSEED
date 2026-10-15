@@ -81,6 +81,14 @@ void AWindseedGameMode::StartPlay()
 #endif
 }
 
+void AWindseedGameMode::RestartStage(AWindseedCharacter* Player)
+{
+    // Windseed Garden の収集物と灯台だけを初期化します。
+    // 別ステージの Actor を探したり、別ステージの進行を消したりしません。
+    if (Stage) Stage->ResetTrail();
+    Super::RestartStage(Player);
+}
+
 void AWindseedGameMode::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
@@ -175,8 +183,18 @@ void AWindseedGameMode::Tick(float DeltaSeconds)
     }
     else if (TestPhase==5 && PhaseTime>1)
     {
-        Stage->ResetTrail(); Player->ReturnToTrail();
-        if (Stage->CollectedCount!=0 || Stage->bFinished) { FinishTest(false,TEXT("Restart failed")); return; }
+        // 直接 ResetTrail を呼ばず、実際の R キーと同じ入力経路を通して確認します。
+        if (auto* PC=Cast<APlayerController>(Player->GetController()))
+            PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::R,IE_Pressed,1));
+        TestPhase=6; PhaseTime=0;
+    }
+    else if (TestPhase==6 && PhaseTime>.15f)
+    {
+        if (auto* PC=Cast<APlayerController>(Player->GetController()))
+            PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::R,IE_Released,0));
+        if (Stage->CollectedCount!=0 || Stage->bFinished || FVector::Dist2D(Player->GetActorLocation(),FVector(-450,-250,100))>5)
+        { FinishTest(false,TEXT("Restart through the R input binding failed")); return; }
+        UE_LOG(LogTemp,Display,TEXT("WINDSEED TEST: R input delegated to the active stage and reset it."));
         FinishTest(true,TEXT("Fall recovery, sprint, movement, camera follow, platform jumps, all 6 seeds, goal and restart passed."));
     }
     if (PhaseTime>100) FinishTest(false,TEXT("Test timed out"));
