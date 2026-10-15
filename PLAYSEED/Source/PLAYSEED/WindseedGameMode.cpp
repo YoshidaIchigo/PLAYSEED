@@ -240,4 +240,3 @@ void AWindseedGameMode::FinishTest(bool bPassed,const FString& Message)
     UE_LOG(LogTemp,Display,TEXT("WINDSEED TEST %s: %s"),bPassed?TEXT("PASS"):TEXT("FAIL"),*ResultMessage);
     FPlatformMisc::RequestExitWithStatus(false,bPassed?0:1);
 }
-
