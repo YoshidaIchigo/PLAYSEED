@@ -106,10 +106,11 @@ bool UThunderClimbTestSubsystem::UpdateTest(AWindseedCharacter* Player, float De
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir() / TEXT("Validation/ThunderTreeTop.png"), false, false);
             bTopSaved = true;
         }
-        if (PhaseTime > 1.2f) { ClimbTap(PC, EKeys::SpaceBar); Advance(7); }
+        if (PhaseTime > 1.2f) { ClimbKey(PC, EKeys::SpaceBar, true); Advance(7); }
     }
     else if (Phase == 7)
     {
+        if (PhaseTime > .15f) ClimbKey(PC, EKeys::SpaceBar, false);
         if (PhaseTime > .2f && !bJumpVerified)
         {
             if (Climb->IsClimbing() || !Movement->IsFalling() || Player->GetVelocity().Z <= 0) { Error = TEXT("Space did not jump from the crown"); return false; }
