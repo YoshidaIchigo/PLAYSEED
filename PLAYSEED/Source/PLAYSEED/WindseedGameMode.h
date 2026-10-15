@@ -29,9 +29,13 @@ private:
     UPROPERTY() TObjectPtr<AWindseedStage> Stage;
     bool bSmokeTest=false;
     bool bCaptureRequested=false;
+    bool bCaptureFailed=false;
+    FDelegateHandle CaptureDrawHandle;
     int32 TestPhase=0;
     int32 Waypoint=0;
     int32 JumpCount=0;
+    int32 RouteRecoveryBaseline=0;
+    FVector InputTestStart=FVector::ZeroVector;
     float PhaseTime=0;
     float LegTime=0;
     float CaptureTime=0;
@@ -39,5 +43,6 @@ private:
     TArray<FVector> Route;
     FAVIWriter* CaptureWriter=nullptr;
     void CaptureFrame(float DeltaSeconds);
+    void CaptureViewport();
     void FinishTest(bool bPassed, const FString& Message);
 };

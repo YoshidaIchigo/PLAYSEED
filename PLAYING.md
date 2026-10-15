@@ -25,7 +25,7 @@ Unreal Engine **5.8.1**とC++開発環境が必要です。`PLAYSEED/PLAYSEED.up
 & 'C:\Program Files\Epic Games\UE_5.8\Engine\Build\BatchFiles\Build.bat' PLAYSEED Win64 Development '-Project=C:\PLAYSEED\PLAYSEED\PLAYSEED.uproject' -WaitMutex
 ```
 
-開発ビルドの`-GardenSmokeTest`は、実際のゲームワールド内で落下復帰、走行速度、移動入力によるルート探索、ジャンプ、6個の収集、ゴールとリスタートを検証して終了します。ルート上の移動にはCharacterMovementの通常の移動入力を使い、島間をテレポートしません。落下復帰の検証だけは意図的にプレイヤーを島の下へ移します。通常プレイでは自動操作されません。
+開発ビルドの`-GardenSmokeTest`は、実際のゲームワールド内で落下復帰、W・Shift・Space・マウス・ホイールの入力イベント、移動入力によるルート探索、ジャンプ、6個の収集、ゴールとリスタートを検証して終了します。ルート上の移動にはCharacterMovementの通常の移動入力を使い、島間をテレポートしません。落下復帰の検証では意図的にプレイヤーを島の下へ移し、キー割り当ての検証後はスタートへ戻します。通常プレイでは自動操作されません。
 
 ```powershell
 & 'C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor.exe' 'C:\PLAYSEED\PLAYSEED\PLAYSEED.uproject' -game -windowed -ResX=960 -ResY=540 -GardenSmokeTest -GardenCapture -unattended -nosound -NoSplash -log
@@ -35,7 +35,7 @@ Unreal Engine **5.8.1**とC++開発環境が必要です。`PLAYSEED/PLAYSEED.up
 
 ## アセットの再生成
 
-マップと配色マテリアルはリポジトリに含めます。失われた場合のみ、Editorを閉じて次を実行してください。既存アセットを上書きしません。
+マップ・配色・空のマテリアルはリポジトリに含めます。失われた場合のみ、Editorを閉じて次を実行してください。既存アセットを上書きしません。
 
 ```powershell
 & 'C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' 'C:\PLAYSEED\PLAYSEED\PLAYSEED.uproject' -run=pythonscript '-script=C:\PLAYSEED\Tools\create_garden_assets.py' -unattended -NullRHI -nosound

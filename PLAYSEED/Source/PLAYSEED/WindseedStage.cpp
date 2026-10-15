@@ -23,6 +23,8 @@ AWindseedStage::AWindseedStage()
     Cube = CubeAsset.Object; Sphere = SphereAsset.Object; Cylinder = CylinderAsset.Object; Cone = ConeAsset.Object;
     static ConstructorHelpers::FObjectFinder<UMaterialInterface> PaletteAsset(TEXT("/Game/Windseed/M_Palette.M_Palette"));
     Palette = PaletteAsset.Object;
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> SkyAsset(TEXT("/Game/Windseed/M_Sky.M_Sky"));
+    SkyMaterial = SkyAsset.Object;
 }
 
 UStaticMeshComponent* AWindseedStage::Shape(UStaticMesh* Mesh, FVector Position, FVector Scale, FLinearColor Color, bool bSolid)
@@ -82,6 +84,9 @@ void AWindseedStage::Sign(FVector Position, const FString& Text, float Yaw)
 void AWindseedStage::BeginPlay()
 {
     Super::BeginPlay();
+    auto* SkyDome = Shape(Sphere, FVector(0,0,0), FVector(400,400,400), FLinearColor::White);
+    if (SkyMaterial) SkyDome->SetMaterial(0, SkyMaterial);
+    SkyDome->SetCastShadow(false);
     Island(FVector(0,0,0), FVector2D(1800,1800));
     Island(FVector(0,1100,100), FVector2D(580,580));
     Island(FVector(400,1450,200), FVector2D(580,580));
@@ -98,7 +103,7 @@ void AWindseedStage::BeginPlay()
         Collected.Add(false);
     }
     Shape(Cylinder, GoalPosition+FVector(0,0,12), FVector(2.6f,2.6f,.24f), FLinearColor(.85f,.75f,.5f), true);
-    Shape(Cylinder, GoalPosition+FVector(0,0,130), FVector(.65f,.65f,2.2f), FLinearColor(.15f,.3f,.4f));
+    Shape(Cylinder, GoalPosition+FVector(0,0,130), FVector(.65f,.65f,2.2f), FLinearColor(.15f,.3f,.4f), true);
     Beacon = Shape(Sphere, GoalPosition+FVector(0,0,270), FVector(1.15f,1.15f,1.3f), FLinearColor(.2f,.37f,.45f));
     for (int32 I=0; I<6; ++I)
     {
@@ -123,7 +128,9 @@ void AWindseedStage::BeginPlay()
     Atmosphere->SetRootComponent(AtmosphereComponent);
     AtmosphereComponent->RegisterComponent();
     auto* Sky = GetWorld()->SpawnActor<ASkyLight>();
-    Sky->GetLightComponent()->SetIntensity(.9f);
+    Sky->GetLightComponent()->SetMobility(EComponentMobility::Movable);
+    Sky->GetLightComponent()->bLowerHemisphereIsBlack = false;
+    Sky->GetLightComponent()->SetIntensity(1.2f);
     Sky->GetLightComponent()->SetRealTimeCaptureEnabled(true);
     auto* Exposure = GetWorld()->SpawnActor<APostProcessVolume>();
     Exposure->bUnbound = true;

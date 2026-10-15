@@ -26,8 +26,9 @@ engine_config = (project_dir / "Config/DefaultEngine.ini").read_text(encoding="u
 match = re.search(r"(?m)^GameDefaultMap=(/Game/[^\r\n]+)", engine_config)
 if not match or not (project_dir / "Content" / (match[1][6:] + ".umap")).is_file():
     errors.append("Configured game map does not exist")
-if not (project_dir / "Content/Windseed/M_Palette.uasset").is_file():
-    errors.append("Original palette material is missing")
+for material in ("M_Palette", "M_Sky"):
+    if not (project_dir / f"Content/Windseed/{material}.uasset").is_file():
+        errors.append(f"Original material is missing: {material}")
 for name in ("create_garden_assets.py", "check_repository.py"):
     compile((root / "Tools" / name).read_text(encoding="utf-8"), name, "exec")
 if errors:

@@ -30,6 +30,7 @@ private:
     UPROPERTY() TObjectPtr<UStaticMesh> Cylinder;
     UPROPERTY() TObjectPtr<UStaticMesh> Cone;
     UPROPERTY() TObjectPtr<UMaterialInterface> Palette;
+    UPROPERTY() TObjectPtr<UMaterialInterface> SkyMaterial;
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Seeds;
     UPROPERTY() TObjectPtr<UStaticMeshComponent> Beacon;
     TArray<FVector> SeedPositions;
