@@ -8,6 +8,7 @@
 #include "PlayseedClimbTree.h"
 #include "PlayseedEnemyBase.h"
 #include "PlayseedCoin.h"
+#include "PlayseedBreakableBox.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
@@ -214,6 +215,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (CarryProp) CarryProp->ResetToSpawn();
     if (PracticeEnemy) PracticeEnemy->ResetEnemy();
     for (APlayseedCoin* Coin : TrainingCoins) if (Coin) Coin->ResetCoin();
+    if (PracticeBox) PracticeBox->ResetBox();
 }
 
 void AThunderMeadowStage::BuildWarpCaves()
@@ -281,6 +283,13 @@ void AThunderMeadowStage::BuildTrainingCoins()
     AddSign(FVector(-50, -60, 0), TEXT("LIGHTCOINS\nGold 1 - Scarlet 2 - Azure 5"));
 }
 
+void AThunderMeadowStage::BuildPracticeBox()
+{
+    PracticeBox = GetWorld()->SpawnActor<APlayseedBreakableBox>(FVector(800, -600, 0), FRotator::ZeroRotator);
+    if (PracticeBox) PracticeBox->ConfigureBox(TEXT("MeadowCopperCache"));
+    AddSign(FVector(1050, -800, 0), TEXT("THE COPPER CACHE\nStrike, or dive onto the top"));
+}
+
 void AThunderMeadowStage::BuildShortcutGate()
 {
     const FVector Position(1600, 300, 0);
@@ -337,6 +346,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildClimbTree();
     BuildPracticeEnemy();
     BuildTrainingCoins();
+    BuildPracticeBox();
     BuildSkyIsland();
     BuildLighting();
 }
