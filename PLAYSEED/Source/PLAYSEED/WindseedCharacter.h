@@ -7,6 +7,7 @@
 class USpringArmComponent;
 class UCameraComponent;
 class UPlayseedVitalityComponent;
+class UPlayseedActionComponent;
 
 // Character は「入力で操作される Pawn」に、カプセル衝突と移動用 Component を加えた UE のクラスです。
 // このクラスは移動や見た目を担当し、ステージ固有の開始位置は GameMode から受け取ります。
@@ -20,12 +21,15 @@ public:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
     virtual void SetupPlayerInputComponent(UInputComponent* Input) override;
+    virtual void Landed(const FHitResult& Hit) override;
     void ReturnToTrail();
     // 新しいステージを始めるときに GameMode が設定します。設定後の落下復帰も同じ位置を使います。
     void SetTrailStartLocation(const FVector& Location) { TrailStartLocation = Location; }
     void SetSprinting(bool bEnabled);
     USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
     UPlayseedVitalityComponent* GetVitality() const { return Vitality; }
+    UPlayseedActionComponent* GetActions() const { return Actions; }
+    void SetPoundPose(bool bEnabled);
     int32 RecoveryCount = 0;
 private:
     // UPROPERTY は UE にこの値を認識させる印です。EditAnywhere により Editor でも位置を調整できます。
@@ -37,6 +41,7 @@ private:
     UPROPERTY() TObjectPtr<UCameraComponent> FollowCamera;
     UPROPERTY() TObjectPtr<USceneComponent> SeedBody;
     UPROPERTY() TObjectPtr<UPlayseedVitalityComponent> Vitality;
+    UPROPERTY() TObjectPtr<UPlayseedActionComponent> Actions;
     void MoveForward(float Value);
     void MoveRight(float Value);
     void LookYaw(float Value);
