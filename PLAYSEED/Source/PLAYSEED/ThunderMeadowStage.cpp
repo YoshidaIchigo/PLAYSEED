@@ -1,4 +1,5 @@
 #include "ThunderMeadowStage.h"
+#include "ThunderMovingPlatform.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
@@ -187,6 +188,19 @@ void AThunderMeadowStage::BuildWoodenBridge()
     AddSign(FVector(-2650, -1000, 100), TEXT("THE TIMBER CROSSING"));
 }
 
+void AThunderMeadowStage::BuildMovingPlatform()
+{
+    // World が Actor を所有し、Stage は再開時に初期化するための参照だけを保持します。
+    MovingPlatform = GetWorld()->SpawnActor<AThunderMovingPlatform>(FVector(600, 800, 90), FRotator::ZeroRotator);
+    AddTerrace(FVector(1250, 800, 220), FVector2D(500, 500), FLinearColor(.18f, .42f, .26f));
+    AddSign(FVector(300, 450, 0), TEXT("THE DRIFTLEAF LIFT\nJump aboard, ride, then jump to the ledge"));
+}
+
+void AThunderMeadowStage::ResetMechanisms()
+{
+    if (MovingPlatform) MovingPlatform->ResetMotion();
+}
+
 void AThunderMeadowStage::BuildLighting()
 {
     auto* SkyDome = AddShape(Sphere, FVector::ZeroVector, FVector(40000), FLinearColor::White);
@@ -213,6 +227,7 @@ void AThunderMeadowStage::BeginPlay()
     Super::BeginPlay();
     BuildMeadow();
     BuildWoodenBridge();
+    BuildMovingPlatform();
     BuildMountain();
     BuildSkyIsland();
     BuildLighting();

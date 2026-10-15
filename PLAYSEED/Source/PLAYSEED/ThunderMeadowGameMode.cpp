@@ -44,3 +44,10 @@ void AThunderMeadowGameMode::StartPlay()
         Player->RecoveryCount = 0;
     }
 }
+
+void AThunderMeadowGameMode::RestartStage(AWindseedCharacter* Player)
+{
+    // このステージが生成した仕掛けだけを初期化し、永続の獲得済み報酬には触れません。
+    if (Stage) Stage->ResetMechanisms();
+    Super::RestartStage(Player);
+}

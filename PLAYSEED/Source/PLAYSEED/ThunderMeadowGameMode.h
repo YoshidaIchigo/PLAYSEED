@@ -23,6 +23,7 @@ class PLAYSEED_API AThunderMeadowGameMode : public APlayseedGameModeBase
 public:
     AThunderMeadowGameMode();
     virtual void StartPlay() override;
+    virtual void RestartStage(AWindseedCharacter* Player) override;
 private:
     // World が Stage を所有します。UPROPERTY は参照を UE に伝えます。
     UPROPERTY() TObjectPtr<AThunderMeadowStage> Stage;
