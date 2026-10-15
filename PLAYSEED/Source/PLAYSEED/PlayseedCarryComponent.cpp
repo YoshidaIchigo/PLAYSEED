@@ -2,6 +2,7 @@
 #include "PlayseedCarryable.h"
 #include "PlayseedActionComponent.h"
 #include "PlayseedVitalityComponent.h"
+#include "PlayseedCombatComponent.h"
 #include "WindseedCharacter.h"
 #include "Components/InputComponent.h"
 #include "EngineUtils.h"
@@ -27,7 +28,7 @@ void UPlayseedCarryComponent::TickComponent(float DeltaTime, ELevelTick TickType
 void UPlayseedCarryComponent::Interact()
 {
     auto* Player = Cast<AWindseedCharacter>(GetOwner());
-    if (!Player || Player->GetVitality()->IsInvulnerable() || Player->GetActions()->IsGroundPounding()) return;
+    if (!Player || Player->GetVitality()->IsInvulnerable() || Player->GetActions()->IsGroundPounding() || Player->GetCombat()->IsAttacking()) return;
     if (Held.IsValid() && Held->IsHeldBy(Player)) { Held->Throw(); Held.Reset(); return; }
     Held.Reset();
     APlayseedCarryable* Closest = nullptr;

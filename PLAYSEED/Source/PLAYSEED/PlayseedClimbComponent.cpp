@@ -3,6 +3,7 @@
 #include "PlayseedCarryComponent.h"
 #include "PlayseedActionComponent.h"
 #include "PlayseedVitalityComponent.h"
+#include "PlayseedCombatComponent.h"
 #include "WindseedCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
@@ -37,6 +38,7 @@ void UPlayseedClimbComponent::ToggleClimb()
     }
     if (!Closest) return;
     Player->GetCarry()->DropHeld();
+    Player->GetCombat()->CancelMelee();
     Tree = Closest;
     Outward = (Player->GetActorLocation() - Tree->GetActorLocation()).GetSafeNormal2D();
     if (Outward.IsNearlyZero()) Outward = FVector::ForwardVector;

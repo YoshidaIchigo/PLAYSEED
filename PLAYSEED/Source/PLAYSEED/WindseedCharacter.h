@@ -10,6 +10,8 @@ class UPlayseedVitalityComponent;
 class UPlayseedActionComponent;
 class UPlayseedCarryComponent;
 class UPlayseedClimbComponent;
+class UPlayseedCombatComponent;
+class UStaticMeshComponent;
 
 // Character は「入力で操作される Pawn」に、カプセル衝突と移動用 Component を加えた UE のクラスです。
 // このクラスは移動や見た目を担当し、ステージ固有の開始位置は GameMode から受け取ります。
@@ -34,8 +36,10 @@ public:
     UPlayseedActionComponent* GetActions() const { return Actions; }
     UPlayseedCarryComponent* GetCarry() const { return Carry; }
     UPlayseedClimbComponent* GetClimb() const { return Climb; }
+    UPlayseedCombatComponent* GetCombat() const { return Combat; }
     void SetPoundPose(bool bEnabled);
     void SetClimbPose(bool bEnabled);
+    void SetMeleePose(int32 Stage, float Progress);
     int32 RecoveryCount = 0;
 private:
     // UPROPERTY は UE にこの値を認識させる印です。EditAnywhere により Editor でも位置を調整できます。
@@ -50,6 +54,10 @@ private:
     UPROPERTY() TObjectPtr<UPlayseedActionComponent> Actions;
     UPROPERTY() TObjectPtr<UPlayseedCarryComponent> Carry;
     UPROPERTY() TObjectPtr<UPlayseedClimbComponent> Climb;
+    UPROPERTY() TObjectPtr<UPlayseedCombatComponent> Combat;
+    UPROPERTY() TObjectPtr<UStaticMeshComponent> LeftHand;
+    UPROPERTY() TObjectPtr<UStaticMeshComponent> RightHand;
+    UPROPERTY() TObjectPtr<UStaticMeshComponent> RightBoot;
     void MoveForward(float Value);
     void MoveRight(float Value);
     void LookYaw(float Value);
