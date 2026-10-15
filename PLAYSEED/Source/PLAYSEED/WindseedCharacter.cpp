@@ -1,5 +1,6 @@
 #include "WindseedCharacter.h"
 #include "PlayseedGameModeBase.h"
+#include "PlayseedVitalityComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
@@ -14,6 +15,7 @@
 AWindseedCharacter::AWindseedCharacter()
 {
     PrimaryActorTick.bCanEverTick = true;
+    Vitality = CreateDefaultSubobject<UPlayseedVitalityComponent>(TEXT("Vitality"));
     GetCapsuleComponent()->InitCapsuleSize(34.f, 82.f);
     bUseControllerRotationYaw = false;
     GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -90,7 +92,11 @@ void AWindseedCharacter::BeginPlay()
 void AWindseedCharacter::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
-    if (GetActorLocation().Z < -650) ReturnToTrail();
+    if (GetActorLocation().Z < -650)
+    {
+        if (auto* Mode = Cast<APlayseedGameModeBase>(GetWorld()->GetAuthGameMode())) Mode->HandlePlayerFall(this);
+        else ReturnToTrail();
+    }
     const float Speed = GetVelocity().Size2D();
     SeedBody->SetRelativeLocation(FVector(0,0, FMath::Sin(GetWorld()->GetTimeSeconds()*12)*FMath::Min(Speed/180, 3.f)));
 }
@@ -141,6 +147,7 @@ void AWindseedCharacter::ReturnToTrail()
     // 座標を Character 内へ固定しないことで、別のステージでも同じ移動コードを再利用できます。
     SetActorLocation(TrailStartLocation, false, nullptr, ETeleportType::TeleportPhysics);
     SetSprinting(false);
+    Vitality->Restore();
     ++RecoveryCount;
 }
 void AWindseedCharacter::RestartTrail()

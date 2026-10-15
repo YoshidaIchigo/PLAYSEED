@@ -52,3 +52,14 @@ void APlayseedGameModeBase::RestartStage(AWindseedCharacter* Player)
     // やり直し時の速度停止と開始位置への移動は Character の一か所に集約します。
     if (Player) Player->ReturnToTrail();
 }
+
+void APlayseedGameModeBase::HandlePlayerDefeat(AWindseedCharacter* Player)
+{
+    RestartStage(Player);
+}
+
+void APlayseedGameModeBase::HandlePlayerFall(AWindseedCharacter* Player)
+{
+    // 既存Gardenの落下は収集物をリセットせず復帰する従来の動作を保ちます。
+    if (Player) Player->ReturnToTrail();
+}
