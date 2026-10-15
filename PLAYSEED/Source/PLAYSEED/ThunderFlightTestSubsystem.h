@@ -18,6 +18,7 @@ public:
     const FString& GetError() const { return Error; }
 private:
     void SetPhase(int32 Number);
+    void RecordBaselines(AWindseedCharacter* Player);
     void SteerTo(AWindseedCharacter* Player, FVector Goal);
     void ClearAxes(AWindseedCharacter* Player);
     bool WalkRoute(AWindseedCharacter* Player, float DeltaSeconds);

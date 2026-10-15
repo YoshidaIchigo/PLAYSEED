@@ -26,6 +26,7 @@ class APlayseedGaleleafEnemy;
 class AThunderGuide;
 class AThunderLauncher;
 class AThunderFlightBloom;
+class AThunderFlightSwitch;
 
 // Actor は World 内の一つの存在です。この Actor が地形・装飾の Component を所有します。
 // ミッションのルールやセーブは GameMode / Subsystem に任せ、形状の生成だけを担当します。
@@ -61,6 +62,8 @@ public:
     AThunderGuide* GetGuide() const { return Guide; }
     AThunderLauncher* GetLauncher() const { return Launcher; }
     AThunderFlightBloom* GetFlightBloom() const { return FlightBloom; }
+    AThunderFlightSwitch* GetFlightSwitch() const { return FlightSwitch; }
+    const TArray<FVector>& GetWingTowerFootPath() const { return WingTowerFootPath; }
     void ResetMechanisms();
 private:
     UStaticMeshComponent* AddShape(UStaticMesh* Mesh, FVector Position, FVector Dimensions, FLinearColor Color, bool bSolid = false, FRotator Rotation = FRotator::ZeroRotator);
@@ -89,6 +92,7 @@ private:
     void BuildGaleleafEnemy();
     void BuildGuideAndLauncher();
     void BuildFlightBloom();
+    void BuildWingTower();
     void AddRamp(FVector Start, FVector End, float Width);
     void BuildLighting();
 
@@ -119,6 +123,8 @@ private:
     UPROPERTY() TObjectPtr<AThunderGuide> Guide;
     UPROPERTY() TObjectPtr<AThunderLauncher> Launcher;
     UPROPERTY() TObjectPtr<AThunderFlightBloom> FlightBloom;
+    UPROPERTY() TObjectPtr<AThunderFlightSwitch> FlightSwitch;
+    TArray<FVector> WingTowerFootPath;
     TArray<FVector> MeadowCoinFootPath;
     TArray<FVector> MountainFootPath;
     TArray<FVector> BridgeFootPath;

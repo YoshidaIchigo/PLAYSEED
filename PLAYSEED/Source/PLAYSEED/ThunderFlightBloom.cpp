@@ -1,5 +1,7 @@
 #include "ThunderFlightBloom.h"
 #include "PlayseedFlightComponent.h"
+#include "ThunderExpeditionSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "WindseedCharacter.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -20,15 +22,24 @@ AThunderFlightBloom::AThunderFlightBloom()
 void AThunderFlightBloom::BeginPlay()
 {
     Super::BeginPlay();
+    ResetBloom();
     if (auto* Palette = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Windseed/M_Palette.M_Palette")))
     {
         auto* Tint = UMaterialInstanceDynamic::Create(Palette, this); Tint->SetVectorParameterValue(TEXT("Tint"), FLinearColor(.1f, .8f, .6f)); Bud->SetMaterial(0, Tint);
     }
 }
-void AThunderFlightBloom::ResetBloom() { bCollected = false; RespawnRemaining = 0; SetActorHiddenInGame(false); }
+void AThunderFlightBloom::ResetBloom()
+{
+    bCollected = false; RespawnRemaining = 0;
+    bUnlocked = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->IsFlightUnlocked();
+    SetActorHiddenInGame(!bUnlocked);
+}
 void AThunderFlightBloom::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+    bUnlocked = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->IsFlightUnlocked();
+    if (!bUnlocked) { SetActorHiddenInGame(true); return; }
+    if (!bCollected) SetActorHiddenInGame(false);
     auto* Player = Cast<AWindseedCharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
     if (!Player) return;
     const float Distance = FVector::Dist2D(Player->GetActorLocation(), GetActorLocation());

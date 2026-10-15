@@ -1,5 +1,6 @@
 #include "ThunderFlightTestSubsystem.h"
 #include "ThunderGuideTestSubsystem.h"
+#include "ThunderTowerTestSubsystem.h"
 #include "ThunderMeadowStage.h"
 #include "ThunderLauncher.h"
 #include "ThunderFlightBloom.h"
@@ -31,13 +32,18 @@ void UThunderFlightTestSubsystem::BeginTest(AWindseedCharacter* Player, AThunder
 {
     Stage = InStage; Error.Reset(); Route.Reset(); SetPhase(0); OrbitPoint = 0;
     bSlowVerified = bFlightScreenshot = false; FastestSpeed = 0;
+    RecordBaselines(Player);
+    GetGameInstance()->GetSubsystem<UThunderGuideTestSubsystem>()->BeginTest(Player, InStage, false);
+}
+void UThunderFlightTestSubsystem::RecordBaselines(AWindseedCharacter* Player)
+{
+    // 前提検証で正当に増えた診断回数を基準に取り直すだけで、ゲームの回数は変更しません。
     auto* Power = Player->GetFlight();
     GrantsBefore = Power->GetPowerGrants(); StartsBefore = Power->GetFlightStarts(); ExpirationsBefore = Power->GetExpirations(); LandingsBefore = Power->GetFlightLandings();
     LaunchesBefore = Player->GetLaunch()->GetLaunchCount();
     const auto* Move = Player->GetCharacterMovement();
     NormalFlySpeed = Move->MaxFlySpeed; NormalAcceleration = Move->MaxAcceleration; NormalBraking = Move->BrakingDecelerationFlying;
     NormalArm = Player->GetCameraBoom()->TargetArmLength; NormalSocket = Player->GetCameraBoom()->SocketOffset;
-    GetGameInstance()->GetSubsystem<UThunderGuideTestSubsystem>()->BeginTest(Player, InStage, false);
 }
 bool UThunderFlightTestSubsystem::SettingsRestored(AWindseedCharacter* Player) const
 {
@@ -83,12 +89,22 @@ bool UThunderFlightTestSubsystem::UpdateTest(AWindseedCharacter* Player, float D
     if (PhaseTime > 80) { Error = FString::Printf(TEXT("Flight phase %d waypoint %d timed out at %s"), Phase, Waypoint, *Player->GetActorLocation().ToString()); return false; }
     if (Player->GetVitality()->GetHealth() != 8) { Error = FString::Printf(TEXT("Flight phase %d took unexpected damage"), Phase); return false; }
     auto* Power = Player->GetFlight(); auto* Move = Player->GetCharacterMovement();
-    if (Phase > 0 && Player->RecoveryCount != RecoveryBefore && Phase != 15) { Error = TEXT("Flight route unexpectedly recovered"); return false; }
+    if (Phase > 0 && Player->RecoveryCount != RecoveryBefore && Phase != 15 && Phase != 16) { Error = TEXT("Flight route unexpectedly recovered"); return false; }
     if (Phase == 0)
     {
         auto* Guide = GetGameInstance()->GetSubsystem<UThunderGuideTestSubsystem>(); const bool bDone = Guide->UpdateTest(Player, DeltaSeconds);
         if (!Guide->GetError().IsEmpty()) { Error = Guide->GetError(); return false; }
-        if (bDone) { RecoveryBefore = Player->RecoveryCount; Route = {FVector(-3000, -600, 82), FVector(-3000, 2800, 82), Stage->GetFlightBloom()->GetActorLocation() + FVector(0, 0, 82)}; SetPhase(1); }
+        if (bDone) { RecoveryBefore = Player->RecoveryCount; GetGameInstance()->GetSubsystem<UThunderTowerTestSubsystem>()->BeginTest(Player, Stage.Get(), false); SetPhase(16); }
+    }
+    else if (Phase == 16)
+    {
+        auto* Tower = GetGameInstance()->GetSubsystem<UThunderTowerTestSubsystem>(); const bool bDone = Tower->UpdateTest(Player, DeltaSeconds);
+        if (!Tower->GetError().IsEmpty()) { Error = Tower->GetError(); return false; }
+        if (bDone)
+        {
+            RecordBaselines(Player); RecoveryBefore = Player->RecoveryCount;
+            Route = {FVector(-3000, -600, 82), FVector(-3000, 2800, 82), Stage->GetFlightBloom()->GetActorLocation() + FVector(0, 0, 82)}; SetPhase(1);
+        }
     }
     else if (Phase == 1 || Phase == 8)
     {

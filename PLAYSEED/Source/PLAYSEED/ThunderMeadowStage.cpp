@@ -17,6 +17,7 @@
 #include "ThunderGuide.h"
 #include "ThunderLauncher.h"
 #include "ThunderFlightBloom.h"
+#include "ThunderFlightSwitch.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
@@ -232,6 +233,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (GaleleafEnemy) GaleleafEnemy->ResetEnemy();
     if (Guide) Guide->ResetDialogue();
     if (FlightBloom) FlightBloom->ResetBloom();
+    if (FlightSwitch) FlightSwitch->RefreshFromProgress();
 }
 
 void AThunderMeadowStage::BuildWarpCaves()
@@ -379,6 +381,21 @@ void AThunderMeadowStage::BuildFlightBloom()
     AddSign(FVector(-2850, 2850, 0), TEXT("LEAFWINGS\nSPACE in the air: glide / fall\nMouse or right stick: steer - W/S: speed"));
 }
 
+void AThunderMeadowStage::BuildWingTower()
+{
+    const FVector Center(-2600, -2500, 0);
+    AddShape(Cylinder, Center + FVector(0, 0, 470), FVector(280, 280, 940), FLinearColor(.12f, .27f, .35f), true);
+    for (int32 Index = 0; Index < 8; ++Index)
+    {
+        const float Angle = PI + Index * PI / 4;
+        const FVector Top = Center + FVector(FMath::Cos(Angle) * 500, FMath::Sin(Angle) * 500, 100 + Index * 120);
+        AddTerrace(Top, FVector2D(400, 400), FLinearColor(.25f, .6f, .47f));
+        WingTowerFootPath.Add(Top);
+    }
+    FlightSwitch = GetWorld()->SpawnActor<AThunderFlightSwitch>(WingTowerFootPath.Last(), FRotator::ZeroRotator);
+    AddSign(FVector(-3300, -2700, 0), TEXT("THE SUNSPROUT SPIRE\nJump around the steps - dive onto the sun switch\nAwaken leafwings throughout the meadow"));
+}
+
 void AThunderMeadowStage::BuildShortcutGate()
 {
     const FVector Position(1600, 300, 0);
@@ -444,6 +461,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildGaleleafEnemy();
     BuildGuideAndLauncher();
     BuildFlightBloom();
+    BuildWingTower();
     BuildSkyIsland();
     BuildLighting();
 }

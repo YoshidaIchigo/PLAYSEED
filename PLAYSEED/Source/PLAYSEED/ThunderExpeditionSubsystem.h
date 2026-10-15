@@ -25,6 +25,8 @@ public:
     int32 GetEarnedRewardCount() const;
     bool IsLauncherUnlocked() const;
     bool TryUnlockLauncher();
+    bool IsFlightUnlocked() const;
+    bool TryUnlockFlight();
     const FString& GetProgressProblem() const { return ProgressProblem; }
     const FString& GetSaveSlotName() const { return SaveSlotName; }
 private:

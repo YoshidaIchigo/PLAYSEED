@@ -15,12 +15,13 @@ public:
     void BeginTerraceRoute(AWindseedCharacter* Player);
     void BeginMountainRoute(AWindseedCharacter* Player, const TArray<FVector>& FootPath, bool bInspectIsland = false);
     void BeginBridgeRoute(AWindseedCharacter* Player, const TArray<FVector>& FootPath);
+    void BeginTowerRoute(AWindseedCharacter* Player, const TArray<FVector>& FootPath);
     void BeginCoinTrailRoute(AWindseedCharacter* Player, const TArray<FVector>& MeadowFootPath, const TArray<FVector>& MountainPath);
     bool UpdateRoute(AWindseedCharacter* Player, float DeltaSeconds);
     bool HasFailed() const { return !Error.IsEmpty(); }
     const FString& GetError() const { return Error; }
 private:
-    void ResetProgress(AWindseedCharacter* Player);
+    void ResetProgress(AWindseedCharacter* Player, bool bZoomOut = true);
     bool VerifyIslandCollision(AWindseedCharacter* Player);
     bool VerifyCoinTrail(AWindseedCharacter* Player);
     TArray<FVector> Route;

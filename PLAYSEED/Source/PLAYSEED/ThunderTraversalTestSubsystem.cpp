@@ -77,7 +77,17 @@ void UThunderTraversalTestSubsystem::BeginCoinTrailRoute(AWindseedCharacter* Pla
     ResetProgress(Player);
 }
 
-void UThunderTraversalTestSubsystem::ResetProgress(AWindseedCharacter* Player)
+void UThunderTraversalTestSubsystem::BeginTowerRoute(AWindseedCharacter* Player, const TArray<FVector>& FootPath)
+{
+    Route = {FVector(-3400, -600, 82), FVector(-3400, -2500, 82)};
+    for (const FVector& Foot : FootPath) Route.Add(Foot + FVector(0, 0, Player->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()));
+    bJumpForSteps = true; MinimumJumps = 8; AutoJumpWaypointLimit = MAX_int32;
+    bInspectSkyIsland = bBridgeRoute = false; CaptureName = TEXT("ThunderWingTower");
+    // 複合検証で使うため、呼出し元の通常カメラ距離を変えません。
+    ResetProgress(Player, false);
+}
+
+void UThunderTraversalTestSubsystem::ResetProgress(AWindseedCharacter* Player, bool bZoomOut)
 {
     Waypoint = 0;
     JumpCount = 0;
@@ -87,7 +97,7 @@ void UThunderTraversalTestSubsystem::ResetProgress(AWindseedCharacter* Player)
     bScreenshotRequested = false;
     bIslandCollisionVerified = false;
     RecoveryBaseline = Player->RecoveryCount;
-    if (auto* PC = Cast<APlayerController>(Player->GetController()))
+    if (auto* PC = Cast<APlayerController>(Player->GetController()); PC && bZoomOut)
         PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::MouseWheelAxis, IE_Axis, -6));
 }
 

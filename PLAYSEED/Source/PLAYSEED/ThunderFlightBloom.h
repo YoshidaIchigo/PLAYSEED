@@ -16,11 +16,12 @@ public:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
     void ResetBloom();
-    bool IsAvailable() const { return !bCollected; }
+    bool IsAvailable() const { return bUnlocked && !bCollected; }
     int32 GetCollections() const { return Collections; }
 private:
     UPROPERTY() TObjectPtr<UStaticMeshComponent> Bud;
     bool bCollected = false;
+    bool bUnlocked = false;
     float RespawnRemaining = 0;
     int32 Collections = 0;
 };
