@@ -56,5 +56,5 @@ void AStageSelectionGameMode::EnterThunderMeadow()
 {
     if (bTravelRequested) return;
     bTravelRequested = true;
-    UGameplayStatics::OpenLevel(this, FName(TEXT("/Game/ThunderMeadow/ThunderMeadow")));
+    UGameplayStatics::OpenLevel(this, FName(TEXT("/Game/ThunderMeadow/MissionSelect")));
 }
