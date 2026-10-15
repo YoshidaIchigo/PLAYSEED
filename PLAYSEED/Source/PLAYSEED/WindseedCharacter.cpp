@@ -5,6 +5,7 @@
 #include "PlayseedCarryComponent.h"
 #include "PlayseedClimbComponent.h"
 #include "PlayseedCombatComponent.h"
+#include "PlayseedRideComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
@@ -24,6 +25,7 @@ AWindseedCharacter::AWindseedCharacter()
     Carry = CreateDefaultSubobject<UPlayseedCarryComponent>(TEXT("Carry"));
     Climb = CreateDefaultSubobject<UPlayseedClimbComponent>(TEXT("Climb"));
     Combat = CreateDefaultSubobject<UPlayseedCombatComponent>(TEXT("Combat"));
+    Ride = CreateDefaultSubobject<UPlayseedRideComponent>(TEXT("GaleleafRide"));
     GetCapsuleComponent()->InitCapsuleSize(34.f, 82.f);
     bUseControllerRotationYaw = false;
     GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -118,6 +120,7 @@ void AWindseedCharacter::SetupPlayerInputComponent(UInputComponent* Input)
     Carry->SetupInput(Input);
     Climb->SetupInput(Input);
     Combat->SetupInput(Input);
+    Ride->SetupInput(Input);
     Input->BindAxis(TEXT("MoveForward"), this, &AWindseedCharacter::MoveForward);
     Input->BindAxis(TEXT("MoveRight"), this, &AWindseedCharacter::MoveRight);
     Input->BindAxis(TEXT("LookYaw"), this, &AWindseedCharacter::LookYaw);
@@ -147,11 +150,17 @@ void AWindseedCharacter::LookPitch(float Value) { AddControllerPitchInput(Value)
 void AWindseedCharacter::LookYawRate(float Value) { AddControllerYawInput(Value*120.f*GetWorld()->GetDeltaSeconds()); }
 void AWindseedCharacter::LookPitchRate(float Value) { AddControllerPitchInput(Value*90.f*GetWorld()->GetDeltaSeconds()); }
 void AWindseedCharacter::Zoom(float Value) { CameraBoom->TargetArmLength = FMath::Clamp(CameraBoom->TargetArmLength-Value*40, 300.f, 800.f); }
-void AWindseedCharacter::SetSprinting(bool bEnabled) { GetCharacterMovement()->MaxWalkSpeed = bEnabled ? 670 : 470; }
+void AWindseedCharacter::SetSprinting(bool bEnabled)
+{
+    // 乗っている間のShiftも記憶し、降りたときに現在の入力へ戻します。
+    bSprintRequested = bEnabled;
+    if (!Ride->IsRiding()) GetCharacterMovement()->MaxWalkSpeed = bEnabled ? 670 : 470;
+}
 void AWindseedCharacter::StartSprint() { SetSprinting(true); }
 void AWindseedCharacter::StopSprint() { SetSprinting(false); }
 void AWindseedCharacter::ReturnToTrail()
 {
+    Ride->CancelRide();
     Actions->CancelGroundPound();
     Carry->DropHeld();
     Climb->CancelClimb();
