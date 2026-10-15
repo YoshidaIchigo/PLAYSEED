@@ -5,6 +5,7 @@
 #include "ThunderCoinLedger.h"
 #include "PlayseedCoin.h"
 #include "ThunderRollingBoulder.h"
+#include "PlayseedVitalityComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
@@ -153,7 +154,7 @@ bool UThunderTraversalTestSubsystem::VerifyCoinTrail(AWindseedCharacter* Player)
 {
     const auto* Mode = Cast<AThunderMeadowGameMode>(Player->GetWorld()->GetAuthGameMode());
     const auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(Player, AThunderMeadowStage::StaticClass()));
-    if (!Mode || !Meadow || Meadow->GetTrailCoins().Num() != 100 || Mode->GetCoinLedger()->GetTotal() != 100 || Mode->GetCoinLedger()->GetRedCount() != 0)
+    if (!Mode || !Meadow || Meadow->GetTrailCoins().Num() != 100 || Mode->GetCoinLedger()->GetTotal() != 100 || Mode->GetCoinLedger()->GetRedCount() != 0 || Player->GetVitality()->GetHealth() != 8)
     { Error = TEXT("Continuous walking route did not collect exactly 100 placed gold coins"); return false; }
     for (const APlayseedCoin* Coin : Meadow->GetTrailCoins())
         if (!Coin || !Coin->IsCollected()) { Error = TEXT("A placed trail coin was not reached by normal movement"); return false; }
