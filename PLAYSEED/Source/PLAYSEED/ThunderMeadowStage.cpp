@@ -2,6 +2,7 @@
 #include "ThunderMovingPlatform.h"
 #include "ThunderTiltingBridge.h"
 #include "ThunderShortcutGate.h"
+#include "ThunderWarpPair.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
@@ -204,6 +205,34 @@ void AThunderMeadowStage::ResetMechanisms()
     if (MovingPlatform) MovingPlatform->ResetMotion();
     if (TiltingBridge) TiltingBridge->ResetTilt();
     if (ShortcutGate) ShortcutGate->ResetGate();
+    if (WarpPair) WarpPair->ResetWarps();
+}
+
+void AThunderMeadowStage::BuildWarpCaves()
+{
+    const FVector MountainCenter(2200, 2100, 0);
+    FVector Floors[2];
+    float ExitYaws[2];
+    const int32 TrailIndices[2] = {2, 22};
+    for (int32 Index = 0; Index < 2; ++Index)
+    {
+        const FVector Trail = MountainFootPath[TrailIndices[Index]];
+        const FVector Outward = (Trail - MountainCenter).GetSafeNormal2D();
+        Floors[Index] = Trail + Outward * 350;
+        const FRotator Rotation(0, Outward.Rotation().Yaw, 0);
+        ExitYaws[Index] = (-Outward).Rotation().Yaw;
+        auto At = [&](FVector Local) { return Floors[Index] + Rotation.RotateVector(Local); };
+        const FLinearColor Rock(.16f, .23f, .29f);
+        // 山道の外側へ床を重ね、三方の壁と天井で中が空いたくぼみを作ります。
+        AddShape(Cube, At(FVector(0, 0, -20)), FVector(520, 460, 40), Rock, true, Rotation);
+        for (float Side : {-1.f, 1.f}) AddShape(Cube, At(FVector(0, Side * 250, 140)), FVector(580, 40, 280), Rock, true, Rotation);
+        AddShape(Cube, At(FVector(280, 0, 140)), FVector(40, 540, 280), Rock, true, Rotation);
+        AddShape(Cube, At(FVector(0, 0, 300)), FVector(580, 540, 40), Rock, true, Rotation);
+        AddShape(Cylinder, At(FVector(0, 0, 3)), FVector(130, 130, 6), FLinearColor(.4f, .15f, .75f));
+        AddSign(Trail - Outward * 65, TEXT("THE ECHO HOLLOW\nStep into the purple light"));
+    }
+    WarpPair = GetWorld()->SpawnActor<AThunderWarpPair>();
+    if (WarpPair) WarpPair->Configure(Floors[0], Floors[1], ExitYaws[0], ExitYaws[1]);
 }
 
 void AThunderMeadowStage::BuildShortcutGate()
@@ -256,6 +285,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildTiltingBridge();
     BuildShortcutGate();
     BuildMountain();
+    BuildWarpCaves();
     BuildSkyIsland();
     BuildLighting();
 }
