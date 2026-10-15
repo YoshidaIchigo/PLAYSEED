@@ -27,6 +27,9 @@ void UThunderTraversalTestSubsystem::BeginMountainRoute(AWindseedCharacter* Play
     // 地形の順路は足元、Character の座標はカプセルの中心なので高さを加えます。
     const float CapsuleHeight = Player->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
     for (const FVector& FootPosition : FootPath) Route.Add(FootPosition + FVector(0, 0, CapsuleHeight));
+    // 山頂中央では手前の床が浮島を隠すため、西の縁まで普通に歩いてから見渡します。
+    if (bInspectIsland && FootPath.Num() > 1)
+        Route.Add(FootPath[FootPath.Num() - 2] + FVector(0, 0, CapsuleHeight));
     bJumpForSteps = false; // 山道はジャンプ入力を使わず、斜面を歩いて登れることを検証します。
     MinimumJumps = 0;
     bInspectSkyIsland = bInspectIsland;
@@ -64,7 +67,7 @@ bool UThunderTraversalTestSubsystem::UpdateRoute(AWindseedCharacter* Player, flo
         if (JumpCount < MinimumJumps) { Error = TEXT("The terrain route did not use the required jumps"); return false; }
         FinishTime += DeltaSeconds;
         const float ViewYaw = bInspectSkyIsland || bJumpForSteps ? 180 : 225;
-        const float ViewPitch = bInspectSkyIsland ? -15 : -25;
+        const float ViewPitch = bInspectSkyIsland ? -22 : -25;
         if (PC) PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(), FRotator(ViewPitch, ViewYaw, 0), DeltaSeconds, 3));
         if (FinishTime > 1 && !bScreenshotRequested)
         {
