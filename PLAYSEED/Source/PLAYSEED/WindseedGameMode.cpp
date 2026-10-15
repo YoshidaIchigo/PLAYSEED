@@ -224,6 +224,11 @@ void AWindseedGameMode::FinishTest(bool bPassed,const FString& Message)
     bSmokeTest=false;
     const int32 CapturedFrames=Recording ? Recording->FinishRecording() : 0;
     FString ResultMessage=Message;
+    if (!HasPassedSelectionTest())
+    {
+        bPassed=false;
+        ResultMessage+=TEXT(" Stage selection travel did not complete.");
+    }
     if (bCaptureRequested && (!Recording || Recording->HasCaptureError() || CapturedFrames<150))
     {
         bPassed=false;
