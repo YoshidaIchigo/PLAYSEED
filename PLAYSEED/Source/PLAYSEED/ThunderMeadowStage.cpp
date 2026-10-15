@@ -21,11 +21,13 @@ AThunderMeadowStage::AThunderMeadowStage()
     static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeAsset(TEXT("/Engine/BasicShapes/Cube.Cube"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereAsset(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> CylinderAsset(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> ConeAsset(TEXT("/Engine/BasicShapes/Cone.Cone"));
     static ConstructorHelpers::FObjectFinder<UMaterialInterface> PaletteAsset(TEXT("/Game/Windseed/M_Palette.M_Palette"));
     static ConstructorHelpers::FObjectFinder<UMaterialInterface> SkyAsset(TEXT("/Game/Windseed/M_Sky.M_Sky"));
     Cube = CubeAsset.Object;
     Sphere = SphereAsset.Object;
     Cylinder = CylinderAsset.Object;
+    Cone = ConeAsset.Object;
     Palette = PaletteAsset.Object;
     SkyMaterial = SkyAsset.Object;
 }
@@ -142,6 +144,18 @@ void AThunderMeadowStage::BuildMountain()
     AddSign(FVector(700, 2300, 0), TEXT("SUMMIT TRAIL\nFollow the rising path"));
 }
 
+void AThunderMeadowStage::BuildSkyIsland()
+{
+    // 地上まで埋める段丘とは違い、厚さ160cmの床だけを空中に置きます。
+    AddShape(Cube, SkyIslandTop - FVector(0, 0, 80), FVector(1100, 1100, 160), FLinearColor(.2f, .3f, .34f), true);
+    AddShape(Cube, SkyIslandTop - FVector(0, 0, 6), FVector(1100, 1100, 12), FLinearColor(.2f, .46f, .3f), true);
+    // 下側の岩にも衝突を付け、底からすり抜けないようにします。上面は平らな床で整えます。
+    AddShape(Cone, SkyIslandTop - FVector(0, 0, 200), FVector(1100, 1100, 300),
+        FLinearColor(.12f, .24f, .28f), true, FRotator(180, 0, 0));
+    AddTree(SkyIslandTop + FVector(200, 160, 0));
+    AddSign(SkyIslandTop + FVector(-50, -240, 0), TEXT("THE LANTERN ISLAND"));
+}
+
 void AThunderMeadowStage::BuildLighting()
 {
     auto* SkyDome = AddShape(Sphere, FVector::ZeroVector, FVector(40000), FLinearColor::White);
@@ -168,6 +182,7 @@ void AThunderMeadowStage::BeginPlay()
     Super::BeginPlay();
     BuildMeadow();
     BuildMountain();
+    BuildSkyIsland();
     BuildLighting();
 }
 
