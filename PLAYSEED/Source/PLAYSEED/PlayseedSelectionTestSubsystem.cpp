@@ -126,7 +126,15 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         if (FVector::Dist2D(Player->GetActorLocation(), FVector(-600, -600, 100)) > 5 || Player->RecoveryCount != 1
             || Expedition->GetSelectedMissionNumber() != 6)
         { Fail(TEXT("Restart in the new stage failed")); return; }
-        if (FParse::Param(FCommandLine::Get(), TEXT("ThunderTerraceTest")))
+        if (FParse::Param(FCommandLine::Get(), TEXT("ThunderMountainTest")))
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+            if (!Meadow || Meadow->GetMountainFootPath().Num() < 25) { Fail(TEXT("The mountain route was not created")); return; }
+            GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>()->BeginMountainRoute(Player, Meadow->GetMountainFootPath());
+            Step = 10;
+            Elapsed = 0;
+        }
+        else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderTerraceTest")))
         {
             GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>()->BeginTerraceRoute(Player);
             Step = 10;
@@ -138,7 +146,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     else if (Step == 10 && Player)
     {
         auto* Traversal = GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>();
-        const bool bComplete = Traversal->UpdateTerraceRoute(Player, DeltaSeconds);
+        const bool bComplete = Traversal->UpdateRoute(Player, DeltaSeconds);
         if (Traversal->HasFailed()) { Fail(Traversal->GetError()); return; }
         if (bComplete) { Tap(PC, EKeys::M); Step = 4; }
     }

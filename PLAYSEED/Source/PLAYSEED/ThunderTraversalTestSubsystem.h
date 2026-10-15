@@ -13,10 +13,12 @@ class PLAYSEED_API UThunderTraversalTestSubsystem : public UGameInstanceSubsyste
     GENERATED_BODY()
 public:
     void BeginTerraceRoute(AWindseedCharacter* Player);
-    bool UpdateTerraceRoute(AWindseedCharacter* Player, float DeltaSeconds);
+    void BeginMountainRoute(AWindseedCharacter* Player, const TArray<FVector>& FootPath);
+    bool UpdateRoute(AWindseedCharacter* Player, float DeltaSeconds);
     bool HasFailed() const { return !Error.IsEmpty(); }
     const FString& GetError() const { return Error; }
 private:
+    void ResetProgress(AWindseedCharacter* Player);
     TArray<FVector> Route;
     int32 Waypoint = 0;
     int32 JumpCount = 0;
@@ -25,4 +27,7 @@ private:
     float FinishTime = 0;
     FString Error;
     bool bScreenshotRequested = false;
+    bool bJumpForSteps = true;
+    int32 MinimumJumps = 3;
+    FString CaptureName = TEXT("ThunderTerraces");
 };

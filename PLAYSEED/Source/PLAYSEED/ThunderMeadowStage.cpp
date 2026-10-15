@@ -30,12 +30,13 @@ AThunderMeadowStage::AThunderMeadowStage()
     SkyMaterial = SkyAsset.Object;
 }
 
-UStaticMeshComponent* AThunderMeadowStage::AddShape(UStaticMesh* Mesh, FVector Position, FVector Dimensions, FLinearColor Color, bool bSolid)
+UStaticMeshComponent* AThunderMeadowStage::AddShape(UStaticMesh* Mesh, FVector Position, FVector Dimensions, FLinearColor Color, bool bSolid, FRotator Rotation)
 {
     auto* Part = NewObject<UStaticMeshComponent>(this);
     Part->SetupAttachment(RootComponent);
     Part->SetStaticMesh(Mesh);
     Part->SetRelativeLocation(Position);
+    Part->SetRelativeRotation(Rotation);
     // Engine 基本形状は一辺/直径100cm。呼出し側は読める寸法cmで指定します。
     Part->SetRelativeScale3D(Dimensions / 100.f);
     Part->SetCollisionEnabled(bSolid ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
@@ -93,6 +94,50 @@ void AThunderMeadowStage::BuildMeadow()
     AddSign(FVector(-700, 1920, 300), TEXT("THE MOSS OVERLOOK"));
 }
 
+void AThunderMeadowStage::AddRamp(FVector Start, FVector End, float Width)
+{
+    const FVector Delta = End - Start;
+    const FRotator Rotation = Delta.Rotation();
+    const FVector Up = Rotation.RotateVector(FVector::UpVector);
+    // Start/End を歩く面の高さとし、厚み40cmの中心を法線方向へ20cm下げます。
+    // 隣の区間と長さを60cm重ね、曲がり角に足が落ちる隙間を作らないようにします。
+    AddShape(Cube, (Start + End) * .5f - Up * 20, FVector(Delta.Size() + 60, Width, 40),
+        FLinearColor(.18f, .4f, .24f), true, Rotation);
+}
+
+void AThunderMeadowStage::BuildMountain()
+{
+    const FVector Center(2200, 2100, 0);
+    const FLinearColor Rock(.14f, .2f, .25f);
+    const FLinearColor Moss(.09f, .27f, .15f);
+    // 山塊は上へ行くほど細くし、周回路の内側を支える段丘にします。
+    AddShape(Cylinder, Center + FVector(0, 0, 300), FVector(2000, 2000, 600), Rock, true);
+    AddShape(Cylinder, Center + FVector(0, 0, 594), FVector(2000, 2000, 12), Moss, true);
+    AddShape(Cylinder, Center + FVector(0, 0, 900), FVector(1850, 1850, 600), Rock, true);
+    AddShape(Cylinder, Center + FVector(0, 0, 1194), FVector(1850, 1850, 12), Moss, true);
+    AddShape(Cylinder, Center + FVector(0, 0, 1540), FVector(1750, 1750, 680), Rock, true);
+    AddShape(Cylinder, Center + FVector(0, 0, 1874), FVector(1750, 1750, 12), Moss, true);
+    AddShape(Cylinder, Center + FVector(0, 0, 1940), FVector(1300, 1300, 120), Rock, true);
+    AddShape(Cylinder, Center + FVector(0, 0, 1994), FVector(1320, 1320, 12), Moss, true);
+
+    constexpr int32 SegmentCount = 24;
+    constexpr float Radius = 1100;
+    MountainFootPath.Reset();
+    for (int32 Index = 0; Index <= SegmentCount; ++Index)
+    {
+        const float Angle = PI + Index * 2 * PI / SegmentCount;
+        const FVector Point = Center + FVector(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, Index * 80.f);
+        if (MountainFootPath.Num()) AddRamp(MountainFootPath.Last(), Point, 420);
+        MountainFootPath.Add(Point);
+    }
+    const FVector SummitEntry(1600, 2100, 2000);
+    AddRamp(MountainFootPath.Last(), SummitEntry, 420);
+    MountainFootPath.Add(SummitEntry);
+    MountainFootPath.Add(Center + FVector(0, 0, 2000));
+    AddSign(Center + FVector(200, 300, 2000), TEXT("THE CLOUD CROWN"));
+    AddSign(FVector(700, 2300, 0), TEXT("SUMMIT TRAIL\nFollow the rising path"));
+}
+
 void AThunderMeadowStage::BuildLighting()
 {
     auto* SkyDome = AddShape(Sphere, FVector::ZeroVector, FVector(40000), FLinearColor::White);
@@ -118,6 +163,7 @@ void AThunderMeadowStage::BeginPlay()
 {
     Super::BeginPlay();
     BuildMeadow();
+    BuildMountain();
     BuildLighting();
 }
 
