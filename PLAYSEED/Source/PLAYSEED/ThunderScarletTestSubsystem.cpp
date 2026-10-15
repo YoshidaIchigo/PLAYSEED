@@ -52,14 +52,14 @@ bool UThunderScarletTestSubsystem::Walk(AWindseedCharacter* Player, FVector Goal
     if (Offset.Size2D() < 25 && FMath::Abs(Offset.Z) < 65 && Move->IsMovingOnGround()) { Move->StopMovementImmediately(); Player->StopJumping(); return true; }
     Player->AddMovementInput(Offset.GetSafeNormal2D(), FMath::Clamp(Offset.Size2D() / 100, .25f, 1.f));
     const auto* Boulder = Stage->GetRollingBoulder();
-    const bool bAvoidBoulder = Boulder && !Boulder->IsWaiting() && FVector::Dist2D(Player->GetActorLocation(), Boulder->GetActorLocation()) < 450 && FMath::Abs(Player->GetActorLocation().Z - 82 - (Boulder->GetActorLocation().Z - 70)) < 160;
+    const bool bAvoidBoulder = Boulder && !Boulder->IsWaiting() && FVector::Dist2D(Player->GetActorLocation(), Boulder->GetActorLocation()) < 280 && FMath::Abs(Player->GetActorLocation().Z - 82 - (Boulder->GetActorLocation().Z - 70)) < 160;
     if (Move->IsMovingOnGround() && ((bJump && Offset.Z > 50 && Offset.Size2D() < 480) || bAvoidBoulder)) Player->Jump();
     else if (Player->GetVelocity().Z < 0) Player->StopJumping();
     auto* PC = Cast<APlayerController>(Player->GetController()); PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(), FRotator(-22, Offset.Rotation().Yaw, 0), DeltaSeconds, 3)); return false;
 }
 bool UThunderScarletTestSubsystem::WalkRoute(AWindseedCharacter* Player, float DeltaSeconds)
 {
-    if (Waypoint < Route.Num() && Walk(Player, Route[Waypoint], DeltaSeconds)) ++Waypoint;
+    if (Waypoint < Route.Num() && Walk(Player, Route[Waypoint], DeltaSeconds, Phase != 16 && Phase != 17 && Phase != 44)) ++Waypoint;
     return Waypoint == Route.Num();
 }
 bool UThunderScarletTestSubsystem::UpdateTest(AWindseedCharacter* Player, float DeltaSeconds)
@@ -71,7 +71,7 @@ bool UThunderScarletTestSubsystem::UpdateTest(AWindseedCharacter* Player, float 
     if (!Trail || !PC || !Ledger) { Error = TEXT("Scarlet stage/controller/ledger missing"); return false; }
     PhaseTime += DeltaSeconds;
     if (PhaseTime > 90) { Error = FString::Printf(TEXT("Scarlet phase %d waypoint %d timed out at %s targets %d"), Phase, Waypoint, *Player->GetActorLocation().ToString(), Trail->GetCollectedCount()); return false; }
-    if (Player->GetVitality()->GetHealth() != 8 || !Progress->GetProgressProblem().IsEmpty()) { Error = TEXT("Scarlet route took damage or save failed"); return false; }
+    if (Player->GetVitality()->GetHealth() != 8 || !Progress->GetProgressProblem().IsEmpty()) { Error = FString::Printf(TEXT("Scarlet route HP%d phase%d waypoint%d at%s boulder%s; save%s"), Player->GetVitality()->GetHealth(), Phase, Waypoint, *Player->GetActorLocation().ToString(), *Stage->GetRollingBoulder()->GetActorLocation().ToString(), *Progress->GetProgressProblem()); return false; }
     if (Phase != 0 && Phase != 3 && Phase != 28 && Phase != 41 && Player->RecoveryCount != RecoveryBefore) { Error = TEXT("Unexpected recovery during continuous eight-coin route"); return false; }
     if (Phase < 26 && Progress->GetEarnedRewardCount() != 0) { Error = TEXT("Scarlet reward saved before its actual lantern contact"); return false; }
     if (Phase == 0)
@@ -156,11 +156,20 @@ bool UThunderScarletTestSubsystem::UpdateTest(AWindseedCharacter* Player, float 
         {
             if (!CheckCount(5)) return false; FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir() / TEXT("Validation/ThunderScarletPlatform.png"), false, false);
             TArray<FVector> Points = {FVector(0, 1100, 82), FVector(600, 1850, 82)};
-            for (int32 Index = 0; Index <= 3; ++Index) Points.Add(Stage->GetMountainFootPath()[Index] + FVector(0, 0, 82)); SetRoute(MoveTemp(Points), 16);
-            Route.Add(Trail->GetCoins()[5]->GetActorLocation() + FVector(0, 0, 20));
+            for (int32 Index = 0; Index <= 2; ++Index) Points.Add(Stage->GetMountainFootPath()[Index] + FVector(0, 0, 82)); SetRoute(MoveTemp(Points), 16);
         }
     }
     else if (Phase == 16 && WalkRoute(Player, DeltaSeconds))
+    {
+        if (!CheckCount(5)) return false;
+        // 岩の終点より下の区間で実際に待ち、通過後に道の縁の赤へ歩きます。
+        SetPhase(43);
+    }
+    else if (Phase == 43 && Stage->GetRollingBoulder()->IsWaiting())
+    {
+        SetRoute({Stage->GetMountainFootPath()[3] + FVector(0, 0, 82), Trail->GetCoins()[5]->GetActorLocation() + FVector(0, 0, 20)}, 44);
+    }
+    else if (Phase == 44 && WalkRoute(Player, DeltaSeconds))
     {
         if (!CheckCount(6)) return false; TArray<FVector> Points;
         for (int32 Index = 2; Index >= 0; --Index) Points.Add(Stage->GetMountainFootPath()[Index] + FVector(0, 0, 82));
