@@ -9,6 +9,7 @@
 #include "ThunderPlatformTestSubsystem.h"
 #include "ThunderBalanceTestSubsystem.h"
 #include "ThunderGateTestSubsystem.h"
+#include "ThunderWarpTestSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "GameFramework/PlayerController.h"
 #include "InputKeyEventArgs.h"
@@ -67,7 +68,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 10 || Step == 12 || Step == 13 || Step == 14 ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 10 || (Step >= 12 && Step <= 15) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -136,6 +137,14 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             if (!Meadow || Meadow->GetMountainFootPath().Num() < 25) { Fail(TEXT("The mountain route was not created")); return; }
             GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>()->BeginMountainRoute(Player, Meadow->GetMountainFootPath(), bIslandTest);
             Step = 10;
+            Elapsed = 0;
+        }
+        else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderWarpTest")))
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+            if (!Meadow || !Meadow->GetWarpPair() || Meadow->GetMountainFootPath().Num() != 27) { Fail(TEXT("The warp caves were not created")); return; }
+            GetGameInstance()->GetSubsystem<UThunderWarpTestSubsystem>()->BeginTest(Player, Meadow->GetWarpPair(), Meadow->GetMountainFootPath());
+            Step = 15;
             Elapsed = 0;
         }
         else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderGateTest")))
@@ -211,6 +220,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         auto* GateTest = GetGameInstance()->GetSubsystem<UThunderGateTestSubsystem>();
         const bool bComplete = GateTest->UpdateTest(Player, DeltaSeconds);
         if (!GateTest->GetError().IsEmpty()) { Fail(GateTest->GetError()); return; }
+        if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
+    else if (Step == 15 && Player)
+    {
+        auto* WarpTest = GetGameInstance()->GetSubsystem<UThunderWarpTestSubsystem>();
+        const bool bComplete = WarpTest->UpdateTest(Player, DeltaSeconds);
+        if (!WarpTest->GetError().IsEmpty()) { Fail(WarpTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
     }
     else if (Step == 4 && Map == TEXT("StageSelect") && Elapsed > 3)
