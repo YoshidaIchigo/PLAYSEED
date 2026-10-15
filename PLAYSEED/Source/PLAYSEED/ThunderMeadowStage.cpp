@@ -122,11 +122,15 @@ void AThunderMeadowStage::BuildMountain()
 
     constexpr int32 SegmentCount = 24;
     constexpr float Radius = 1100;
+    // 最後は連絡路へ直角に曲がるため、手前から傾斜を緩めて水平にします。
+    // 登り坂のすぐ上に幅広い橋を置くと、その側面に頭が当たって歩けなくなるためです。
+    const float LandingHeights[] = {1800, 1860, 1900, 1920, 1920};
     MountainFootPath.Reset();
     for (int32 Index = 0; Index <= SegmentCount; ++Index)
     {
         const float Angle = PI + Index * 2 * PI / SegmentCount;
-        const FVector Point = Center + FVector(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, Index * 80.f);
+        const float Height = Index < 20 ? Index * 90.f : LandingHeights[Index - 20];
+        const FVector Point = Center + FVector(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, Height);
         if (MountainFootPath.Num()) AddRamp(MountainFootPath.Last(), Point, 420);
         MountainFootPath.Add(Point);
     }
