@@ -1,9 +1,12 @@
 #include "ThunderTraversalTestSubsystem.h"
 #include "WindseedCharacter.h"
+#include "ThunderMeadowStage.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "InputKeyEventArgs.h"
+#include "Engine/World.h"
+#include "Kismet/GameplayStatics.h"
 #include "Misc/Paths.h"
 #include "UnrealClient.h"
 
@@ -14,18 +17,23 @@ void UThunderTraversalTestSubsystem::BeginTerraceRoute(AWindseedCharacter* Playe
     bJumpForSteps = true;
     MinimumJumps = 3;
     CaptureName = TEXT("ThunderTerraces");
+    bInspectSkyIsland = false;
     ResetProgress(Player);
 }
 
-void UThunderTraversalTestSubsystem::BeginMountainRoute(AWindseedCharacter* Player, const TArray<FVector>& FootPath)
+void UThunderTraversalTestSubsystem::BeginMountainRoute(AWindseedCharacter* Player, const TArray<FVector>& FootPath, bool bInspectIsland)
 {
     Route = {FVector(0, 1100, 82), FVector(600, 1850, 82)};
     // 地形の順路は足元、Character の座標はカプセルの中心なので高さを加えます。
     const float CapsuleHeight = Player->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
     for (const FVector& FootPosition : FootPath) Route.Add(FootPosition + FVector(0, 0, CapsuleHeight));
+    // 山頂中央では手前の床や連絡路が浮島を隠すため、南西の縁まで歩いてから見渡します。
+    if (bInspectIsland && FootPath.Num() > 1)
+        Route.Add(FootPath.Last() + FVector(-420, -380, CapsuleHeight));
     bJumpForSteps = false; // 山道はジャンプ入力を使わず、斜面を歩いて登れることを検証します。
     MinimumJumps = 0;
-    CaptureName = TEXT("ThunderSummit");
+    bInspectSkyIsland = bInspectIsland;
+    CaptureName = bInspectIsland ? TEXT("ThunderIsland") : TEXT("ThunderSummit");
     ResetProgress(Player);
 }
 
@@ -37,6 +45,7 @@ void UThunderTraversalTestSubsystem::ResetProgress(AWindseedCharacter* Player)
     FinishTime = 0;
     Error.Reset();
     bScreenshotRequested = false;
+    bIslandCollisionVerified = false;
     RecoveryBaseline = Player->RecoveryCount;
     if (auto* PC = Cast<APlayerController>(Player->GetController()))
         PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::MouseWheelAxis, IE_Axis, -6));
@@ -50,10 +59,16 @@ bool UThunderTraversalTestSubsystem::UpdateRoute(AWindseedCharacter* Player, flo
     auto* PC = Cast<APlayerController>(Player->GetController());
     if (Waypoint == Route.Num())
     {
+        if (bInspectSkyIsland && !bIslandCollisionVerified)
+        {
+            if (!VerifyIslandCollision(Player)) return false;
+            bIslandCollisionVerified = true;
+        }
         if (JumpCount < MinimumJumps) { Error = TEXT("The terrain route did not use the required jumps"); return false; }
         FinishTime += DeltaSeconds;
-        const float ViewYaw = bJumpForSteps ? 180 : 225;
-        if (PC) PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(), FRotator(-25, ViewYaw, 0), DeltaSeconds, 3));
+        const float ViewYaw = bInspectSkyIsland ? 155 : (bJumpForSteps ? 180 : 225);
+        const float ViewPitch = bInspectSkyIsland ? -22 : -25;
+        if (PC) PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(), FRotator(ViewPitch, ViewYaw, 0), DeltaSeconds, 3));
         if (FinishTime > 1 && !bScreenshotRequested)
         {
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir() / (TEXT("Validation/") + CaptureName + TEXT(".png")), false, false);
@@ -85,4 +100,23 @@ bool UThunderTraversalTestSubsystem::UpdateRoute(AWindseedCharacter* Player, flo
     else if (Player->GetVelocity().Z < 0) Player->StopJumping();
     if (PC) PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(), FRotator(-23, Offset.Rotation().Yaw, 0), DeltaSeconds, 2));
     return false;
+}
+
+bool UThunderTraversalTestSubsystem::VerifyIslandCollision(AWindseedCharacter* Player)
+{
+    auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(Player, AThunderMeadowStage::StaticClass()));
+    if (!Meadow) { Error = TEXT("Sky island stage is missing"); return false; }
+    const FVector Top = Meadow->GetSkyIslandTop();
+    FHitResult Hit;
+    FCollisionQueryParams Params;
+    Params.AddIgnoredActor(Player);
+    const auto* Capsule = Player->GetCapsuleComponent();
+    // プレイヤーを移動させず、同じ寸法のカプセルを物理問い合わせで下へ掃引します。
+    // これは床の衝突検証です。発射台からの実際の着地は、その機能のPRで確認します。
+    const bool bHit = Player->GetWorld()->SweepSingleByChannel(Hit, Top + FVector(0, 0, 400), Top - FVector(0, 0, 100), FQuat::Identity,
+        ECC_Visibility, FCollisionShape::MakeCapsule(Capsule->GetScaledCapsuleRadius(), Capsule->GetScaledCapsuleHalfHeight()), Params);
+    if (!bHit || Hit.GetActor() != Meadow || FMath::Abs(Hit.ImpactPoint.Z - Top.Z) > 5 || Hit.ImpactNormal.Z < .95f)
+    { Error = TEXT("The sky island has no flat blocking landing surface"); return false; }
+    UE_LOG(LogTemp, Display, TEXT("ISLAND COLLISION TEST PASS: top %s, capsule floor impact %s."), *Top.ToString(), *Hit.ImpactPoint.ToString());
+    return true;
 }
