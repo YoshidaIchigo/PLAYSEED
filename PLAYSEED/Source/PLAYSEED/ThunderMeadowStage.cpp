@@ -11,6 +11,7 @@
 #include "PlayseedBreakableBox.h"
 #include "ThunderRollingBoulder.h"
 #include "ThunderWaterBomb.h"
+#include "PlayseedChasingEnemy.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
@@ -221,6 +222,7 @@ void AThunderMeadowStage::ResetMechanisms()
     for (APlayseedCoin* Coin : TrailCoins) if (Coin) Coin->ResetCoin();
     if (RollingBoulder) RollingBoulder->ResetMotion();
     if (WaterBomb) WaterBomb->ResetCycle();
+    if (ChasingEnemy) ChasingEnemy->ResetEnemy();
 }
 
 void AThunderMeadowStage::BuildWarpCaves()
@@ -337,6 +339,12 @@ void AThunderMeadowStage::BuildWaterBomb()
     AddSign(FVector(-100, -2850, 0), TEXT("THE RAINFALL PEARL\nLeave the amber circle before it falls"));
 }
 
+void AThunderMeadowStage::BuildChasingEnemy()
+{
+    ChasingEnemy = GetWorld()->SpawnActor<APlayseedChasingEnemy>(FVector(2700, -1200, 0), FRotator(0, 180, 0));
+    AddSign(FVector(3000, -1450, 0), TEXT("THE ROAMING TUFTLING\nKeep moving, or strike before it reaches you"));
+}
+
 void AThunderMeadowStage::BuildShortcutGate()
 {
     const FVector Position(1600, 300, 0);
@@ -397,6 +405,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildCoinTrail();
     BuildRollingBoulder();
     BuildWaterBomb();
+    BuildChasingEnemy();
     BuildSkyIsland();
     BuildLighting();
 }
