@@ -10,7 +10,7 @@ class UStaticMesh;
 class UStaticMeshComponent;
 
 // 敵の共通の接触判定です。上からの足元の通過と、横からの身体の接触を分けます。
-// この段階は静止した練習用の敵で、追跡などのAIは別の作業単位で追加します。
+// 基底クラス自身は移動せず、追跡などのAIは派生Actorへ分けます。
 UCLASS()
 class PLAYSEED_API APlayseedEnemyBase : public AActor, public IPlayseedStrikeTarget
 {

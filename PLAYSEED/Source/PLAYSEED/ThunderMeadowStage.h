@@ -20,6 +20,7 @@ class APlayseedCoin;
 class APlayseedBreakableBox;
 class AThunderRollingBoulder;
 class AThunderWaterBomb;
+class APlayseedChasingEnemy;
 
 // Actor は World 内の一つの存在です。この Actor が地形・装飾の Component を所有します。
 // ミッションのルールやセーブは GameMode / Subsystem に任せ、形状の生成だけを担当します。
@@ -49,6 +50,7 @@ public:
     const TArray<FVector>& GetMeadowCoinFootPath() const { return MeadowCoinFootPath; }
     AThunderRollingBoulder* GetRollingBoulder() const { return RollingBoulder; }
     AThunderWaterBomb* GetWaterBomb() const { return WaterBomb; }
+    APlayseedChasingEnemy* GetChasingEnemy() const { return ChasingEnemy; }
     void ResetMechanisms();
 private:
     UStaticMeshComponent* AddShape(UStaticMesh* Mesh, FVector Position, FVector Dimensions, FLinearColor Color, bool bSolid = false, FRotator Rotation = FRotator::ZeroRotator);
@@ -72,6 +74,7 @@ private:
     void BuildCoinTrail();
     void BuildRollingBoulder();
     void BuildWaterBomb();
+    void BuildChasingEnemy();
     void AddRamp(FVector Start, FVector End, float Width);
     void BuildLighting();
 
@@ -96,6 +99,7 @@ private:
     UPROPERTY() TArray<TObjectPtr<APlayseedCoin>> TrailCoins;
     UPROPERTY() TObjectPtr<AThunderRollingBoulder> RollingBoulder;
     UPROPERTY() TObjectPtr<AThunderWaterBomb> WaterBomb;
+    UPROPERTY() TObjectPtr<APlayseedChasingEnemy> ChasingEnemy;
     TArray<FVector> MeadowCoinFootPath;
     TArray<FVector> MountainFootPath;
     TArray<FVector> BridgeFootPath;
