@@ -6,6 +6,7 @@
 #include "PlayseedClimbComponent.h"
 #include "PlayseedCombatComponent.h"
 #include "PlayseedRideComponent.h"
+#include "PlayseedInteractionComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
@@ -26,6 +27,7 @@ AWindseedCharacter::AWindseedCharacter()
     Climb = CreateDefaultSubobject<UPlayseedClimbComponent>(TEXT("Climb"));
     Combat = CreateDefaultSubobject<UPlayseedCombatComponent>(TEXT("Combat"));
     Ride = CreateDefaultSubobject<UPlayseedRideComponent>(TEXT("GaleleafRide"));
+    Interaction = CreateDefaultSubobject<UPlayseedInteractionComponent>(TEXT("Interaction"));
     GetCapsuleComponent()->InitCapsuleSize(34.f, 82.f);
     bUseControllerRotationYaw = false;
     GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -121,6 +123,7 @@ void AWindseedCharacter::SetupPlayerInputComponent(UInputComponent* Input)
     Climb->SetupInput(Input);
     Combat->SetupInput(Input);
     Ride->SetupInput(Input);
+    Interaction->SetupInput(Input);
     Input->BindAxis(TEXT("MoveForward"), this, &AWindseedCharacter::MoveForward);
     Input->BindAxis(TEXT("MoveRight"), this, &AWindseedCharacter::MoveRight);
     Input->BindAxis(TEXT("LookYaw"), this, &AWindseedCharacter::LookYaw);
@@ -160,6 +163,7 @@ void AWindseedCharacter::StartSprint() { SetSprinting(true); }
 void AWindseedCharacter::StopSprint() { SetSprinting(false); }
 void AWindseedCharacter::ReturnToTrail()
 {
+    Interaction->ClearMessage();
     Ride->CancelRide();
     Actions->CancelGroundPound();
     Carry->DropHeld();

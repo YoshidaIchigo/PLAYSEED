@@ -24,6 +24,8 @@
 #include "ThunderBurstTestSubsystem.h"
 #include "ThunderGaleleafTestSubsystem.h"
 #include "ThunderRideTestSubsystem.h"
+#include "ThunderGuideTestSubsystem.h"
+#include "ThunderLauncher.h"
 #include "ThunderDamageThistle.h"
 #include "ThunderCoinLedger.h"
 #include "ThunderMeadowGameMode.h"
@@ -86,7 +88,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 31 ? 300 : Step == 10 || (Step >= 12 && Step <= 30) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 31 ? 300 : Step == 10 || (Step >= 12 && Step <= 32) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -115,6 +117,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         { Fail(TEXT("Mission selection did not survive travel or accepted an invalid number")); return; }
         if (bSecondMissionEntry)
         {
+            if (FParse::Param(FCommandLine::Get(), TEXT("ThunderGuideTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderGuideReadTest")))
+            {
+                auto* ReenteredMeadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+                if (!ReenteredMeadow || !ReenteredMeadow->GetLauncher() || !ReenteredMeadow->GetLauncher()->IsOpen() || !Expedition->IsLauncherUnlocked() || Expedition->GetEarnedRewardCount() != 0)
+                { Fail(TEXT("Re-entry did not retain the unlocked launcher with zero rewards")); return; }
+                UE_LOG(LogTemp, Display, TEXT("GUIDE REENTRY TEST PASS: saved launcher is open in a newly created World; quest rewards remain zero."));
+            }
             if (FParse::Param(FCommandLine::Get(), TEXT("ThunderCoinTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderCoinTrailTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderBoulderTest")))
             {
                 auto* MeadowMode = Cast<AThunderMeadowGameMode>(CurrentMode);
@@ -176,6 +185,14 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             if (!Meadow || Meadow->GetMountainFootPath().Num() < 25) { Fail(TEXT("The mountain route was not created")); return; }
             GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>()->BeginMountainRoute(Player, Meadow->GetMountainFootPath(), bIslandTest);
             Step = 10;
+            Elapsed = 0;
+        }
+        else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderGuideTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderGuideReadTest")))
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+            if (!Meadow || !Meadow->GetGuide() || !Meadow->GetLauncher()) { Fail(TEXT("Guide and launcher were not created")); return; }
+            GetGameInstance()->GetSubsystem<UThunderGuideTestSubsystem>()->BeginTest(Player, Meadow, FParse::Param(FCommandLine::Get(), TEXT("ThunderGuideReadTest")));
+            Step = 32;
             Elapsed = 0;
         }
         else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderRideTest")))
@@ -434,6 +451,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         auto* BoxTest = GetGameInstance()->GetSubsystem<UThunderBoxTestSubsystem>();
         const bool bComplete = BoxTest->UpdateTest(Player, DeltaSeconds);
         if (!BoxTest->GetError().IsEmpty()) { Fail(BoxTest->GetError()); return; }
+        if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
+    else if (Step == 32 && Player)
+    {
+        auto* GuideTest = GetGameInstance()->GetSubsystem<UThunderGuideTestSubsystem>();
+        const bool bComplete = GuideTest->UpdateTest(Player, DeltaSeconds);
+        if (!GuideTest->GetError().IsEmpty()) { Fail(GuideTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
     }
     else if (Step == 31 && Player)

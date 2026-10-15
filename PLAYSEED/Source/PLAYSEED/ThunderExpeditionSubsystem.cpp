@@ -49,7 +49,7 @@ bool UThunderExpeditionSubsystem::ChooseSaveSlot()
 {
 #if !UE_BUILD_SHIPPING
     const bool bSaveTest = FParse::Param(FCommandLine::Get(), TEXT("ProgressWriteTest")) ||
-        FParse::Param(FCommandLine::Get(), TEXT("ProgressReadTest"));
+        FParse::Param(FCommandLine::Get(), TEXT("ProgressReadTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderValidation"));
     if (bSaveTest)
     {
         FString Candidate;
@@ -61,7 +61,7 @@ bool UThunderExpeditionSubsystem::ChooseSaveSlot()
         if (!bValid)
         {
             bCanWriteProgress = false;
-            ProgressProblem = TEXT("Save test needs a separate Validation_ slot.");
+            ProgressProblem = TEXT("Validation needs a separate Validation_ save slot.");
             return false;
         }
         SaveSlotName = Candidate;
@@ -120,6 +120,23 @@ bool UThunderExpeditionSubsystem::TryAwardReward(int32 RewardNumber)
         // 保存が失敗したらメモリーの追加も戻し、次の取得で再試行できるようにします。
         Progress->EarnedRewardNumbers.Remove(RewardNumber);
         ProgressProblem = TEXT("Progress could not be saved. Please try the reward again.");
+        return false;
+    }
+    ProgressProblem.Reset();
+    return true;
+}
+
+bool UThunderExpeditionSubsystem::IsLauncherUnlocked() const { return Progress && Progress->bLauncherUnlocked; }
+
+bool UThunderExpeditionSubsystem::TryUnlockLauncher()
+{
+    if (!bCanWriteProgress || !Progress || Progress->bLauncherUnlocked) return false;
+    Progress->bLauncherUnlocked = true;
+    if (!UGameplayStatics::SaveGameToSlot(Progress, SaveSlotName, 0))
+    {
+        // ディスクへ残らなければメモリーも戻し、会話からもう一度試せるようにします。
+        Progress->bLauncherUnlocked = false;
+        ProgressProblem = TEXT("Launcher progress could not be saved. Please try again.");
         return false;
     }
     ProgressProblem.Reset();

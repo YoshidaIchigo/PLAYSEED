@@ -14,6 +14,8 @@
 #include "PlayseedChasingEnemy.h"
 #include "PlayseedBurstEnemy.h"
 #include "PlayseedGaleleafEnemy.h"
+#include "ThunderGuide.h"
+#include "ThunderLauncher.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
@@ -227,6 +229,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (ChasingEnemy) ChasingEnemy->ResetEnemy();
     if (BurstEnemy) BurstEnemy->ResetEnemy();
     if (GaleleafEnemy) GaleleafEnemy->ResetEnemy();
+    if (Guide) Guide->ResetDialogue();
 }
 
 void AThunderMeadowStage::BuildWarpCaves()
@@ -361,6 +364,13 @@ void AThunderMeadowStage::BuildGaleleafEnemy()
     AddSign(FVector(3000, 250, 0), TEXT("THE GALELEAF CARRIER\nFirst hit frees the leaf - another earns azure five"));
 }
 
+void AThunderMeadowStage::BuildGuideAndLauncher()
+{
+    Guide = GetWorld()->SpawnActor<AThunderGuide>(FVector(-2800, 1800, 0), FRotator::ZeroRotator);
+    Launcher = GetWorld()->SpawnActor<AThunderLauncher>(FVector(-2400, 1800, 0), FRotator::ZeroRotator);
+    AddSign(FVector(-3050, 1500, 0), TEXT("AERI'S SKYBLOOM\nG / D-pad Down: talk or interact nearby"));
+}
+
 void AThunderMeadowStage::BuildShortcutGate()
 {
     const FVector Position(1600, 300, 0);
@@ -424,6 +434,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildChasingEnemy();
     BuildBurstEnemy();
     BuildGaleleafEnemy();
+    BuildGuideAndLauncher();
     BuildSkyIsland();
     BuildLighting();
 }
