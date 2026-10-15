@@ -19,6 +19,7 @@
 #include "ThunderFlightBloom.h"
 #include "ThunderFlightSwitch.h"
 #include "ThunderStormkeeper.h"
+#include "ThunderCloudflagRace.h"
 #include "ThunderExpeditionSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Camera/PlayerCameraManager.h"
@@ -238,6 +239,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (FlightBloom) FlightBloom->ResetBloom();
     if (FlightSwitch) FlightSwitch->RefreshFromProgress();
     if (Stormkeeper) Stormkeeper->ResetToSpawn();
+    if (CloudflagRace) CloudflagRace->ResetRace();
 }
 
 void AThunderMeadowStage::BuildWarpCaves()
@@ -475,8 +477,20 @@ void AThunderMeadowStage::BeginPlay()
     BuildFlightBloom();
     BuildWingTower();
     BuildStormkeeper();
+    BuildCloudflagRace();
     BuildSkyIsland();
     BuildLighting();
+}
+
+void AThunderMeadowStage::BuildCloudflagRace()
+{
+    if (GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->GetSelectedMissionNumber() != 2) return;
+    CloudflagRace = GetWorld()->SpawnActor<AThunderCloudflagRace>(FVector(-1050, -650, 0), FRotator::ZeroRotator);
+    CloudflagRace->Configure(MountainFootPath);
+    AddSign(FVector(-1250, -800, 0), TEXT("BRISK'S CLOUDFLAG RACE\nG / DOWN to start - caves allowed\nNo Skybloom launches - R to retry"));
+    AddShape(Cylinder, FVector(2240, 2140, 2160), FVector(14, 14, 320), FLinearColor(.85f, .55f, .18f));
+    AddShape(Cube, FVector(2330, 2140, 2260), FVector(180, 10, 100), FLinearColor(.05f, .65f, .55f));
+    AddSign(FVector(2380, 2350, 2000), TEXT("THE CLOUDFLAG\nReach the crown, then wait for Brisk"));
 }
 
 void AThunderMeadowStage::Tick(float DeltaSeconds)
