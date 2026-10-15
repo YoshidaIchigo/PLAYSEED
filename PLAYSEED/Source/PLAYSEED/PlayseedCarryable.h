@@ -19,10 +19,10 @@ public:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
     virtual bool CanBePickedUp(AWindseedCharacter* Player) const;
-    bool TryPickup(AWindseedCharacter* Player);
+    virtual bool TryPickup(AWindseedCharacter* Player);
     void Throw();
     void Drop();
-    void ResetToSpawn();
+    virtual void ResetToSpawn();
     bool IsHeldBy(const AWindseedCharacter* Player) const { return bHeld && Holder.Get() == Player; }
     bool IsHeld() const { return bHeld; }
     bool IsInThrownFlight() const { return bThrown; }
@@ -32,6 +32,9 @@ public:
     int32 GetThrownLandingCount() const { return ThrownLandingCount; }
 protected:
     virtual void OnThrownLanding(const FHitResult& Hit) {}
+    // 普通の小箱の動作を保ったまま、大きな相手だけ持つ位置と投げる初速を変えられます。
+    virtual FVector GetCarryOffset() const { return FVector(100, 0, 30); }
+    virtual FVector GetThrowVelocity(const AWindseedCharacter* Player) const;
 private:
     void Release(FVector Velocity, bool bWasThrown);
     UFUNCTION() void HandleBodyHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);

@@ -1,0 +1,18 @@
+{
+  "slot": "Validation_PR35_Boss_B",
+  "normal_before": "ABSENT",
+  "normal_after": "ABSENT",
+  "game_exit": 0
+}
+{
+  "slot": "Validation_PR35_Boss_B",
+  "normal_after": "ABSENT",
+  "normal_before": "ABSENT",
+  "game_exit": 0
+}
+{
+  "normal_after": "ABSENT",
+  "normal_before": "ABSENT",
+  "slot": "Validation_PR35_Carry_A",
+  "game_exit": 0
+}

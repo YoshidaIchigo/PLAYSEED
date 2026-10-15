@@ -18,6 +18,9 @@
 #include "ThunderLauncher.h"
 #include "ThunderFlightBloom.h"
 #include "ThunderFlightSwitch.h"
+#include "ThunderStormkeeper.h"
+#include "ThunderExpeditionSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
@@ -234,6 +237,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (Guide) Guide->ResetDialogue();
     if (FlightBloom) FlightBloom->ResetBloom();
     if (FlightSwitch) FlightSwitch->RefreshFromProgress();
+    if (Stormkeeper) Stormkeeper->ResetToSpawn();
 }
 
 void AThunderMeadowStage::BuildWarpCaves()
@@ -437,6 +441,14 @@ void AThunderMeadowStage::BuildLighting()
     Exposure->Settings.AutoExposureApplyPhysicalCameraExposure = false;
 }
 
+void AThunderMeadowStage::BuildStormkeeper()
+{
+    // 主ミッション1だけに番人を配置します。別の目的で山頂を訪れる時は通行を妨げません。
+    if (GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->GetSelectedMissionNumber() != 1) return;
+    Stormkeeper = GetWorld()->SpawnActor<AThunderStormkeeper>(FVector(2200, 2100, 2100), FRotator(0, 180, 0));
+    AddSign(FVector(2250, 2450, 2000), TEXT("THE STORMKEEPER\nCircle behind - E / X to lift and throw\nThree landings on the crown - cliffs do not count"));
+}
+
 void AThunderMeadowStage::BeginPlay()
 {
     Super::BeginPlay();
@@ -462,6 +474,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildGuideAndLauncher();
     BuildFlightBloom();
     BuildWingTower();
+    BuildStormkeeper();
     BuildSkyIsland();
     BuildLighting();
 }

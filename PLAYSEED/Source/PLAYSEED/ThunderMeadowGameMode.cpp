@@ -6,6 +6,7 @@
 #include "PlayseedLaunchComponent.h"
 #include "PlayseedFlightComponent.h"
 #include "ThunderMeadowStage.h"
+#include "ThunderStormkeeper.h"
 #include "Engine/World.h"
 #include "ThunderExpeditionSubsystem.h"
 #include "Engine/GameInstance.h"
@@ -62,6 +63,9 @@ void AThunderMeadowHUD::DrawHUD()
     }
     if (!Expedition->GetProgressProblem().IsEmpty())
         DrawText(Expedition->GetProgressProblem(), FLinearColor(1, .5f, .4f), 30, Canvas->SizeY - 80, GEngine->GetMediumFont(), 1);
+    if (Mission == 1)
+        if (const auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(this, AThunderMeadowStage::StaticClass())); Meadow && Meadow->GetStormkeeper())
+            DrawText(FString::Printf(TEXT("STORMKEEPER  THROWS %d / 3"), Meadow->GetStormkeeper()->GetValidThrows()), FLinearColor(1, .85f, .6f), 30, 211, GEngine->GetMediumFont(), 1.1f);
 }
 
 AThunderMeadowGameMode::AThunderMeadowGameMode()
