@@ -1,4 +1,8 @@
 #include "ThunderExpeditionSubsystem.h"
+#include "ThunderProgressSaveGame.h"
+#include "Kismet/GameplayStatics.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 
 namespace
 {
@@ -33,4 +37,91 @@ const TCHAR* UThunderExpeditionSubsystem::GetMissionTitle(int32 MissionNumber)
 const TCHAR* UThunderExpeditionSubsystem::GetMissionGoal(int32 MissionNumber)
 {
     return MissionNumber >= 1 && MissionNumber <= MainMissionCount ? Goals[MissionNumber - 1] : TEXT("Choose an expedition to begin.");
+}
+
+void UThunderExpeditionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+    Super::Initialize(Collection);
+    if (ChooseSaveSlot()) LoadProgress();
+}
+
+bool UThunderExpeditionSubsystem::ChooseSaveSlot()
+{
+#if !UE_BUILD_SHIPPING
+    const bool bSaveTest = FParse::Param(FCommandLine::Get(), TEXT("ProgressWriteTest")) ||
+        FParse::Param(FCommandLine::Get(), TEXT("ProgressReadTest"));
+    if (bSaveTest)
+    {
+        FString Candidate;
+        bool bValid = FParse::Value(FCommandLine::Get(), TEXT("PlayseedValidationSlot="), Candidate) &&
+            Candidate.StartsWith(TEXT("Validation_")) && Candidate.Len() <= 80;
+        for (TCHAR Character : Candidate)
+            if (!FChar::IsAlnum(Character) && Character != TEXT('_')) bValid = false;
+        // 検証で通常の進行を汚さないため、専用スロット名がなければ保存も読込もしません。
+        if (!bValid)
+        {
+            bCanWriteProgress = false;
+            ProgressProblem = TEXT("Save test needs a separate Validation_ slot.");
+            return false;
+        }
+        SaveSlotName = Candidate;
+    }
+#endif
+    return true;
+}
+
+bool UThunderExpeditionSubsystem::IsValidProgress(const UThunderProgressSaveGame* Data) const
+{
+    if (!Data || Data->FormatVersion != 1) return false;
+    TSet<int32> UniqueNumbers;
+    for (int32 Number : Data->EarnedRewardNumbers)
+    {
+        if (Number < 1 || Number > TotalRewardCount || UniqueNumbers.Contains(Number)) return false;
+        UniqueNumbers.Add(Number);
+    }
+    return true;
+}
+
+void UThunderExpeditionSubsystem::LoadProgress()
+{
+    if (!UGameplayStatics::DoesSaveGameExist(SaveSlotName, 0))
+    {
+        Progress = Cast<UThunderProgressSaveGame>(UGameplayStatics::CreateSaveGameObject(UThunderProgressSaveGame::StaticClass()));
+        return;
+    }
+    auto* Loaded = Cast<UThunderProgressSaveGame>(UGameplayStatics::LoadGameFromSlot(SaveSlotName, 0));
+    if (!IsValidProgress(Loaded))
+    {
+        // 読めない既存データを空の進行で上書きしません。原因をHUDへ渡して保存を止めます。
+        bCanWriteProgress = false;
+        ProgressProblem = TEXT("Progress could not be loaded. Existing save preserved.");
+        UE_LOG(LogTemp, Warning, TEXT("THUNDER PROGRESS: existing save was not loaded and will not be overwritten."));
+        return;
+    }
+    Progress = Loaded;
+}
+
+bool UThunderExpeditionSubsystem::HasEarnedReward(int32 RewardNumber) const
+{
+    return Progress && Progress->EarnedRewardNumbers.Contains(RewardNumber);
+}
+
+int32 UThunderExpeditionSubsystem::GetEarnedRewardCount() const
+{
+    return Progress ? Progress->EarnedRewardNumbers.Num() : 0;
+}
+
+bool UThunderExpeditionSubsystem::TryAwardReward(int32 RewardNumber)
+{
+    if (!bCanWriteProgress || !Progress || RewardNumber < 1 || RewardNumber > TotalRewardCount || HasEarnedReward(RewardNumber)) return false;
+    Progress->EarnedRewardNumbers.Add(RewardNumber);
+    if (!UGameplayStatics::SaveGameToSlot(Progress, SaveSlotName, 0))
+    {
+        // 保存が失敗したらメモリーの追加も戻し、次の取得で再試行できるようにします。
+        Progress->EarnedRewardNumbers.Remove(RewardNumber);
+        ProgressProblem = TEXT("Progress could not be saved. Please try the reward again.");
+        return false;
+    }
+    ProgressProblem.Reset();
+    return true;
 }

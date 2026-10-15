@@ -23,9 +23,12 @@ void AThunderMeadowHUD::DrawHUD()
     // HUD は現在選択された目的だけを表示します。選択しただけでは達成扱いにしません。
     auto* Expedition = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
     const int32 Mission = Expedition->GetSelectedMissionNumber();
+    DrawText(FString::Printf(TEXT("LANTERNS %d / 7"), Expedition->GetEarnedRewardCount()), FLinearColor(.7f, 1, .8f), Canvas->SizeX - 235, 34, GEngine->GetMediumFont(), 1.1f);
     DrawText(FString::Printf(TEXT("%d: %s"), Mission, UThunderExpeditionSubsystem::GetMissionTitle(Mission)), FLinearColor(1, .86f, .52f), 38, 78, GEngine->GetMediumFont(), 1.1f);
     DrawText(UThunderExpeditionSubsystem::GetMissionGoal(Mission), FLinearColor::White, 38, 115, GEngine->GetMediumFont(), .85f);
     DrawText(TEXT("WASD: move   SPACE: jump   R: restart   M: stage selection"), FLinearColor::White, 30, Canvas->SizeY - 45, GEngine->GetMediumFont(), 1.2f);
+    if (!Expedition->GetProgressProblem().IsEmpty())
+        DrawText(Expedition->GetProgressProblem(), FLinearColor(1, .5f, .4f), 30, Canvas->SizeY - 80, GEngine->GetMediumFont(), 1);
 }
 
 AThunderMeadowGameMode::AThunderMeadowGameMode()

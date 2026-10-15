@@ -10,6 +10,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 
 namespace
 {
@@ -30,6 +32,30 @@ void UPlayseedSelectionTestSubsystem::BeginStage()
     auto* Recording = GetGameInstance()->GetSubsystem<UPlayseedRecordingSubsystem>();
     if (!Recording->StartRecording(TEXT("Validation/WindseedPlaythrough.avi")))
         Fail(TEXT("Stage selection recording could not start"));
+    RunProgressTestOnce();
+}
+
+void UPlayseedSelectionTestSubsystem::RunProgressTestOnce()
+{
+    if (bProgressTestExecuted) return;
+    bProgressTestExecuted = true;
+    const bool bWrite = FParse::Param(FCommandLine::Get(), TEXT("ProgressWriteTest"));
+    bProgressTest = bWrite || FParse::Param(FCommandLine::Get(), TEXT("ProgressReadTest"));
+    if (!bProgressTest) return;
+    auto* Expedition = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
+    if (!Expedition->GetSaveSlotName().StartsWith(TEXT("Validation_")) || !Expedition->GetProgressProblem().IsEmpty())
+    { Fail(TEXT("Progress test did not use a healthy isolated save slot")); return; }
+    // 保存APIの試験データです。ミッションを実際にクリアしたという意味ではありません。
+    // 通常プレイのセーブには触れず、別プロセスで同じ検証スロットを読み直します。
+    if (bWrite && (UGameplayStatics::DoesSaveGameExist(Expedition->GetSaveSlotName(), 0) || Expedition->GetEarnedRewardCount() != 0 ||
+        !Expedition->TryAwardReward(1) || !Expedition->TryAwardReward(7)))
+    { Fail(TEXT("Writing fresh isolated progress failed or the test slot already existed")); return; }
+    if (Expedition->GetEarnedRewardCount() != 2 || !Expedition->HasEarnedReward(1) || !Expedition->HasEarnedReward(7) ||
+        Expedition->TryAwardReward(1) || Expedition->TryAwardReward(0) || Expedition->TryAwardReward(8) ||
+        Expedition->GetEarnedRewardCount() != 2 || !Expedition->GetProgressProblem().IsEmpty())
+    { Fail(TEXT("Progress restore, duplicate prevention or reward range validation failed")); return; }
+    UE_LOG(LogTemp, Display, TEXT("PROGRESS TEST PASS: %s isolated slot %s; rewards 1 and 7, total 2, duplicate and range rejection passed."),
+        bWrite ? TEXT("wrote") : TEXT("loaded after process restart"), *Expedition->GetSaveSlotName());
 }
 
 void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameModeBase* CurrentMode)
@@ -44,6 +70,8 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     // 起動中は Tick が先に進む場合があるため、実際に選択画面を録画できてから入力します。
     const auto* Recording = GetGameInstance()->GetSubsystem<UPlayseedRecordingSubsystem>();
     auto* Expedition = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
+    if (bProgressTest && (Expedition->GetEarnedRewardCount() != 2 || !Expedition->HasEarnedReward(1) || !Expedition->HasEarnedReward(7)))
+    { Fail(TEXT("Saved rewards changed during restart or re-entry")); return; }
     if (Step == 0 && Map == TEXT("StageSelect") && Elapsed > 3 && Recording->GetCapturedFrameCount() > 15)
     {
         Tap(PC, EKeys::Two);
