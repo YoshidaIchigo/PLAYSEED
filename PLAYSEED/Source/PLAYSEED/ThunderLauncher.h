@@ -18,6 +18,9 @@ public:
     virtual void Tick(float DeltaSeconds) override;
     virtual void Interact(AWindseedCharacter* Player) override;
     bool IsOpen() const { return bOpen; }
+    FVector GetSeatLocation() const { return GetActorLocation() + FVector(0, 0, 140); }
+    float GetDefaultAimYaw() const { return 10.304846f; }
+    void SetAimPose(float Pitch, float WorldYaw);
 private:
     void RefreshOpenState();
     UPROPERTY() TObjectPtr<UStaticMeshComponent> Barrel;

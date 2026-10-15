@@ -5,6 +5,7 @@
 #include "PlayseedVitalityComponent.h"
 #include "PlayseedCombatComponent.h"
 #include "PlayseedRideComponent.h"
+#include "PlayseedLaunchComponent.h"
 #include "WindseedCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
@@ -27,6 +28,7 @@ void UPlayseedClimbComponent::ToggleClimb()
 {
     if (bClimbing) { CancelClimb(); return; }
     auto* Player = Cast<AWindseedCharacter>(GetOwner());
+    if (Player && Player->GetLaunch()->IsAiming()) return;
     if (!Player || Player->GetVitality()->IsInvulnerable() || Player->GetActions()->IsGroundPounding()) return;
     APlayseedClimbTree* Closest = nullptr;
     double Distance = 170;
