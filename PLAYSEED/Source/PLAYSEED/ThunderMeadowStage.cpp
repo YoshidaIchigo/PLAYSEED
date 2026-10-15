@@ -13,6 +13,7 @@
 #include "ThunderWaterBomb.h"
 #include "PlayseedChasingEnemy.h"
 #include "PlayseedBurstEnemy.h"
+#include "PlayseedGaleleafEnemy.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
@@ -225,6 +226,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (WaterBomb) WaterBomb->ResetCycle();
     if (ChasingEnemy) ChasingEnemy->ResetEnemy();
     if (BurstEnemy) BurstEnemy->ResetEnemy();
+    if (GaleleafEnemy) GaleleafEnemy->ResetEnemy();
 }
 
 void AThunderMeadowStage::BuildWarpCaves()
@@ -353,6 +355,12 @@ void AThunderMeadowStage::BuildBurstEnemy()
     AddSign(FVector(2600, -2550, 0), TEXT("THE SCARLET SEEDBURST\nTwo seconds to leave - or strike first"));
 }
 
+void AThunderMeadowStage::BuildGaleleafEnemy()
+{
+    GaleleafEnemy = GetWorld()->SpawnActor<APlayseedGaleleafEnemy>(FVector(2700, 0, 0), FRotator(0, 180, 0));
+    AddSign(FVector(3000, 250, 0), TEXT("THE GALELEAF CARRIER\nFirst hit frees the leaf - another earns azure five"));
+}
+
 void AThunderMeadowStage::BuildShortcutGate()
 {
     const FVector Position(1600, 300, 0);
@@ -415,6 +423,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildWaterBomb();
     BuildChasingEnemy();
     BuildBurstEnemy();
+    BuildGaleleafEnemy();
     BuildSkyIsland();
     BuildLighting();
 }
