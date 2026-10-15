@@ -6,7 +6,7 @@
 #include "WindseedGameMode.generated.h"
 
 class AWindseedStage;
-class FAVIWriter;
+class UPlayseedRecordingSubsystem;
 
 UCLASS()
 class PLAYSEED_API AWindseedHUD : public AHUD
@@ -25,13 +25,14 @@ public:
     virtual void StartPlay() override;
     virtual void RestartStage(class AWindseedCharacter* Player) override;
     virtual void Tick(float DeltaSeconds) override;
-    virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 private:
     UPROPERTY() TObjectPtr<AWindseedStage> Stage;
     bool bSmokeTest=false;
     bool bCaptureRequested=false;
-    bool bCaptureFailed=false;
-    FDelegateHandle CaptureDrawHandle;
+    // Subsystem の所有者は GameInstance。UPROPERTY は UE に参照を伝えます。
+    UPROPERTY() TObjectPtr<UPlayseedRecordingSubsystem> Recording;
+    bool bTravelTest=false;
+    bool bCaptureRetainedAfterTravel=false;
     int32 TestPhase=0;
     int32 Waypoint=0;
     int32 JumpCount=0;
@@ -39,11 +40,6 @@ private:
     FVector InputTestStart=FVector::ZeroVector;
     float PhaseTime=0;
     float LegTime=0;
-    float CaptureTime=0;
-    float NextCapture=0;
     TArray<FVector> Route;
-    FAVIWriter* CaptureWriter=nullptr;
-    void CaptureFrame(float DeltaSeconds);
-    void CaptureViewport();
     void FinishTest(bool bPassed, const FString& Message);
 };
