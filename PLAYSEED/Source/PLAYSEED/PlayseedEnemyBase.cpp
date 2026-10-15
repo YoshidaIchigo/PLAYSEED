@@ -72,6 +72,10 @@ void APlayseedEnemyBase::Tick(float DeltaSeconds)
         HurtDisplayRemaining -= DeltaSeconds;
         if (HurtDisplayRemaining <= 0) Visual->SetRelativeScale3D(FVector::OneVector);
     }
+    // 生き残る敵では、LaunchCharacterの反動が次の移動Tickへ届くまで側面接触を猶予します。
+    // 長い一フレームで残り時間を越えても、そのフレームまでは猶予を維持します。
+    const bool bStompGraceActive = StompContactGrace > 0;
+    StompContactGrace = FMath::Max(0.f, StompContactGrace - DeltaSeconds);
     auto* Player = Cast<AWindseedCharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
     if (!Player) return;
     const FVector Position = Player->GetActorLocation();
@@ -87,15 +91,15 @@ void APlayseedEnemyBase::Tick(float DeltaSeconds)
         const FVector Crossing = FMath::Lerp(PreviousPlayerPosition, Position, Fraction);
         bStomp = FVector::Dist2D(Crossing, GetActorLocation()) < Radius;
     }
-    if (bStomp) DefeatFromStomp(Player);
-    else if (FVector::Dist2D(Position, GetActorLocation()) < Radius && Feet < Top - 15 && Feet + HalfHeight * 2 > GetActorLocation().Z + 10)
+    if (bStomp) HandleStomp(Player);
+    else if (!bStompGraceActive && FVector::Dist2D(Position, GetActorLocation()) < Radius && Feet < Top - 15 && Feet + HalfHeight * 2 > GetActorLocation().Z + 10)
         Player->GetVitality()->TryTakeImpact(2, Position - GetActorLocation());
     PreviousPlayerPosition = Position;
     PreviousFeetZ = Feet;
     bHasPreviousPosition = true;
 }
 
-void APlayseedEnemyBase::DefeatFromStomp(AWindseedCharacter* Player)
+void APlayseedEnemyBase::HandleStomp(AWindseedCharacter* Player)
 {
     DefeatEnemy(Player, true);
 }
@@ -106,16 +110,25 @@ void APlayseedEnemyBase::DefeatEnemy(AWindseedCharacter* Player, bool bBounce)
     bDefeated = true;
     DefeatAge = 0;
     Visual->SetRelativeScale3D(FVector(1.2f, 1.2f, .25f));
-    if (bBounce)
-    {
-        ++SuccessfulStomps;
-        Player->GetActions()->CancelGroundPound();
-        Player->StopJumping();
-        // 接触位置へテレポートせず、着地後の反動を通常の物理移動で与えます。
-        const FVector Velocity = Player->GetVelocity();
-        Player->LaunchCharacter(FVector(Velocity.X, Velocity.Y, 540), true, true);
-    }
+    if (bBounce) BounceFromStomp(Player);
     OnDefeated(Player);
+}
+
+void APlayseedEnemyBase::BounceFromStomp(AWindseedCharacter* Player)
+{
+    ++SuccessfulStomps;
+    StompContactGrace = .3f;
+    Player->GetActions()->CancelGroundPound();
+    Player->StopJumping();
+    // 撃破しない初回の踏みつけでも、同じ通常の反動を使えます。
+    const FVector Velocity = Player->GetVelocity();
+    Player->LaunchCharacter(FVector(Velocity.X, Velocity.Y, 540), true, true);
+}
+
+void APlayseedEnemyBase::RefreshBudTint()
+{
+    if (!Parts.IsEmpty())
+        if (auto* Tint = Cast<UMaterialInstanceDynamic>(Parts[0]->GetMaterial(0))) Tint->SetVectorParameterValue(TEXT("Tint"), GetBudTint());
 }
 
 void APlayseedEnemyBase::ResetEnemy()
@@ -125,6 +138,7 @@ void APlayseedEnemyBase::ResetEnemy()
     DefeatAge = 0;
     MeleeHealth = MaximumMeleeHealth;
     HurtDisplayRemaining = 0;
+    StompContactGrace = 0;
     SetActorTransform(SpawnTransform, false, nullptr, ETeleportType::TeleportPhysics);
     Visual->SetRelativeScale3D(FVector::OneVector);
     SetActorHiddenInGame(false);
