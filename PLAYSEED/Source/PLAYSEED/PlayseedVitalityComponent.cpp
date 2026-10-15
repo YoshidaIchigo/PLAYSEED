@@ -2,6 +2,7 @@
 #include "PlayseedGameModeBase.h"
 #include "PlayseedActionComponent.h"
 #include "PlayseedCarryComponent.h"
+#include "PlayseedClimbComponent.h"
 #include "WindseedCharacter.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -31,6 +32,7 @@ bool UPlayseedVitalityComponent::TryTakeImpact(int32 Points, FVector AwayDirecti
     if (!Player) return false;
     Player->GetActions()->CancelGroundPound();
     Player->GetCarry()->DropHeld();
+    Player->GetClimb()->CancelClimb();
     ++SuccessfulImpacts;
     Health = FMath::Max(0, Health - Points);
     InvulnerabilityRemaining = 1.2f;

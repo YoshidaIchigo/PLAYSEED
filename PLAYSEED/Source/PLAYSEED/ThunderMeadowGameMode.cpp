@@ -28,7 +28,7 @@ void AThunderMeadowHUD::DrawHUD()
         DrawRect(FLinearColor(.02f, .06f, .1f, .9f), 20, 158, 215, 35);
         DrawText(FString::Printf(TEXT("VITALITY %d / %d%s"), Vitality->GetHealth(), Vitality->GetMaximumHealth(), Vitality->IsInvulnerable() ? TEXT("  !") : TEXT("")), Color, 30, 165, GEngine->GetMediumFont(), 1.1f);
     }
-    DrawText(TEXT("WASD: move  SPACE: jump  CTRL/RB: dive  E/X: lift/throw  R: restart  M: menu"), FLinearColor::White, 30, Canvas->SizeY - 45, GEngine->GetMediumFont(), 1.1f);
+    DrawText(TEXT("WASD: move  SPACE: jump  CTRL/RB: dive  E/X: lift/throw  F/Y: climb  R: restart  M: menu"), FLinearColor::White, 30, Canvas->SizeY - 45, GEngine->GetMediumFont(), 1);
     if (!Expedition->GetProgressProblem().IsEmpty())
         DrawText(Expedition->GetProgressProblem(), FLinearColor(1, .5f, .4f), 30, Canvas->SizeY - 80, GEngine->GetMediumFont(), 1);
 }

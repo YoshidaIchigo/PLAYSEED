@@ -5,6 +5,7 @@
 #include "ThunderWarpPair.h"
 #include "ThunderDamageThistle.h"
 #include "PlayseedCarryable.h"
+#include "PlayseedClimbTree.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
@@ -250,6 +251,12 @@ void AThunderMeadowStage::BuildCarryProp()
     AddSign(FVector(-650, -1350, 0), TEXT("THE TIDESTONE\nE / X: lift nearby, then throw"));
 }
 
+void AThunderMeadowStage::BuildClimbTree()
+{
+    ClimbTree = GetWorld()->SpawnActor<APlayseedClimbTree>(FVector(-1800, -500, 0), FRotator::ZeroRotator);
+    AddSign(FVector(-1550, -650, 0), TEXT("THE HUSHBLOOM TREE\nF / Y: hold or release\nW / S: climb   SPACE: leap away"));
+}
+
 void AThunderMeadowStage::BuildShortcutGate()
 {
     const FVector Position(1600, 300, 0);
@@ -303,6 +310,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildWarpCaves();
     BuildDamageThistle();
     BuildCarryProp();
+    BuildClimbTree();
     BuildSkyIsland();
     BuildLighting();
 }

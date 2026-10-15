@@ -3,6 +3,7 @@
 #include "PlayseedVitalityComponent.h"
 #include "PlayseedActionComponent.h"
 #include "PlayseedCarryComponent.h"
+#include "PlayseedClimbComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
@@ -20,6 +21,7 @@ AWindseedCharacter::AWindseedCharacter()
     Vitality = CreateDefaultSubobject<UPlayseedVitalityComponent>(TEXT("Vitality"));
     Actions = CreateDefaultSubobject<UPlayseedActionComponent>(TEXT("Actions"));
     Carry = CreateDefaultSubobject<UPlayseedCarryComponent>(TEXT("Carry"));
+    Climb = CreateDefaultSubobject<UPlayseedClimbComponent>(TEXT("Climb"));
     GetCapsuleComponent()->InitCapsuleSize(34.f, 82.f);
     bUseControllerRotationYaw = false;
     GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -110,6 +112,7 @@ void AWindseedCharacter::SetupPlayerInputComponent(UInputComponent* Input)
     Super::SetupPlayerInputComponent(Input);
     Actions->SetupInput(Input);
     Carry->SetupInput(Input);
+    Climb->SetupInput(Input);
     Input->BindAxis(TEXT("MoveForward"), this, &AWindseedCharacter::MoveForward);
     Input->BindAxis(TEXT("MoveRight"), this, &AWindseedCharacter::MoveRight);
     Input->BindAxis(TEXT("LookYaw"), this, &AWindseedCharacter::LookYaw);
@@ -126,10 +129,12 @@ void AWindseedCharacter::SetupPlayerInputComponent(UInputComponent* Input)
 }
 void AWindseedCharacter::MoveForward(float Value)
 {
+    if (Climb->IsClimbing()) { Climb->SetClimbInput(Value); return; }
     if (Controller) AddMovementInput(FRotationMatrix(FRotator(0,Controller->GetControlRotation().Yaw,0)).GetUnitAxis(EAxis::X), Value);
 }
 void AWindseedCharacter::MoveRight(float Value)
 {
+    if (Climb->IsClimbing()) return;
     if (Controller) AddMovementInput(FRotationMatrix(FRotator(0,Controller->GetControlRotation().Yaw,0)).GetUnitAxis(EAxis::Y), Value);
 }
 void AWindseedCharacter::LookYaw(float Value) { AddControllerYawInput(Value); }
@@ -144,6 +149,7 @@ void AWindseedCharacter::ReturnToTrail()
 {
     Actions->CancelGroundPound();
     Carry->DropHeld();
+    Climb->CancelClimb();
     // 直前の落下速度やジャンプの長押し状態を残すと、復帰直後にまた飛び出してしまいます。
     // CharacterMovementComponent が管理する速度を止めてから、安全な開始位置へ移します。
     StopJumping();
@@ -187,4 +193,14 @@ void AWindseedCharacter::SetPoundPose(bool bEnabled)
 {
     // 見た目だけを縮めて急降下の姿勢を表現します。カプセル衝突の大きさは変えません。
     SeedBody->SetRelativeScale3D(bEnabled ? FVector(1.2f, 1.2f, .65f) : FVector::OneVector);
+}
+
+void AWindseedCharacter::Jump()
+{
+    if (!Climb->JumpAway()) Super::Jump();
+}
+
+void AWindseedCharacter::SetClimbPose(bool bEnabled)
+{
+    SeedBody->SetRelativeRotation(bEnabled ? FRotator(-12, 0, 0) : FRotator::ZeroRotator);
 }
