@@ -92,7 +92,8 @@ void AThunderMeadowStage::BuildMeadow()
     AddTerrace(FVector(-1350, 450, 100), FVector2D(1100, 1100), FLinearColor(.1f, .4f, .19f));
     AddTerrace(FVector(-1750, 1400, 200), FVector2D(1000, 1000), FLinearColor(.16f, .46f, .23f));
     AddTerrace(FVector(-700, 1800, 300), FVector2D(850, 850), FLinearColor(.25f, .44f, .3f));
-    for (const FVector& Position : {FVector(-2500, -2000, 0), FVector(700, -2000, 0), FVector(-2600, 2400, 0), FVector(400, 2400, 0), FVector(2900, -1000, 0)})
+    // 南の木を橋の出口から離し、乗降とカメラの見通しを確保します。
+    for (const FVector& Position : {FVector(-2500, -2000, 0), FVector(1450, -2500, 0), FVector(-2600, 2400, 0), FVector(400, 2400, 0), FVector(2900, -1000, 0)})
         AddTree(Position);
     AddSign(FVector(-300, -200, 0), TEXT("THUNDER MEADOW\nNorth-west: the terrace trail"));
     AddSign(FVector(-700, 1920, 300), TEXT("THE MOSS OVERLOOK"));
