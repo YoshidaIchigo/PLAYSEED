@@ -156,6 +156,37 @@ void AThunderMeadowStage::BuildSkyIsland()
     AddSign(SkyIslandTop + FVector(-50, -240, 0), TEXT("THE LANTERN ISLAND"));
 }
 
+void AThunderMeadowStage::BuildWoodenBridge()
+{
+    AddTerrace(FVector(-2500, -1200, 100), FVector2D(600, 600), FLinearColor(.12f, .38f, .2f));
+    AddTerrace(FVector(-1200, -1200, 100), FVector2D(600, 600), FLinearColor(.12f, .38f, .2f));
+    BridgeFootPath.Reset();
+    constexpr int32 PlankCount = 12;
+    const FLinearColor Wood(.35f, .19f, .08f);
+    for (int32 Index = 0; Index <= PlankCount; ++Index)
+    {
+        const float T = static_cast<float>(Index) / PlankCount;
+        const FVector Point(-2200 + 700 * T, -1200, 100 + 150 * FMath::Sin(PI * T));
+        if (BridgeFootPath.Num())
+        {
+            const FVector Previous = BridgeFootPath.Last();
+            const FVector Delta = Point - Previous;
+            const FRotator Rotation = Delta.Rotation();
+            const FVector Up = Rotation.RotateVector(FVector::UpVector);
+            // 厚さ24cmの板を5cmだけ重ね、歩く面に隙間を作らず、木の板の区切りも残します。
+            AddShape(Cube, (Previous + Point) * .5f - Up * 12, FVector(Delta.Size() + 5, 260, 24), Wood, true, Rotation);
+        }
+        BridgeFootPath.Add(Point);
+        if (Index == 4 || Index == 8)
+        {
+            // 支柱は中央通路を避けて両側へ置き、橋の下に通常の身長で通れる空間を残します。
+            for (float Side : {-1.f, 1.f})
+                AddShape(Cube, FVector(Point.X, Point.Y + Side * 150, Point.Z * .5f), FVector(30, 30, Point.Z), FLinearColor(.23f, .12f, .055f), true);
+        }
+    }
+    AddSign(FVector(-2650, -1000, 100), TEXT("THE TIMBER CROSSING"));
+}
+
 void AThunderMeadowStage::BuildLighting()
 {
     auto* SkyDome = AddShape(Sphere, FVector::ZeroVector, FVector(40000), FLinearColor::White);
@@ -181,6 +212,7 @@ void AThunderMeadowStage::BeginPlay()
 {
     Super::BeginPlay();
     BuildMeadow();
+    BuildWoodenBridge();
     BuildMountain();
     BuildSkyIsland();
     BuildLighting();

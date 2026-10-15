@@ -14,6 +14,7 @@ class PLAYSEED_API UThunderTraversalTestSubsystem : public UGameInstanceSubsyste
 public:
     void BeginTerraceRoute(AWindseedCharacter* Player);
     void BeginMountainRoute(AWindseedCharacter* Player, const TArray<FVector>& FootPath, bool bInspectIsland = false);
+    void BeginBridgeRoute(AWindseedCharacter* Player, const TArray<FVector>& FootPath);
     bool UpdateRoute(AWindseedCharacter* Player, float DeltaSeconds);
     bool HasFailed() const { return !Error.IsEmpty(); }
     const FString& GetError() const { return Error; }
@@ -33,4 +34,6 @@ private:
     FString CaptureName = TEXT("ThunderTerraces");
     bool bInspectSkyIsland = false;
     bool bIslandCollisionVerified = false;
+    bool bBridgeRoute = false;
+    int32 AutoJumpWaypointLimit = MAX_int32;
 };

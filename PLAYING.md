@@ -45,6 +45,8 @@ Unreal Engine **5.8.1**とC++開発環境が必要です。`PLAYSEED/PLAYSEED.up
 
 浮島「THE LANTERN ISLAND」を山の西側へ追加しました。現段階は地形と床衝突の確認で、発射台からの着地・箱の報酬は後続PRで実装します。`-ThunderIslandTest`は山頂まで普通に歩いて浮島を見渡し、実ワールドの床衝突をカプセル掃引で確認して`ThunderIsland.png`へ保存します。プレイヤーを浮島へテレポートしてクリア扱いにする検証ではありません。
 
+草原の南西に木橋「THE TIMBER CROSSING」を追加しました。橋を歩いて渡り、中央の下を通常の身長で通れます。`-ThunderBridgeTest`をステージ往復検証へ追加すると、入口の段丘へジャンプ→橋上の徒歩→下の通路を歩く実ゲーム確認を行い、`ThunderBridge.png`へ記録します。
+
 ## アセットの再生成
 
 `/Game/Playseed/StageSelect`から`-StageSelectionSmokeTest -GardenSmokeTest -GardenCapture`で起動すると、2→追加ステージの移動・ジャンプ・R→M→1→既存ステージ走破を連続検証します。録画はレベル移動をまたいで継続します。`-GardenCaptureTravelTest`は既存ステージを一度再読込して録画の寿命を確認する追加検証です。

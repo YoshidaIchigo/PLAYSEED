@@ -22,6 +22,7 @@ public:
     // 山道の足元の順路です。原点に生成する Stage 内で、徒歩の案内・検証に共用します。
     const TArray<FVector>& GetMountainFootPath() const { return MountainFootPath; }
     FVector GetSkyIslandTop() const { return SkyIslandTop; }
+    const TArray<FVector>& GetBridgeFootPath() const { return BridgeFootPath; }
 private:
     UStaticMeshComponent* AddShape(UStaticMesh* Mesh, FVector Position, FVector Dimensions, FLinearColor Color, bool bSolid = false, FRotator Rotation = FRotator::ZeroRotator);
     void AddTerrace(FVector TopCenter, FVector2D Size, FLinearColor GrassColor);
@@ -30,6 +31,7 @@ private:
     void BuildMeadow();
     void BuildMountain();
     void BuildSkyIsland();
+    void BuildWoodenBridge();
     void AddRamp(FVector Start, FVector End, float Width);
     void BuildLighting();
 
@@ -42,6 +44,7 @@ private:
     UPROPERTY() TObjectPtr<UMaterialInterface> SkyMaterial;
     UPROPERTY() TArray<TObjectPtr<UTextRenderComponent>> Signs;
     TArray<FVector> MountainFootPath;
+    TArray<FVector> BridgeFootPath;
     // cm単位の上面中央。発射台や着地判定でも同じ目標を参照できます。
     FVector SkyIslandTop = FVector(-200, 2200, 1400);
 };
