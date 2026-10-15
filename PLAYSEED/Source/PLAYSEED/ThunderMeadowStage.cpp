@@ -1,5 +1,6 @@
 #include "ThunderMeadowStage.h"
 #include "ThunderMovingPlatform.h"
+#include "ThunderTiltingBridge.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
@@ -91,7 +92,8 @@ void AThunderMeadowStage::BuildMeadow()
     AddTerrace(FVector(-1350, 450, 100), FVector2D(1100, 1100), FLinearColor(.1f, .4f, .19f));
     AddTerrace(FVector(-1750, 1400, 200), FVector2D(1000, 1000), FLinearColor(.16f, .46f, .23f));
     AddTerrace(FVector(-700, 1800, 300), FVector2D(850, 850), FLinearColor(.25f, .44f, .3f));
-    for (const FVector& Position : {FVector(-2500, -2000, 0), FVector(700, -2000, 0), FVector(-2600, 2400, 0), FVector(400, 2400, 0), FVector(2900, -1000, 0)})
+    // 南の木を橋の出口から離し、乗降とカメラの見通しを確保します。
+    for (const FVector& Position : {FVector(-2500, -2000, 0), FVector(1450, -2500, 0), FVector(-2600, 2400, 0), FVector(400, 2400, 0), FVector(2900, -1000, 0)})
         AddTree(Position);
     AddSign(FVector(-300, -200, 0), TEXT("THUNDER MEADOW\nNorth-west: the terrace trail"));
     AddSign(FVector(-700, 1920, 300), TEXT("THE MOSS OVERLOOK"));
@@ -199,6 +201,17 @@ void AThunderMeadowStage::BuildMovingPlatform()
 void AThunderMeadowStage::ResetMechanisms()
 {
     if (MovingPlatform) MovingPlatform->ResetMotion();
+    if (TiltingBridge) TiltingBridge->ResetTilt();
+}
+
+void AThunderMeadowStage::BuildTiltingBridge()
+{
+    TiltingBridge = GetWorld()->SpawnActor<AThunderTiltingBridge>(FVector(0, -2100, 160), FRotator::ZeroRotator);
+    AddTerrace(FVector(-850, -2100, 180), FVector2D(500), FLinearColor(.2f, .4f, .24f));
+    AddTerrace(FVector(850, -2100, 180), FVector2D(500), FLinearColor(.2f, .4f, .24f));
+    // 中央の支点は装飾です。歩行の衝突は回転する床一枚に集約します。
+    AddShape(Cylinder, FVector(0, -2100, 65), FVector(120, 180, 190), FLinearColor(.27f, .2f, .15f));
+    AddSign(FVector(-850, -2350, 180), TEXT("THE BALANCE BOUGH\nYour weight tips the crossing"));
 }
 
 void AThunderMeadowStage::BuildLighting()
@@ -228,6 +241,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildMeadow();
     BuildWoodenBridge();
     BuildMovingPlatform();
+    BuildTiltingBridge();
     BuildMountain();
     BuildSkyIsland();
     BuildLighting();

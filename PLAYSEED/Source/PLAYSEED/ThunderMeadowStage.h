@@ -9,6 +9,7 @@ class UStaticMeshComponent;
 class UMaterialInterface;
 class UTextRenderComponent;
 class AThunderMovingPlatform;
+class AThunderTiltingBridge;
 
 // Actor は World 内の一つの存在です。この Actor が地形・装飾の Component を所有します。
 // ミッションのルールやセーブは GameMode / Subsystem に任せ、形状の生成だけを担当します。
@@ -25,6 +26,7 @@ public:
     FVector GetSkyIslandTop() const { return SkyIslandTop; }
     const TArray<FVector>& GetBridgeFootPath() const { return BridgeFootPath; }
     AThunderMovingPlatform* GetMovingPlatform() const { return MovingPlatform; }
+    AThunderTiltingBridge* GetTiltingBridge() const { return TiltingBridge; }
     void ResetMechanisms();
 private:
     UStaticMeshComponent* AddShape(UStaticMesh* Mesh, FVector Position, FVector Dimensions, FLinearColor Color, bool bSolid = false, FRotator Rotation = FRotator::ZeroRotator);
@@ -36,6 +38,7 @@ private:
     void BuildSkyIsland();
     void BuildWoodenBridge();
     void BuildMovingPlatform();
+    void BuildTiltingBridge();
     void AddRamp(FVector Start, FVector End, float Width);
     void BuildLighting();
 
@@ -48,6 +51,7 @@ private:
     UPROPERTY() TObjectPtr<UMaterialInterface> SkyMaterial;
     UPROPERTY() TArray<TObjectPtr<UTextRenderComponent>> Signs;
     UPROPERTY() TObjectPtr<AThunderMovingPlatform> MovingPlatform;
+    UPROPERTY() TObjectPtr<AThunderTiltingBridge> TiltingBridge;
     TArray<FVector> MountainFootPath;
     TArray<FVector> BridgeFootPath;
     // cm単位の上面中央。発射台や着地判定でも同じ目標を参照できます。
