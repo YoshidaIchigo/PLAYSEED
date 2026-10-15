@@ -1,7 +1,8 @@
 #include "WindseedGameMode.h"
 #include "WindseedCharacter.h"
 #include "WindseedStage.h"
-#include "AVIWriter.h"
+#include "PlayseedRecordingSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
@@ -16,8 +17,6 @@
 #include "Misc/Parse.h"
 #include "Misc/Paths.h"
 #include "UnrealClient.h"
-#include "RHICommandList.h"
-#include "RenderingThread.h"
 
 void AWindseedHUD::DrawHUD()
 {
@@ -73,8 +72,16 @@ void AWindseedGameMode::StartPlay()
 #if !UE_BUILD_SHIPPING
     bSmokeTest=FParse::Param(FCommandLine::Get(),TEXT("GardenSmokeTest"));
     bCaptureRequested=FParse::Param(FCommandLine::Get(),TEXT("GardenCapture"));
-    if (bCaptureRequested && GEngine && GEngine->GameViewport)
-        CaptureDrawHandle=GEngine->GameViewport->OnEndDraw().AddUObject(this,&AWindseedGameMode::CaptureViewport);
+    bTravelTest=FParse::Param(FCommandLine::Get(),TEXT("GardenCaptureTravelTest"));
+    if (bCaptureRequested)
+    {
+        Recording=GetGameInstance()->GetSubsystem<UPlayseedRecordingSubsystem>();
+        bCaptureRetainedAfterTravel=Recording && Recording->IsRecording() && Recording->GetCapturedFrameCount()>15;
+        if (!Recording || !Recording->StartRecording(TEXT("Validation/WindseedPlaythrough.avi")))
+        { FinishTest(false,TEXT("The recording subsystem could not start")); return; }
+        if (bCaptureRetainedAfterTravel)
+            UE_LOG(LogTemp,Display,TEXT("WINDSEED TEST: recording session retained across level reload."));
+    }
     Route={FVector(-100,0,82),FVector(0,1100,182),FVector(400,1450,282),
         FVector(0,1100,182),FVector(0,400,82),FVector(450,100,82),
         FVector(1050,100,182),FVector(1500,-100,282),FVector(1950,150,382),FVector(2150,650,506)};
@@ -97,6 +104,17 @@ void AWindseedGameMode::Tick(float DeltaSeconds)
     auto* Player=Cast<AWindseedCharacter>(UGameplayStatics::GetPlayerPawn(this,0));
     if (!Player) { FinishTest(false,TEXT("Player did not spawn")); return; }
     PhaseTime+=DeltaSeconds;
+    // この static は検証専用。World が入れ替わっても再読込を一度に限り、無限ループを防ぎます。
+    static bool bTravelReloadRequested=false;
+    if (bTravelTest && !bTravelReloadRequested && PhaseTime>3)
+    {
+        if (!Recording || Recording->GetCapturedFrameCount()<=15)
+        { FinishTest(false,TEXT("No frames were recorded before level travel")); return; }
+        bTravelReloadRequested=true;
+        UE_LOG(LogTemp,Display,TEXT("WINDSEED TEST: reloading the level while recording."));
+        UGameplayStatics::OpenLevel(this,FName(TEXT("/Game/Windseed/WindseedGarden")));
+        return;
+    }
     if (TestPhase==0 && PhaseTime>4)
     {
         if (Stage->CollectedCount!=0 || Stage->bFinished) { FinishTest(false,TEXT("Initial state is invalid")); return; }
@@ -201,74 +219,24 @@ void AWindseedGameMode::Tick(float DeltaSeconds)
 #endif
 }
 
-void AWindseedGameMode::CaptureViewport()
-{
-#if !UE_BUILD_SHIPPING
-    if (bSmokeTest && GetWorld()->GetTimeSeconds()>2) CaptureFrame(GetWorld()->GetDeltaSeconds());
-#endif
-}
-
-void AWindseedGameMode::CaptureFrame(float DeltaSeconds)
-{
-#if !UE_BUILD_SHIPPING
-    if (!bCaptureRequested || bCaptureFailed || !GEngine || !GEngine->GameViewport || !GEngine->GameViewport->Viewport) return;
-    FViewport* Viewport=GEngine->GameViewport->Viewport;
-    const FIntPoint Size=Viewport->GetSizeXY();
-    if (Size.X<=0 || Size.Y<=0) return;
-    if (!CaptureWriter)
-    {
-        FAVIWriterOptions Options;
-        Options.OutputFilename=FPaths::ProjectSavedDir()/TEXT("Validation/WindseedPlaythrough.avi");
-        IFileManager::Get().MakeDirectory(*(FPaths::ProjectSavedDir()/TEXT("Validation")),true);
-        Options.Width=Size.X; Options.Height=Size.Y;
-        Options.CaptureFramerateNumerator=15;
-        Options.CompressionQuality=.75f;
-        Options.bSynchronizeFrames=true;
-        CaptureWriter=FAVIWriter::CreateInstance(Options);
-        if (CaptureWriter) CaptureWriter->Initialize();
-        if (!CaptureWriter || !CaptureWriter->IsCapturing())
-        {
-            UE_LOG(LogTemp,Error,TEXT("WINDSEED CAPTURE: AVI capture could not start."));
-            bCaptureFailed=true;
-            return;
-        }
-    }
-    CaptureTime+=DeltaSeconds;
-    if (CaptureTime<NextCapture) return;
-    TArray<FColor> Pixels;
-    ENQUEUE_RENDER_COMMAND(WindseedReadback)([Viewport,Size,&Pixels](FRHICommandListImmediate& RHICmdList)
-    {
-        const FTextureRHIRef& Texture=Viewport->GetShaderResourceTexture();
-        if (Texture.IsValid())
-            RHICmdList.ReadSurfaceData(Texture,FIntRect(0,0,Size.X,Size.Y),Pixels,FReadSurfaceDataFlags(RCM_UNorm));
-    });
-    FlushRenderingCommands();
-    if (Pixels.Num()==Size.X*Size.Y) CaptureWriter->Update(CaptureTime,MoveTemp(Pixels));
-    NextCapture=CaptureTime+1.f/15.f;
-#endif
-}
-
 void AWindseedGameMode::FinishTest(bool bPassed,const FString& Message)
 {
     bSmokeTest=false;
-    const int32 CapturedFrames=CaptureWriter ? CaptureWriter->GetFrameNumber() : 0;
+    const int32 CapturedFrames=Recording ? Recording->FinishRecording() : 0;
     FString ResultMessage=Message;
-    if (bCaptureRequested && (bCaptureFailed || CapturedFrames<150))
+    if (bCaptureRequested && (!Recording || Recording->HasCaptureError() || CapturedFrames<150))
     {
         bPassed=false;
         ResultMessage+=TEXT(" Capture failed or contains fewer than 150 frames.");
     }
-    if (CaptureWriter) { CaptureWriter->Finalize(); delete CaptureWriter; CaptureWriter=nullptr; }
+    if (bTravelTest && !bCaptureRetainedAfterTravel)
+    {
+        bPassed=false;
+        ResultMessage+=TEXT(" The recording session did not survive level travel.");
+    }
     const FString Report=FString::Printf(TEXT("%s\n%s\nJumps: %d\nCaptureFrames: %d\nUTC: %s\n"),bPassed?TEXT("PASS"):TEXT("FAIL"),*ResultMessage,JumpCount,CapturedFrames,*FDateTime::UtcNow().ToIso8601());
     IFileManager::Get().MakeDirectory(*(FPaths::ProjectSavedDir()/TEXT("Validation")),true);
     FFileHelper::SaveStringToFile(Report,*(FPaths::ProjectSavedDir()/TEXT("Validation/Result.txt")));
     UE_LOG(LogTemp,Display,TEXT("WINDSEED TEST %s: %s"),bPassed?TEXT("PASS"):TEXT("FAIL"),*ResultMessage);
     FPlatformMisc::RequestExitWithStatus(false,bPassed?0:1);
-}
-
-void AWindseedGameMode::EndPlay(const EEndPlayReason::Type Reason)
-{
-    if (GEngine && GEngine->GameViewport) GEngine->GameViewport->OnEndDraw().Remove(CaptureDrawHandle);
-    if (CaptureWriter) { CaptureWriter->Finalize(); delete CaptureWriter; CaptureWriter=nullptr; }
-    Super::EndPlay(Reason);
 }
