@@ -20,6 +20,8 @@ public:
     // virtual により、子クラスは自分のステージを初期化してから共通の復帰処理を呼べます。
     // 引数は操作中の Character です。所有権は World にあり、この関数で生成・破棄しません。
     virtual void RestartStage(AWindseedCharacter* Player);
+    virtual void HandlePlayerDefeat(AWindseedCharacter* Player);
+    virtual void HandlePlayerFall(AWindseedCharacter* Player);
 private:
     void ReturnToStageSelection();
     bool bSelectionTest = false;

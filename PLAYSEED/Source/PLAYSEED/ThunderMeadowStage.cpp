@@ -3,6 +3,7 @@
 #include "ThunderTiltingBridge.h"
 #include "ThunderShortcutGate.h"
 #include "ThunderWarpPair.h"
+#include "ThunderDamageThistle.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
@@ -235,6 +236,12 @@ void AThunderMeadowStage::BuildWarpCaves()
     if (WarpPair) WarpPair->Configure(Floors[0], Floors[1], ExitYaws[0], ExitYaws[1]);
 }
 
+void AThunderMeadowStage::BuildDamageThistle()
+{
+    DamageThistle = GetWorld()->SpawnActor<AThunderDamageThistle>(FVector(0, -1200, 60), FRotator::ZeroRotator);
+    AddSign(FVector(0, -1500, 0), TEXT("SPARKING THISTLE\nKeep clear, or jump over"));
+}
+
 void AThunderMeadowStage::BuildShortcutGate()
 {
     const FVector Position(1600, 300, 0);
@@ -286,6 +293,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildShortcutGate();
     BuildMountain();
     BuildWarpCaves();
+    BuildDamageThistle();
     BuildSkyIsland();
     BuildLighting();
 }

@@ -10,6 +10,7 @@
 #include "ThunderBalanceTestSubsystem.h"
 #include "ThunderGateTestSubsystem.h"
 #include "ThunderWarpTestSubsystem.h"
+#include "ThunderDamageTestSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "GameFramework/PlayerController.h"
 #include "InputKeyEventArgs.h"
@@ -68,7 +69,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 10 || (Step >= 12 && Step <= 15) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 10 || (Step >= 12 && Step <= 16) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -137,6 +138,14 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             if (!Meadow || Meadow->GetMountainFootPath().Num() < 25) { Fail(TEXT("The mountain route was not created")); return; }
             GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>()->BeginMountainRoute(Player, Meadow->GetMountainFootPath(), bIslandTest);
             Step = 10;
+            Elapsed = 0;
+        }
+        else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderDamageTest")))
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+            if (!Meadow || !Meadow->GetDamageThistle()) { Fail(TEXT("The damage thistle was not created")); return; }
+            GetGameInstance()->GetSubsystem<UThunderDamageTestSubsystem>()->BeginTest(Player, Meadow->GetDamageThistle());
+            Step = 16;
             Elapsed = 0;
         }
         else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderWarpTest")))
@@ -227,6 +236,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         auto* WarpTest = GetGameInstance()->GetSubsystem<UThunderWarpTestSubsystem>();
         const bool bComplete = WarpTest->UpdateTest(Player, DeltaSeconds);
         if (!WarpTest->GetError().IsEmpty()) { Fail(WarpTest->GetError()); return; }
+        if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
+    else if (Step == 16 && Player)
+    {
+        auto* DamageTest = GetGameInstance()->GetSubsystem<UThunderDamageTestSubsystem>();
+        const bool bComplete = DamageTest->UpdateTest(Player, DeltaSeconds);
+        if (!DamageTest->GetError().IsEmpty()) { Fail(DamageTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
     }
     else if (Step == 4 && Map == TEXT("StageSelect") && Elapsed > 3)
