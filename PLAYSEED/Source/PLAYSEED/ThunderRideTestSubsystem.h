@@ -43,6 +43,7 @@ private:
     float NormalAcceleration = 0;
     float NormalAirControl = 0;
     bool bAcquireStrikeSent = false;
+    bool bAcquireMountSent = false;
     bool bJumpHeld = false;
     bool bSlopeScreenshot = false;
 };

@@ -24,14 +24,19 @@ void RideKey(APlayerController* PC, FKey Key, bool bPressed)
 void RideTap(APlayerController* PC, FKey Key) { RideKey(PC, Key, true); RideKey(PC, Key, false); }
 }
 
-void UThunderRideTestSubsystem::SetPhase(int32 Number) { Phase = Number; PhaseTime = 0; Waypoint = 0; }
+void UThunderRideTestSubsystem::SetPhase(int32 Number)
+{
+    Phase = Number; PhaseTime = 0; Waypoint = 0;
+    if (Number == 7 || Number == 10) bAcquireStrikeSent = bAcquireMountSent = false;
+    UE_LOG(LogTemp, Display, TEXT("RIDE TEST: phase %d"), Number);
+}
 
 void UThunderRideTestSubsystem::BeginTest(AWindseedCharacter* Player, AThunderMeadowStage* InStage)
 {
     Stage = InStage;
     Board.Reset(); Error.Reset(); Route.Reset();
     SetPhase(0);
-    bJumpHeld = bSlopeScreenshot = bAcquireStrikeSent = false;
+    bJumpHeld = bSlopeScreenshot = bAcquireStrikeSent = bAcquireMountSent = false;
     HighestFeet = 0;
     const auto* Move = Player->GetCharacterMovement();
     NormalFriction = Move->GroundFriction; NormalBraking = Move->BrakingDecelerationWalking;
@@ -67,6 +72,7 @@ bool UThunderRideTestSubsystem::FollowRoute(AWindseedCharacter* Player, float De
 
 bool UThunderRideTestSubsystem::AcquireAndMount(AWindseedCharacter* Player, float DeltaSeconds)
 {
+    if (Player->GetRide()->IsRiding()) return true;
     auto* PC = Cast<APlayerController>(Player->GetController());
     auto* Enemy = Stage->GetGaleleafEnemy();
     const FVector Approach[] = {FVector(-600, -900, 82), FVector(1900, -900, 82), FVector(1900, -600, 82), FVector(2100, -300, 82)};
@@ -84,7 +90,8 @@ bool UThunderRideTestSubsystem::AcquireAndMount(AWindseedCharacter* Player, floa
     }
     Board = Enemy->GetDroppedGaleleaf();
     if (!Board.IsValid()) { Error = TEXT("Actual enemy strike did not leave a board"); return false; }
-    if (Walk(Player, Board->GetActorLocation() + FVector(0, 0, 82), DeltaSeconds)) RideTap(PC, EKeys::Q);
+    if (!bAcquireMountSent && Walk(Player, Board->GetActorLocation() + FVector(0, 0, 82), DeltaSeconds))
+    { RideTap(PC, EKeys::Q); bAcquireMountSent = true; }
     return Player->GetRide()->IsRiding();
 }
 
@@ -117,17 +124,22 @@ bool UThunderRideTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
         if (Walk(Player, Board->GetActorLocation() + FVector(0, 0, 82), DeltaSeconds))
         {
             RideTap(PC, EKeys::Q);
+            SetPhase(19);
+        }
+    }
+    else if (Phase == 19 && PhaseTime > .15f)
+    {
+            // InputKeyの後、PlayerControllerが入力を処理したフレームで結果を確認します。
             if (!Ride->IsRiding() || Board->GetAttachParentActor() != Player || Move->MovementMode != MOVE_Walking || Move->MaxWalkSpeed != 900)
-            { Error = TEXT("Q did not mount the board using normal CharacterMovement"); return false; }
+            { Error = FString::Printf(TEXT("Q mount failed: riding=%d parent=%s mode=%d speed=%.1f distance=%.1f"), Ride->IsRiding(), *GetNameSafe(Board->GetAttachParentActor()), int32(Move->MovementMode), Move->MaxWalkSpeed, FVector::Dist2D(Player->GetActorLocation(), Board->GetActorLocation())); return false; }
             // 乗車中のShiftと攻撃入力で速度や状態を壊さないことも確認します。
             RideTap(PC, EKeys::LeftShift); RideTap(PC, EKeys::LeftMouseButton); RideTap(PC, EKeys::E);
-            if (Move->MaxWalkSpeed != 900 || Player->GetCombat()->IsAttacking()) { Error = TEXT("Ride input exclusivity failed"); return false; }
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir() / TEXT("Validation/ThunderGaleleafRide.png"), false, false);
             SetPhase(2);
-        }
     }
     else if (Phase == 2)
     {
+        if (Move->MaxWalkSpeed != 900 || Player->GetCombat()->IsAttacking()) { Error = TEXT("Ride input exclusivity failed"); return false; }
         Player->AddMovementInput(FVector(-1, 0, 0));
         if (PhaseTime > 1.3f)
         {
@@ -141,12 +153,20 @@ bool UThunderRideTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
         { Error = TEXT("Releasing movement did not preserve visible glide momentum"); return false; }
         Move->StopMovementImmediately();
         RideTap(PC, EKeys::Gamepad_DPad_Up);
+        SetPhase(20);
+    }
+    else if (Phase == 20 && PhaseTime > .15f)
+    {
         if (!NormalMovementRestored(Player) || !Board.IsValid() || Board->GetAttachParentActor()) { Error = TEXT("D-pad dismount did not restore movement and release the prop"); return false; }
         SetPhase(4);
     }
     else if (Phase == 4 && PhaseTime > .2f)
     {
         RideTap(PC, EKeys::Gamepad_DPad_Up);
+        SetPhase(21);
+    }
+    else if (Phase == 21 && PhaseTime > .15f)
+    {
         if (!Ride->IsRiding()) { Error = TEXT("Grounded board could not be mounted again"); return false; }
         Route = {FVector(1900, -600, 82), FVector(1900, -900, 82), FVector(0, -900, 82), FVector(0, 1100, 82), FVector(600, 1850, 82)};
         const auto& Feet = Stage->GetMountainFootPath();
@@ -210,6 +230,7 @@ bool UThunderRideTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
     else if (Phase == 12 && PhaseTime > .22f) { RideTap(PC, EKeys::LeftControl); SetPhase(13); }
     else if (Phase == 13)
     {
+        if (PhaseTime < .1f) return false;
         if (Ride->IsRiding()) { Error = TEXT("Midair ground pound did not cancel riding"); return false; }
         if (Move->IsMovingOnGround() && PhaseTime > .2f)
         {
@@ -223,10 +244,14 @@ bool UThunderRideTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
         if (Walk(Player, Board->GetActorLocation() + FVector(0, 0, 82), DeltaSeconds))
         {
             RideTap(PC, EKeys::Q);
+            SetPhase(22);
+        }
+    }
+    else if (Phase == 22 && PhaseTime > .15f)
+    {
             if (!Ride->IsRiding()) { Error = TEXT("Board could not be mounted after pound"); return false; }
             Route = {FVector(1900, -600, 82), FVector(1900, -900, 82), FVector(-1800, -900, 82), FVector(-1800, -580, 82)};
             SetPhase(15);
-        }
     }
     else if (Phase == 15)
     {
@@ -243,10 +268,14 @@ bool UThunderRideTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
         if (Walk(Player, Board->GetActorLocation() + FVector(0, 0, 82), DeltaSeconds))
         {
             RideTap(PC, EKeys::Q);
+            SetPhase(23);
+        }
+    }
+    else if (Phase == 23 && PhaseTime > .15f)
+    {
             if (!Ride->IsRiding()) { Error = TEXT("Remount after climbing failed"); return false; }
             RecoveryBeforeFall = Player->RecoveryCount; DefeatBeforeFall = Player->GetVitality()->GetDefeatCount();
             Route = {FVector(-1800, -900, 82), FVector(-3000, -600, 82), FVector(-3800, -600, 82)}; SetPhase(18);
-        }
     }
     else if (Phase == 18)
     {
