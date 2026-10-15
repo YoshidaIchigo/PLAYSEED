@@ -30,6 +30,7 @@
 #include "ThunderTowerTestSubsystem.h"
 #include "ThunderBossTestSubsystem.h"
 #include "ThunderRaceTestSubsystem.h"
+#include "ThunderSkyCacheTestSubsystem.h"
 #include "ThunderFlightSwitch.h"
 #include "ThunderFlightBloom.h"
 #include "ThunderLauncher.h"
@@ -95,7 +96,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 37 ? 360 : Step == 31 || Step == 33 || Step == 34 || Step == 35 || Step == 36 ? 300 : Step == 10 || (Step >= 12 && Step <= 32) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 37 ? 360 : Step == 31 || Step == 33 || Step == 34 || Step == 35 || Step == 36 || Step == 38 ? 300 : Step == 10 || (Step >= 12 && Step <= 32) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -105,6 +106,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     auto* Expedition = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
     const bool bBossTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderBossTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderBossReadTest"));
     const bool bRaceTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderRaceTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderRaceReadTest"));
+    const bool bSkyCacheTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderSkyCacheTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderSkyCacheReadTest"));
     if (bProgressTest && (Expedition->GetEarnedRewardCount() != 2 || !Expedition->HasEarnedReward(1) || !Expedition->HasEarnedReward(7)))
     { Fail(TEXT("Saved rewards changed during restart or re-entry")); return; }
     if (Step == 0 && Map == TEXT("StageSelect") && Elapsed > 3 && Recording->GetCapturedFrameCount() > 15)
@@ -115,17 +117,22 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     }
     else if (Step == 1 && Map == TEXT("MissionSelect") && Elapsed > 3)
     {
-        Tap(PC, bSecondMissionEntry || bRaceTest ? EKeys::Two : bBossTest ? EKeys::One : EKeys::Six);
+        Tap(PC, bSecondMissionEntry || bRaceTest ? EKeys::Two : bBossTest ? EKeys::One : bSkyCacheTest ? EKeys::Three : EKeys::Six);
         Step = 7;
     }
     else if (Step == 7 && Map == TEXT("ThunderMeadow") && Player && Elapsed > 2)
     {
-        const int32 ExpectedMission = bSecondMissionEntry || bRaceTest ? 2 : bBossTest ? 1 : 6;
+        const int32 ExpectedMission = bSecondMissionEntry || bRaceTest ? 2 : bBossTest ? 1 : bSkyCacheTest ? 3 : 6;
         if (Expedition->GetSelectedMissionNumber() != ExpectedMission || Expedition->SelectMission(0) || Expedition->SelectMission(7)
             || Expedition->GetSelectedMissionNumber() != ExpectedMission)
         { Fail(TEXT("Mission selection did not survive travel or accepted an invalid number")); return; }
         if (bSecondMissionEntry)
         {
+            if (bSkyCacheTest)
+            {
+                if (Expedition->GetEarnedRewardCount() != 1 || !Expedition->HasEarnedReward(3) || !Expedition->IsLauncherUnlocked()) { Fail(TEXT("Sky reward or launcher lost on new World entry")); return; }
+                UE_LOG(LogTemp, Display, TEXT("SKY CACHE REENTRY TEST PASS: actually earned reward 3 and launcher retained in new World."));
+            }
             if (bRaceTest)
             {
                 if (Expedition->GetEarnedRewardCount() != 1 || !Expedition->HasEarnedReward(2) || !Expedition->IsLauncherUnlocked()) { Fail(TEXT("Race reward or real guide unlock lost on new World entry")); return; }
@@ -193,10 +200,17 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     else if (Step == 3 && Elapsed > 1 && Player)
     {
         if (FVector::Dist2D(Player->GetActorLocation(), FVector(-600, -600, 100)) > 5 || Player->RecoveryCount != 1
-            || Expedition->GetSelectedMissionNumber() != (bBossTest ? 1 : bRaceTest ? 2 : 6))
+            || Expedition->GetSelectedMissionNumber() != (bBossTest ? 1 : bRaceTest ? 2 : bSkyCacheTest ? 3 : 6))
         { Fail(TEXT("Restart in the new stage failed")); return; }
         const bool bIslandTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderIslandTest"));
-        if (bRaceTest)
+        if (bSkyCacheTest)
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+            if (!Meadow || !Meadow->GetSkyCache() || !Meadow->GetLauncher()) { Fail(TEXT("Mission 3 sky cache or launcher missing")); return; }
+            GetGameInstance()->GetSubsystem<UThunderSkyCacheTestSubsystem>()->BeginTest(Player, Meadow, FParse::Param(FCommandLine::Get(), TEXT("ThunderSkyCacheReadTest")));
+            Step = 38; Elapsed = 0;
+        }
+        else if (bRaceTest)
         {
             auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
             if (!Meadow || !Meadow->GetCloudflagRace() || !Meadow->GetWarpPair() || !Meadow->GetLauncher()) { Fail(TEXT("Mission 2 racer, cave or launcher missing")); return; }
@@ -517,6 +531,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         if (!BoxTest->GetError().IsEmpty()) { Fail(BoxTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
     }
+    else if (Step == 38 && Player)
+    {
+        auto* SkyTest = GetGameInstance()->GetSubsystem<UThunderSkyCacheTestSubsystem>();
+        const bool bComplete = SkyTest->UpdateTest(Player, DeltaSeconds);
+        if (!SkyTest->GetError().IsEmpty()) { Fail(SkyTest->GetError()); return; }
+        if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
     else if (Step == 37 && Player)
     {
         auto* RaceTest = GetGameInstance()->GetSubsystem<UThunderRaceTestSubsystem>();
@@ -636,7 +657,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     else if (Step == 5 && Map == TEXT("WindseedGarden") && Player && Elapsed > 1)
     {
         Step = 6;
-        UE_LOG(LogTemp, Display, TEXT("SELECTION TEST PASS: mission 6, R, re-entry with mission 2, invalid numbers and Garden entry passed."));
+        UE_LOG(LogTemp, Display, TEXT("SELECTION TEST PASS: selected mission, R, new World entry with mission 2, invalid numbers and Garden entry passed."));
     }
 }
 
