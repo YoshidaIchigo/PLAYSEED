@@ -60,7 +60,7 @@ bool APlayseedCarryable::TryPickup(AWindseedCharacter* Player)
     Body->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     // Attachするのは持たれる物だけです。プレイヤー自身の移動は従来のCharacterMovementのままです。
     if (!AttachToComponent(Player->GetRootComponent(), FAttachmentTransformRules::KeepWorldTransform)) { ResetToSpawn(); return false; }
-    SetActorRelativeLocation(FVector(100, 0, 30));
+    SetActorRelativeLocation(GetCarryOffset());
     SetActorRelativeRotation(FRotator::ZeroRotator);
     Holder = Player;
     bHeld = true;
@@ -87,9 +87,14 @@ void APlayseedCarryable::Throw()
 {
     auto* Player = Holder.Get();
     if (!bHeld || !Player) return;
-    const FVector Velocity = Player->GetActorForwardVector() * 1100 + FVector(0, 0, 450);
+    const FVector Velocity = GetThrowVelocity(Player);
     ++ThrowCount;
     Release(Velocity, true);
+}
+
+FVector APlayseedCarryable::GetThrowVelocity(const AWindseedCharacter* Player) const
+{
+    return Player->GetActorForwardVector() * 1100 + FVector(0, 0, 450);
 }
 
 void APlayseedCarryable::Drop()
