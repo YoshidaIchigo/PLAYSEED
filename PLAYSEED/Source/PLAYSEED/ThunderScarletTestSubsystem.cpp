@@ -171,7 +171,7 @@ bool UThunderScarletTestSubsystem::UpdateTest(AWindseedCharacter* Player, float 
     }
     else if (Phase == 44 && WalkRoute(Player, DeltaSeconds))
     {
-        if (!CheckCount(6)) return false; TArray<FVector> Points;
+        if (!CheckCount(6)) return false; TArray<FVector> Points = {Stage->GetMountainFootPath()[3] + FVector(0, 0, 82)};
         for (int32 Index = 2; Index >= 0; --Index) Points.Add(Stage->GetMountainFootPath()[Index] + FVector(0, 0, 82));
         Points.Append({FVector(600, 1850, 82), FVector(0, 1100, 82), FVector(-600, -600, 82), FVector(-2800, -600, 82), FVector(-3000, 1500, 82), Stage->GetLauncher()->GetActorLocation() + FVector(-140, 0, 82)}); SetRoute(MoveTemp(Points), 17);
     }
