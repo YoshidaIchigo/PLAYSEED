@@ -41,7 +41,7 @@ bool UThunderBurstTestSubsystem::WalkToward(AWindseedCharacter* Player, FVector 
 
 bool UThunderBurstTestSubsystem::Approach(AWindseedCharacter* Player, float DeltaSeconds)
 {
-    const FVector BurstApproachPoints[] = {FVector(-600, -900, 82), FVector(1900, -900, 82), FVector(1900, -2850, 82), Enemy->GetActorLocation() + FVector(0, -550, 82)};
+    const FVector BurstApproachPoints[] = {FVector(-600, -900, 82), FVector(1700, -900, 82), FVector(1700, -2850, 82), Enemy->GetActorLocation() + FVector(0, -550, 82)};
     if (Waypoint < 4 && WalkToward(Player, BurstApproachPoints[Waypoint], DeltaSeconds)) ++Waypoint;
     return Waypoint >= 4;
 }
@@ -58,7 +58,8 @@ bool UThunderBurstTestSubsystem::UpdateTest(AWindseedCharacter* Player, float De
     {
         if (Approach(Player, DeltaSeconds))
         {
-            if (Enemy->IsFuseActive() || Enemy->IsDefeated()) { Error = TEXT("Burst fuse began outside its range"); return false; }
+            if (Enemy->IsFuseActive() || Enemy->IsDefeated())
+            { Error = FString::Printf(TEXT("Burst approach entered the fuse range: player %s, distance %.1f, age %.2f, defeated %d"), *Player->GetActorLocation().ToString(), FVector::Dist2D(Player->GetActorLocation(), Enemy->GetActorLocation()), Enemy->GetFuseAge(), Enemy->IsDefeated()); return false; }
             Next(1);
         }
     }
