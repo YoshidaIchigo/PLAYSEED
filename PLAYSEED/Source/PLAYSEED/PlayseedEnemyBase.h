@@ -28,10 +28,12 @@ public:
     int32 GetReceivedStrikes() const { return ReceivedStrikes; }
 protected:
     virtual void OnDefeated(AWindseedCharacter* Player) {}
+    // 派生Actorは色と撃破のきっかけだけを変え、共通の描画部品やガードは内部で保ちます。
+    virtual FLinearColor GetBudTint() const { return FLinearColor(.25f, .35f, .55f); }
+    void DefeatEnemy(AWindseedCharacter* Player, bool bBounce);
 private:
     void AddPart(FName Name, UStaticMesh* Mesh, FVector Position, FVector Scale, FLinearColor Color);
     void DefeatFromStomp(AWindseedCharacter* Player);
-    void DefeatEnemy(AWindseedCharacter* Player, bool bBounce);
     UPROPERTY() TObjectPtr<USceneComponent> Visual;
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Parts;
     TArray<FLinearColor> Colors;

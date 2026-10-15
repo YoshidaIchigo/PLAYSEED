@@ -21,6 +21,7 @@
 #include "ThunderBoulderTestSubsystem.h"
 #include "ThunderWaterTestSubsystem.h"
 #include "ThunderChaseTestSubsystem.h"
+#include "ThunderBurstTestSubsystem.h"
 #include "ThunderDamageThistle.h"
 #include "ThunderCoinLedger.h"
 #include "ThunderMeadowGameMode.h"
@@ -83,7 +84,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 10 || (Step >= 12 && Step <= 28) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 10 || (Step >= 12 && Step <= 29) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -173,6 +174,14 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             if (!Meadow || Meadow->GetMountainFootPath().Num() < 25) { Fail(TEXT("The mountain route was not created")); return; }
             GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>()->BeginMountainRoute(Player, Meadow->GetMountainFootPath(), bIslandTest);
             Step = 10;
+            Elapsed = 0;
+        }
+        else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderBurstTest")))
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+            if (!Meadow || !Meadow->GetBurstEnemy()) { Fail(TEXT("The fuse enemy was not created")); return; }
+            GetGameInstance()->GetSubsystem<UThunderBurstTestSubsystem>()->BeginTest(Player, Meadow->GetBurstEnemy());
+            Step = 29;
             Elapsed = 0;
         }
         else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderChaseTest")))
@@ -407,6 +416,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         auto* BoxTest = GetGameInstance()->GetSubsystem<UThunderBoxTestSubsystem>();
         const bool bComplete = BoxTest->UpdateTest(Player, DeltaSeconds);
         if (!BoxTest->GetError().IsEmpty()) { Fail(BoxTest->GetError()); return; }
+        if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
+    else if (Step == 29 && Player)
+    {
+        auto* BurstTest = GetGameInstance()->GetSubsystem<UThunderBurstTestSubsystem>();
+        const bool bComplete = BurstTest->UpdateTest(Player, DeltaSeconds);
+        if (!BurstTest->GetError().IsEmpty()) { Fail(BurstTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
     }
     else if (Step == 28 && Player)
