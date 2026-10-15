@@ -29,6 +29,7 @@
 #include "ThunderFlightTestSubsystem.h"
 #include "ThunderTowerTestSubsystem.h"
 #include "ThunderBossTestSubsystem.h"
+#include "ThunderRaceTestSubsystem.h"
 #include "ThunderFlightSwitch.h"
 #include "ThunderFlightBloom.h"
 #include "ThunderLauncher.h"
@@ -94,7 +95,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 31 || Step == 33 || Step == 34 || Step == 35 || Step == 36 ? 300 : Step == 10 || (Step >= 12 && Step <= 32) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 37 ? 360 : Step == 31 || Step == 33 || Step == 34 || Step == 35 || Step == 36 ? 300 : Step == 10 || (Step >= 12 && Step <= 32) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -103,6 +104,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     const auto* Recording = GetGameInstance()->GetSubsystem<UPlayseedRecordingSubsystem>();
     auto* Expedition = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
     const bool bBossTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderBossTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderBossReadTest"));
+    const bool bRaceTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderRaceTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderRaceReadTest"));
     if (bProgressTest && (Expedition->GetEarnedRewardCount() != 2 || !Expedition->HasEarnedReward(1) || !Expedition->HasEarnedReward(7)))
     { Fail(TEXT("Saved rewards changed during restart or re-entry")); return; }
     if (Step == 0 && Map == TEXT("StageSelect") && Elapsed > 3 && Recording->GetCapturedFrameCount() > 15)
@@ -113,17 +115,22 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     }
     else if (Step == 1 && Map == TEXT("MissionSelect") && Elapsed > 3)
     {
-        Tap(PC, bSecondMissionEntry ? EKeys::Two : bBossTest ? EKeys::One : EKeys::Six);
+        Tap(PC, bSecondMissionEntry || bRaceTest ? EKeys::Two : bBossTest ? EKeys::One : EKeys::Six);
         Step = 7;
     }
     else if (Step == 7 && Map == TEXT("ThunderMeadow") && Player && Elapsed > 2)
     {
-        const int32 ExpectedMission = bSecondMissionEntry ? 2 : bBossTest ? 1 : 6;
+        const int32 ExpectedMission = bSecondMissionEntry || bRaceTest ? 2 : bBossTest ? 1 : 6;
         if (Expedition->GetSelectedMissionNumber() != ExpectedMission || Expedition->SelectMission(0) || Expedition->SelectMission(7)
             || Expedition->GetSelectedMissionNumber() != ExpectedMission)
         { Fail(TEXT("Mission selection did not survive travel or accepted an invalid number")); return; }
         if (bSecondMissionEntry)
         {
+            if (bRaceTest)
+            {
+                if (Expedition->GetEarnedRewardCount() != 1 || !Expedition->HasEarnedReward(2) || !Expedition->IsLauncherUnlocked()) { Fail(TEXT("Race reward or real guide unlock lost on new World entry")); return; }
+                UE_LOG(LogTemp, Display, TEXT("RACE REENTRY TEST PASS: actually earned reward 2 and launcher retained in a new World."));
+            }
             if (bBossTest)
             {
                 if (Expedition->GetEarnedRewardCount() != 1 || !Expedition->HasEarnedReward(1)) { Fail(TEXT("Boss reward lost across new World entry")); return; }
@@ -157,7 +164,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             }
             Tap(PC, EKeys::M);
             Step = 8;
-            UE_LOG(LogTemp, Display, TEXT("SELECTION TEST: re-entry with mission 2 passed after mission 6."));
+            UE_LOG(LogTemp, Display, TEXT("SELECTION TEST: a new World entry with mission 2 passed."));
             return;
         }
         TArray<AActor*> Gardens;
@@ -186,10 +193,17 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     else if (Step == 3 && Elapsed > 1 && Player)
     {
         if (FVector::Dist2D(Player->GetActorLocation(), FVector(-600, -600, 100)) > 5 || Player->RecoveryCount != 1
-            || Expedition->GetSelectedMissionNumber() != (bBossTest ? 1 : 6))
+            || Expedition->GetSelectedMissionNumber() != (bBossTest ? 1 : bRaceTest ? 2 : 6))
         { Fail(TEXT("Restart in the new stage failed")); return; }
         const bool bIslandTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderIslandTest"));
-        if (bBossTest)
+        if (bRaceTest)
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+            if (!Meadow || !Meadow->GetCloudflagRace() || !Meadow->GetWarpPair() || !Meadow->GetLauncher()) { Fail(TEXT("Mission 2 racer, cave or launcher missing")); return; }
+            GetGameInstance()->GetSubsystem<UThunderRaceTestSubsystem>()->BeginTest(Player, Meadow, FParse::Param(FCommandLine::Get(), TEXT("ThunderRaceReadTest")));
+            Step = 37; Elapsed = 0;
+        }
+        else if (bBossTest)
         {
             auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
             if (!Meadow || !Meadow->GetStormkeeper()) { Fail(TEXT("Mission 1 keeper missing")); return; }
@@ -501,6 +515,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         auto* BoxTest = GetGameInstance()->GetSubsystem<UThunderBoxTestSubsystem>();
         const bool bComplete = BoxTest->UpdateTest(Player, DeltaSeconds);
         if (!BoxTest->GetError().IsEmpty()) { Fail(BoxTest->GetError()); return; }
+        if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
+    else if (Step == 37 && Player)
+    {
+        auto* RaceTest = GetGameInstance()->GetSubsystem<UThunderRaceTestSubsystem>();
+        const bool bComplete = RaceTest->UpdateTest(Player, DeltaSeconds);
+        if (!RaceTest->GetError().IsEmpty()) { Fail(RaceTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
     }
     else if (Step == 36 && Player)
