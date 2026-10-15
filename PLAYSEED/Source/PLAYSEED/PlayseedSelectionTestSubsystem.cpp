@@ -8,6 +8,7 @@
 #include "ThunderTraversalTestSubsystem.h"
 #include "ThunderPlatformTestSubsystem.h"
 #include "ThunderBalanceTestSubsystem.h"
+#include "ThunderGateTestSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "GameFramework/PlayerController.h"
 #include "InputKeyEventArgs.h"
@@ -66,7 +67,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 10 || Step == 12 || Step == 13 ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 10 || Step == 12 || Step == 13 || Step == 14 ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -137,6 +138,14 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             Step = 10;
             Elapsed = 0;
         }
+        else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderGateTest")))
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+            if (!Meadow || !Meadow->GetShortcutGate()) { Fail(TEXT("The shortcut gate was not created")); return; }
+            GetGameInstance()->GetSubsystem<UThunderGateTestSubsystem>()->BeginTest(Player, Meadow->GetShortcutGate());
+            Step = 14;
+            Elapsed = 0;
+        }
         else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderBalanceTest")))
         {
             auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
@@ -195,6 +204,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         auto* BalanceTest = GetGameInstance()->GetSubsystem<UThunderBalanceTestSubsystem>();
         const bool bComplete = BalanceTest->UpdateTest(Player, DeltaSeconds);
         if (!BalanceTest->GetError().IsEmpty()) { Fail(BalanceTest->GetError()); return; }
+        if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
+    else if (Step == 14 && Player)
+    {
+        auto* GateTest = GetGameInstance()->GetSubsystem<UThunderGateTestSubsystem>();
+        const bool bComplete = GateTest->UpdateTest(Player, DeltaSeconds);
+        if (!GateTest->GetError().IsEmpty()) { Fail(GateTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
     }
     else if (Step == 4 && Map == TEXT("StageSelect") && Elapsed > 3)

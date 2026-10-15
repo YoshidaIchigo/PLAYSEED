@@ -1,6 +1,7 @@
 #include "ThunderMeadowStage.h"
 #include "ThunderMovingPlatform.h"
 #include "ThunderTiltingBridge.h"
+#include "ThunderShortcutGate.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
@@ -202,6 +203,17 @@ void AThunderMeadowStage::ResetMechanisms()
 {
     if (MovingPlatform) MovingPlatform->ResetMotion();
     if (TiltingBridge) TiltingBridge->ResetTilt();
+    if (ShortcutGate) ShortcutGate->ResetGate();
+}
+
+void AThunderMeadowStage::BuildShortcutGate()
+{
+    const FVector Position(1600, 300, 0);
+    ShortcutGate = GetWorld()->SpawnActor<AThunderShortcutGate>(Position, FRotator::ZeroRotator);
+    // 柵の左右を壁へつなぎ、スイッチを踏むと中央の通路を歩けるようにします。
+    for (const float Side : {-1.f, 1.f})
+        AddShape(Cube, Position + FVector(0, Side * 400, 170), FVector(60, 480, 340), FLinearColor(.2f, .28f, .26f), true);
+    AddSign(Position + FVector(-450, -550, 0), TEXT("THE MEADOW SHORTCUT\nStand on the purple switch"));
 }
 
 void AThunderMeadowStage::BuildTiltingBridge()
@@ -242,6 +254,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildWoodenBridge();
     BuildMovingPlatform();
     BuildTiltingBridge();
+    BuildShortcutGate();
     BuildMountain();
     BuildSkyIsland();
     BuildLighting();
