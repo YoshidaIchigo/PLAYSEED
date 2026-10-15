@@ -135,6 +135,14 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             Step = 10;
             Elapsed = 0;
         }
+        else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderBridgeTest")))
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+            if (!Meadow || Meadow->GetBridgeFootPath().Num() != 13) { Fail(TEXT("The wooden bridge was not created")); return; }
+            GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>()->BeginBridgeRoute(Player, Meadow->GetBridgeFootPath());
+            Step = 10;
+            Elapsed = 0;
+        }
         else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderTerraceTest")))
         {
             GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>()->BeginTerraceRoute(Player);
