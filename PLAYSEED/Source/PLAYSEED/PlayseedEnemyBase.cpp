@@ -52,7 +52,7 @@ void APlayseedEnemyBase::BeginPlay()
         for (int32 Index = 0; Index < Parts.Num(); ++Index)
         {
             auto* Material = UMaterialInstanceDynamic::Create(Palette, this);
-            Material->SetVectorParameterValue(TEXT("Tint"), Colors[Index]);
+            Material->SetVectorParameterValue(TEXT("Tint"), Index == 0 ? GetBudTint() : Colors[Index]);
             Parts[Index]->SetMaterial(0, Material);
         }
     }

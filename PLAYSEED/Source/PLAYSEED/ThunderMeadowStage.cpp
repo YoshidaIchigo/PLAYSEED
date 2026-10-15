@@ -12,6 +12,7 @@
 #include "ThunderRollingBoulder.h"
 #include "ThunderWaterBomb.h"
 #include "PlayseedChasingEnemy.h"
+#include "PlayseedBurstEnemy.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
@@ -223,6 +224,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (RollingBoulder) RollingBoulder->ResetMotion();
     if (WaterBomb) WaterBomb->ResetCycle();
     if (ChasingEnemy) ChasingEnemy->ResetEnemy();
+    if (BurstEnemy) BurstEnemy->ResetEnemy();
 }
 
 void AThunderMeadowStage::BuildWarpCaves()
@@ -345,6 +347,12 @@ void AThunderMeadowStage::BuildChasingEnemy()
     AddSign(FVector(3000, -1450, 0), TEXT("THE ROAMING TUFTLING\nKeep moving, or strike before it reaches you"));
 }
 
+void AThunderMeadowStage::BuildBurstEnemy()
+{
+    BurstEnemy = GetWorld()->SpawnActor<APlayseedBurstEnemy>(FVector(2300, -2300, 0), FRotator(0, -90, 0));
+    AddSign(FVector(2600, -2550, 0), TEXT("THE SCARLET SEEDBURST\nTwo seconds to leave - or strike first"));
+}
+
 void AThunderMeadowStage::BuildShortcutGate()
 {
     const FVector Position(1600, 300, 0);
@@ -406,6 +414,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildRollingBoulder();
     BuildWaterBomb();
     BuildChasingEnemy();
+    BuildBurstEnemy();
     BuildSkyIsland();
     BuildLighting();
 }
