@@ -2,6 +2,7 @@
 #include "ThunderCoinLedger.h"
 #include "WindseedCharacter.h"
 #include "PlayseedVitalityComponent.h"
+#include "PlayseedInteractionComponent.h"
 #include "ThunderMeadowStage.h"
 #include "Engine/World.h"
 #include "ThunderExpeditionSubsystem.h"
@@ -28,9 +29,14 @@ void AThunderMeadowHUD::DrawHUD()
         const FLinearColor Color = Vitality->IsInvulnerable() ? FLinearColor(1, .4f, .35f) : FLinearColor(.85f, 1, .9f);
         DrawRect(FLinearColor(.02f, .06f, .1f, .9f), 20, 158, 215, 35);
         DrawText(FString::Printf(TEXT("VITALITY %d / %d%s"), Vitality->GetHealth(), Vitality->GetMaximumHealth(), Vitality->IsInvulnerable() ? TEXT("  !") : TEXT("")), Color, 30, 165, GEngine->GetMediumFont(), 1.1f);
+        if (!Player->GetInteraction()->GetMessage().IsEmpty())
+        {
+            DrawRect(FLinearColor(.02f, .06f, .1f, .94f), 20, Canvas->SizeY - 145, FMath::Min(920.f, Canvas->SizeX - 40.f), 48);
+            DrawText(Player->GetInteraction()->GetMessage(), FLinearColor(1, .88f, .55f), 34, Canvas->SizeY - 132, GEngine->GetMediumFont(), 1.05f);
+        }
     }
     DrawText(TEXT("WASD: move  SPACE: jump  CTRL/RB: dive  LMB/RT: strike"), FLinearColor::White, 30, Canvas->SizeY - 62, GEngine->GetMediumFont(), 1.05f);
-    DrawText(TEXT("E/X: lift/throw  F/Y: climb  Q/DPAD UP: ride  R: restart  M: menu"), FLinearColor::White, 30, Canvas->SizeY - 38, GEngine->GetMediumFont(), 1.05f);
+    DrawText(TEXT("E/X: lift  F/Y: climb  Q/UP: ride  G/DOWN: talk  R: restart  M: menu"), FLinearColor::White, 30, Canvas->SizeY - 38, GEngine->GetMediumFont(), 1.05f);
     if (auto* Mode = Cast<AThunderMeadowGameMode>(GetWorld()->GetAuthGameMode()))
     {
         const auto* Coins = Mode->GetCoinLedger();

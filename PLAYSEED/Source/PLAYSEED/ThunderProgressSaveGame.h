@@ -14,4 +14,6 @@ public:
     UPROPERTY(SaveGame) int32 FormatVersion = 1;
     // 主ミッションは1〜6、100コインの追加報酬は7。重複しない番号だけを保持します。
     UPROPERTY(SaveGame) TArray<int32> EarnedRewardNumbers;
+    // 旧形式Version1を読み込む場合も、未保存の追加項目はfalseから始まります。
+    UPROPERTY(SaveGame) bool bLauncherUnlocked = false;
 };

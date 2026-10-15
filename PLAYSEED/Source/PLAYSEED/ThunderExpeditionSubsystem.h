@@ -23,6 +23,8 @@ public:
     bool TryAwardReward(int32 RewardNumber);
     bool HasEarnedReward(int32 RewardNumber) const;
     int32 GetEarnedRewardCount() const;
+    bool IsLauncherUnlocked() const;
+    bool TryUnlockLauncher();
     const FString& GetProgressProblem() const { return ProgressProblem; }
     const FString& GetSaveSlotName() const { return SaveSlotName; }
 private:
