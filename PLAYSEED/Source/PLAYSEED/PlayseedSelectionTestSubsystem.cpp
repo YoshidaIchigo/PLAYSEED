@@ -4,6 +4,8 @@
 #include "WindseedCharacter.h"
 #include "WindseedStage.h"
 #include "ThunderExpeditionSubsystem.h"
+#include "ThunderMeadowStage.h"
+#include "ThunderTraversalTestSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "GameFramework/PlayerController.h"
 #include "InputKeyEventArgs.h"
@@ -62,7 +64,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > 20) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 10 ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -98,7 +100,9 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         }
         TArray<AActor*> Gardens;
         UGameplayStatics::GetAllActorsOfClass(CurrentMode, AWindseedStage::StaticClass(), Gardens);
-        if (Gardens.Num() || FVector::Dist2D(Player->GetActorLocation(), FVector(-600, -600, 100)) > 5)
+        TArray<AActor*> Meadows;
+        UGameplayStatics::GetAllActorsOfClass(CurrentMode, AThunderMeadowStage::StaticClass(), Meadows);
+        if (Gardens.Num() || Meadows.Num() != 1 || FVector::Dist2D(Player->GetActorLocation(), FVector(-600, -600, 100)) > 5)
         { Fail(TEXT("The new stage has mixed actors or a wrong start")); return; }
         InputStart = Player->GetActorLocation();
         PC->SetControlRotation(FRotator(-18, 0, 0));
@@ -122,9 +126,21 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         if (FVector::Dist2D(Player->GetActorLocation(), FVector(-600, -600, 100)) > 5 || Player->RecoveryCount != 1
             || Expedition->GetSelectedMissionNumber() != 6)
         { Fail(TEXT("Restart in the new stage failed")); return; }
-        Tap(PC, EKeys::M);
-        Step = 4;
-        UE_LOG(LogTemp, Display, TEXT("SELECTION TEST: Thunder movement, jump and R passed; pressed M."));
+        if (FParse::Param(FCommandLine::Get(), TEXT("ThunderTerraceTest")))
+        {
+            GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>()->BeginTerraceRoute(Player);
+            Step = 10;
+            Elapsed = 0;
+        }
+        else { Tap(PC, EKeys::M); Step = 4; }
+        UE_LOG(LogTemp, Display, TEXT("SELECTION TEST: Thunder movement, jump and R passed."));
+    }
+    else if (Step == 10 && Player)
+    {
+        auto* Traversal = GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>();
+        const bool bComplete = Traversal->UpdateTerraceRoute(Player, DeltaSeconds);
+        if (Traversal->HasFailed()) { Fail(Traversal->GetError()); return; }
+        if (bComplete) { Tap(PC, EKeys::M); Step = 4; }
     }
     else if (Step == 4 && Map == TEXT("StageSelect") && Elapsed > 3)
     {

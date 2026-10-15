@@ -5,6 +5,8 @@
 #include "GameFramework/HUD.h"
 #include "ThunderMeadowGameMode.generated.h"
 
+class AThunderMeadowStage;
+
 UCLASS()
 class PLAYSEED_API AThunderMeadowHUD : public AHUD
 {
@@ -13,7 +15,7 @@ public:
     virtual void DrawHUD() override;
 };
 
-// 雷鳴の丘のルール。入口確認用の床だけを作り、地形やミッションは次の小さな変更で追加します。
+// 雷鳴の丘のルールを担当します。地形の形状は専用 Actor へ分けます。
 UCLASS()
 class PLAYSEED_API AThunderMeadowGameMode : public APlayseedGameModeBase
 {
@@ -22,5 +24,6 @@ public:
     AThunderMeadowGameMode();
     virtual void StartPlay() override;
 private:
-    void CreateEntryFloor();
+    // World が Stage を所有します。UPROPERTY は参照を UE に伝えます。
+    UPROPERTY() TObjectPtr<AThunderMeadowStage> Stage;
 };
