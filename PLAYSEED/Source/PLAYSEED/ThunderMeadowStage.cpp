@@ -20,6 +20,7 @@
 #include "ThunderFlightSwitch.h"
 #include "ThunderStormkeeper.h"
 #include "ThunderCloudflagRace.h"
+#include "ThunderSkyCache.h"
 #include "ThunderExpeditionSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Camera/PlayerCameraManager.h"
@@ -240,6 +241,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (FlightSwitch) FlightSwitch->RefreshFromProgress();
     if (Stormkeeper) Stormkeeper->ResetToSpawn();
     if (CloudflagRace) CloudflagRace->ResetRace();
+    if (SkyCache) SkyCache->ResetBox();
 }
 
 void AThunderMeadowStage::BuildWarpCaves()
@@ -479,6 +481,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildStormkeeper();
     BuildCloudflagRace();
     BuildSkyIsland();
+    BuildSkyCache();
     BuildLighting();
 }
 
@@ -506,4 +509,12 @@ void AThunderMeadowStage::Tick(float DeltaSeconds)
             Sign->SetWorldRotation(FRotator(0, Yaw, 0));
         }
     }
+}
+
+void AThunderMeadowStage::BuildSkyCache()
+{
+    if (GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->GetSelectedMissionNumber() != 3) return;
+    SkyCache = GetWorld()->SpawnActor<AThunderSkyCache>(SkyIslandTop + FVector(200, 150, 0), FRotator::ZeroRotator);
+    SkyCache->ConfigureBox(TEXT("SkyLanternCache"));
+    AddSign(SkyIslandTop + FVector(200, 330, 0), TEXT("THE SKYSEED CACHE\nStrike the copper box - claim its lantern"));
 }
