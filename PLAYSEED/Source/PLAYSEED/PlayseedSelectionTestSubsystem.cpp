@@ -79,7 +79,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 10 || (Step >= 12 && Step <= 23) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 10 || (Step >= 12 && Step <= 24) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -108,7 +108,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         { Fail(TEXT("Mission selection did not survive travel or accepted an invalid number")); return; }
         if (bSecondMissionEntry)
         {
-            if (FParse::Param(FCommandLine::Get(), TEXT("ThunderCoinTest")))
+            if (FParse::Param(FCommandLine::Get(), TEXT("ThunderCoinTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderCoinTrailTest")))
             {
                 auto* MeadowMode = Cast<AThunderMeadowGameMode>(CurrentMode);
                 auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
@@ -116,7 +116,9 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
                 { Fail(TEXT("Coin totals survived a new stage entry")); return; }
                 for (APlayseedCoin* Coin : Meadow->GetTrainingCoins())
                     if (!Coin || Coin->IsCollected()) { Fail(TEXT("Collected coin visibility survived a new entry")); return; }
-                UE_LOG(LogTemp, Display, TEXT("COIN TEST: fresh re-entry cleared totals and restored all three coin actors."));
+                for (APlayseedCoin* Coin : Meadow->GetTrailCoins())
+                    if (!Coin || Coin->IsCollected()) { Fail(TEXT("A trail coin remained collected after re-entry")); return; }
+                UE_LOG(LogTemp, Display, TEXT("COIN TEST: fresh re-entry cleared totals and restored all placed coin actors."));
             }
             Tap(PC, EKeys::M);
             Step = 8;
@@ -152,7 +154,16 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             || Expedition->GetSelectedMissionNumber() != 6)
         { Fail(TEXT("Restart in the new stage failed")); return; }
         const bool bIslandTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderIslandTest"));
-        if (FParse::Param(FCommandLine::Get(), TEXT("ThunderMountainTest")) || bIslandTest)
+        if (FParse::Param(FCommandLine::Get(), TEXT("ThunderCoinTrailTest")))
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+            if (!Meadow || Meadow->GetMeadowCoinFootPath().Num() != 80 || Meadow->GetTrailCoins().Num() != 100)
+            { Fail(TEXT("The hundred-coin walking trail was not created")); return; }
+            GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>()->BeginCoinTrailRoute(Player, Meadow->GetMeadowCoinFootPath(), Meadow->GetMountainFootPath());
+            Step = 10;
+            Elapsed = 0;
+        }
+        else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderMountainTest")) || bIslandTest)
         {
             auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
             if (!Meadow || Meadow->GetMountainFootPath().Num() < 25) { Fail(TEXT("The mountain route was not created")); return; }
@@ -280,8 +291,8 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         {
             // 長い徒歩検証の時間を、次のメニュー遷移のタイムアウトへ持ち越しません。
             Elapsed = 0;
-            Tap(PC, EKeys::M);
-            Step = 4;
+            if (FParse::Param(FCommandLine::Get(), TEXT("ThunderCoinTrailTest"))) { Tap(PC, EKeys::R); Step = 24; }
+            else { Tap(PC, EKeys::M); Step = 4; }
         }
     }
     else if (Step == 12 && Player)
@@ -367,6 +378,19 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         const bool bComplete = BoxTest->UpdateTest(Player, DeltaSeconds);
         if (!BoxTest->GetError().IsEmpty()) { Fail(BoxTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
+    else if (Step == 24 && Player && Elapsed > .5f)
+    {
+        const auto* MeadowMode = Cast<AThunderMeadowGameMode>(CurrentMode);
+        const auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+        if (!MeadowMode || !Meadow || MeadowMode->GetCoinLedger()->GetTotal() != 0 || Player->RecoveryCount != 2)
+        { Fail(TEXT("R after the hundred-coin trail did not clear totals and restore start")); return; }
+        for (const APlayseedCoin* Coin : Meadow->GetTrailCoins())
+            if (!Coin || Coin->IsCollected()) { Fail(TEXT("R did not restore a placed trail coin")); return; }
+        UE_LOG(LogTemp, Display, TEXT("COIN TRAIL RESET TEST PASS: R restored all 100 trail coins and total zero."));
+        Elapsed = 0;
+        Tap(PC, EKeys::M);
+        Step = 4;
     }
     else if (Step == 4 && Map == TEXT("StageSelect") && Elapsed > 3)
     {
