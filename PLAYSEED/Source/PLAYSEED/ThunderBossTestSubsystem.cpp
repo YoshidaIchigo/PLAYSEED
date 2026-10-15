@@ -50,11 +50,11 @@ bool UThunderBossTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
     }
     else if (Phase == 1)
     {
-        if (Walk(Player, Boss->GetActorLocation() + Boss->GetActorForwardVector() * 158, DeltaSeconds)) { BossTap(PC, EKeys::E); SetPhase(2); }
+        if (Walk(Player, Boss->GetActorLocation() + Boss->GetActorForwardVector() * 145, DeltaSeconds, 4)) { BossTap(PC, EKeys::E); SetPhase(2); }
     }
     else if (Phase == 2 && PhaseTime > 1.4f && Move->IsMovingOnGround())
     {
-        if (Boss->GetFrontCounters() != 1 || Boss->IsHeld() || Player->GetVitality()->GetHealth() != 6) { Error = TEXT("Front pickup did not cause exactly one real counter and two damage"); return false; }
+        if (Boss->GetFrontCounters() != 1 || Boss->IsHeld() || Player->GetVitality()->GetHealth() != 6) { Error = FString::Printf(TEXT("Front pickup: counters %d held %d HP %d enemy %s hero %s invulnerable %d"), Boss->GetFrontCounters(), Boss->IsHeld(), Player->GetVitality()->GetHealth(), *Boss->GetActorLocation().ToString(), *Player->GetActorLocation().ToString(), Player->GetVitality()->IsInvulnerable()); return false; }
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir() / TEXT("Validation/ThunderBossCounter.png"), false, false); SetPhase(3);
     }
     else if (Phase == 3)
