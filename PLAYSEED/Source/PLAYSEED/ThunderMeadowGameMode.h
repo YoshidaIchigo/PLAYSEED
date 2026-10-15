@@ -6,6 +6,7 @@
 #include "ThunderMeadowGameMode.generated.h"
 
 class AThunderMeadowStage;
+class UThunderCoinLedger;
 
 UCLASS()
 class PLAYSEED_API AThunderMeadowHUD : public AHUD
@@ -25,7 +26,9 @@ public:
     virtual void StartPlay() override;
     virtual void RestartStage(AWindseedCharacter* Player) override;
     virtual void HandlePlayerFall(AWindseedCharacter* Player) override;
+    UThunderCoinLedger* GetCoinLedger() const { return CoinLedger; }
 private:
+    UPROPERTY() TObjectPtr<UThunderCoinLedger> CoinLedger;
     // World が Stage を所有します。UPROPERTY は参照を UE に伝えます。
     UPROPERTY() TObjectPtr<AThunderMeadowStage> Stage;
 };
