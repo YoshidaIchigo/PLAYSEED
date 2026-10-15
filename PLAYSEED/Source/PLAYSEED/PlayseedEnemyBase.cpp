@@ -72,6 +72,10 @@ void APlayseedEnemyBase::Tick(float DeltaSeconds)
         HurtDisplayRemaining -= DeltaSeconds;
         if (HurtDisplayRemaining <= 0) Visual->SetRelativeScale3D(FVector::OneVector);
     }
+    // 生き残る敵では、LaunchCharacterの反動が次の移動Tickへ届くまで側面接触を猶予します。
+    // 長い一フレームで残り時間を越えても、そのフレームまでは猶予を維持します。
+    const bool bStompGraceActive = StompContactGrace > 0;
+    StompContactGrace = FMath::Max(0.f, StompContactGrace - DeltaSeconds);
     auto* Player = Cast<AWindseedCharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
     if (!Player) return;
     const FVector Position = Player->GetActorLocation();
@@ -88,7 +92,7 @@ void APlayseedEnemyBase::Tick(float DeltaSeconds)
         bStomp = FVector::Dist2D(Crossing, GetActorLocation()) < Radius;
     }
     if (bStomp) HandleStomp(Player);
-    else if (FVector::Dist2D(Position, GetActorLocation()) < Radius && Feet < Top - 15 && Feet + HalfHeight * 2 > GetActorLocation().Z + 10)
+    else if (!bStompGraceActive && FVector::Dist2D(Position, GetActorLocation()) < Radius && Feet < Top - 15 && Feet + HalfHeight * 2 > GetActorLocation().Z + 10)
         Player->GetVitality()->TryTakeImpact(2, Position - GetActorLocation());
     PreviousPlayerPosition = Position;
     PreviousFeetZ = Feet;
@@ -113,6 +117,7 @@ void APlayseedEnemyBase::DefeatEnemy(AWindseedCharacter* Player, bool bBounce)
 void APlayseedEnemyBase::BounceFromStomp(AWindseedCharacter* Player)
 {
     ++SuccessfulStomps;
+    StompContactGrace = .3f;
     Player->GetActions()->CancelGroundPound();
     Player->StopJumping();
     // 撃破しない初回の踏みつけでも、同じ通常の反動を使えます。
@@ -133,6 +138,7 @@ void APlayseedEnemyBase::ResetEnemy()
     DefeatAge = 0;
     MeleeHealth = MaximumMeleeHealth;
     HurtDisplayRemaining = 0;
+    StompContactGrace = 0;
     SetActorTransform(SpawnTransform, false, nullptr, ETeleportType::TeleportPhysics);
     Visual->SetRelativeScale3D(FVector::OneVector);
     SetActorHiddenInGame(false);

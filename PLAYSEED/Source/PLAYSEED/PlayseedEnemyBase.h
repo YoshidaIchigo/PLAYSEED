@@ -48,6 +48,7 @@ private:
     int32 MeleeHealth = 1;
     int32 ReceivedStrikes = 0;
     float HurtDisplayRemaining = 0;
+    float StompContactGrace = 0;
     bool bHasPreviousPosition = false;
     bool bDefeated = false;
 };
