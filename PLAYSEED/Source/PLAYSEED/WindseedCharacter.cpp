@@ -2,6 +2,7 @@
 #include "PlayseedGameModeBase.h"
 #include "PlayseedVitalityComponent.h"
 #include "PlayseedActionComponent.h"
+#include "PlayseedCarryComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
@@ -18,6 +19,7 @@ AWindseedCharacter::AWindseedCharacter()
     PrimaryActorTick.bCanEverTick = true;
     Vitality = CreateDefaultSubobject<UPlayseedVitalityComponent>(TEXT("Vitality"));
     Actions = CreateDefaultSubobject<UPlayseedActionComponent>(TEXT("Actions"));
+    Carry = CreateDefaultSubobject<UPlayseedCarryComponent>(TEXT("Carry"));
     GetCapsuleComponent()->InitCapsuleSize(34.f, 82.f);
     bUseControllerRotationYaw = false;
     GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -107,6 +109,7 @@ void AWindseedCharacter::SetupPlayerInputComponent(UInputComponent* Input)
 {
     Super::SetupPlayerInputComponent(Input);
     Actions->SetupInput(Input);
+    Carry->SetupInput(Input);
     Input->BindAxis(TEXT("MoveForward"), this, &AWindseedCharacter::MoveForward);
     Input->BindAxis(TEXT("MoveRight"), this, &AWindseedCharacter::MoveRight);
     Input->BindAxis(TEXT("LookYaw"), this, &AWindseedCharacter::LookYaw);
@@ -140,6 +143,7 @@ void AWindseedCharacter::StopSprint() { SetSprinting(false); }
 void AWindseedCharacter::ReturnToTrail()
 {
     Actions->CancelGroundPound();
+    Carry->DropHeld();
     // 直前の落下速度やジャンプの長押し状態を残すと、復帰直後にまた飛び出してしまいます。
     // CharacterMovementComponent が管理する速度を止めてから、安全な開始位置へ移します。
     StopJumping();

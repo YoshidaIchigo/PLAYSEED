@@ -8,6 +8,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class UPlayseedVitalityComponent;
 class UPlayseedActionComponent;
+class UPlayseedCarryComponent;
 
 // Character は「入力で操作される Pawn」に、カプセル衝突と移動用 Component を加えた UE のクラスです。
 // このクラスは移動や見た目を担当し、ステージ固有の開始位置は GameMode から受け取ります。
@@ -29,6 +30,7 @@ public:
     USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
     UPlayseedVitalityComponent* GetVitality() const { return Vitality; }
     UPlayseedActionComponent* GetActions() const { return Actions; }
+    UPlayseedCarryComponent* GetCarry() const { return Carry; }
     void SetPoundPose(bool bEnabled);
     int32 RecoveryCount = 0;
 private:
@@ -42,6 +44,7 @@ private:
     UPROPERTY() TObjectPtr<USceneComponent> SeedBody;
     UPROPERTY() TObjectPtr<UPlayseedVitalityComponent> Vitality;
     UPROPERTY() TObjectPtr<UPlayseedActionComponent> Actions;
+    UPROPERTY() TObjectPtr<UPlayseedCarryComponent> Carry;
     void MoveForward(float Value);
     void MoveRight(float Value);
     void LookYaw(float Value);

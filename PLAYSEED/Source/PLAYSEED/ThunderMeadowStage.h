@@ -13,6 +13,7 @@ class AThunderTiltingBridge;
 class AThunderShortcutGate;
 class AThunderWarpPair;
 class AThunderDamageThistle;
+class APlayseedCarryable;
 
 // Actor は World 内の一つの存在です。この Actor が地形・装飾の Component を所有します。
 // ミッションのルールやセーブは GameMode / Subsystem に任せ、形状の生成だけを担当します。
@@ -33,6 +34,7 @@ public:
     AThunderShortcutGate* GetShortcutGate() const { return ShortcutGate; }
     AThunderWarpPair* GetWarpPair() const { return WarpPair; }
     AThunderDamageThistle* GetDamageThistle() const { return DamageThistle; }
+    APlayseedCarryable* GetCarryProp() const { return CarryProp; }
     void ResetMechanisms();
 private:
     UStaticMeshComponent* AddShape(UStaticMesh* Mesh, FVector Position, FVector Dimensions, FLinearColor Color, bool bSolid = false, FRotator Rotation = FRotator::ZeroRotator);
@@ -48,6 +50,7 @@ private:
     void BuildShortcutGate();
     void BuildWarpCaves();
     void BuildDamageThistle();
+    void BuildCarryProp();
     void AddRamp(FVector Start, FVector End, float Width);
     void BuildLighting();
 
@@ -64,6 +67,7 @@ private:
     UPROPERTY() TObjectPtr<AThunderShortcutGate> ShortcutGate;
     UPROPERTY() TObjectPtr<AThunderWarpPair> WarpPair;
     UPROPERTY() TObjectPtr<AThunderDamageThistle> DamageThistle;
+    UPROPERTY() TObjectPtr<APlayseedCarryable> CarryProp;
     TArray<FVector> MountainFootPath;
     TArray<FVector> BridgeFootPath;
     // cm単位の上面中央。発射台や着地判定でも同じ目標を参照できます。

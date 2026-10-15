@@ -4,6 +4,7 @@
 #include "ThunderShortcutGate.h"
 #include "ThunderWarpPair.h"
 #include "ThunderDamageThistle.h"
+#include "PlayseedCarryable.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
@@ -207,6 +208,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (TiltingBridge) TiltingBridge->ResetTilt();
     if (ShortcutGate) ShortcutGate->ResetGate();
     if (WarpPair) WarpPair->ResetWarps();
+    if (CarryProp) CarryProp->ResetToSpawn();
 }
 
 void AThunderMeadowStage::BuildWarpCaves()
@@ -240,6 +242,12 @@ void AThunderMeadowStage::BuildDamageThistle()
 {
     DamageThistle = GetWorld()->SpawnActor<AThunderDamageThistle>(FVector(0, -1200, 60), FRotator::ZeroRotator);
     AddSign(FVector(0, -1500, 0), TEXT("SPARKING THISTLE\nKeep clear, or jump over"));
+}
+
+void AThunderMeadowStage::BuildCarryProp()
+{
+    CarryProp = GetWorld()->SpawnActor<APlayseedCarryable>(FVector(-450, -1100, 60), FRotator::ZeroRotator);
+    AddSign(FVector(-650, -1350, 0), TEXT("THE TIDESTONE\nE / X: lift nearby, then throw"));
 }
 
 void AThunderMeadowStage::BuildShortcutGate()
@@ -294,6 +302,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildMountain();
     BuildWarpCaves();
     BuildDamageThistle();
+    BuildCarryProp();
     BuildSkyIsland();
     BuildLighting();
 }
