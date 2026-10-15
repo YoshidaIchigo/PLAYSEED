@@ -1,6 +1,7 @@
 #include "ThunderLauncher.h"
 #include "ThunderExpeditionSubsystem.h"
 #include "PlayseedInteractionComponent.h"
+#include "PlayseedLaunchComponent.h"
 #include "WindseedCharacter.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -46,10 +47,18 @@ void AThunderLauncher::BeginPlay()
 void AThunderLauncher::RefreshOpenState()
 {
     bOpen = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->IsLauncherUnlocked();
-    Barrel->SetRelativeRotation(FRotator(bOpen ? 20 : 90, 0, 0));
+    Barrel->SetRelativeRotation(FRotator(bOpen ? 20 : 90, bOpen ? GetDefaultAimYaw() : 0, 0));
 }
-void AThunderLauncher::Tick(float DeltaSeconds) { Super::Tick(DeltaSeconds); RefreshOpenState(); }
+void AThunderLauncher::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+    if (bOpen != GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->IsLauncherUnlocked()) RefreshOpenState();
+}
+void AThunderLauncher::SetAimPose(float Pitch, float WorldYaw) { Barrel->SetRelativeRotation(FRotator(90 - Pitch, WorldYaw - GetActorRotation().Yaw, 0)); }
 void AThunderLauncher::Interact(AWindseedCharacter* Player)
 {
-    if (Player) Player->GetInteraction()->ShowMessage(bOpen ? TEXT("The Skybloom is ready.") : TEXT("The Skybloom is folded. Ask Aeri nearby to open it."));
+    if (!Player) return;
+    if (Player->GetLaunch()->IsAiming()) { Player->GetLaunch()->CancelAim(); return; }
+    if (!bOpen) { Player->GetInteraction()->ShowMessage(TEXT("The Skybloom is folded. Ask Aeri nearby to open it.")); return; }
+    Player->GetLaunch()->TryBeginAim(this);
 }

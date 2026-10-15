@@ -3,6 +3,7 @@
 #include "WindseedCharacter.h"
 #include "PlayseedVitalityComponent.h"
 #include "PlayseedInteractionComponent.h"
+#include "PlayseedLaunchComponent.h"
 #include "ThunderMeadowStage.h"
 #include "Engine/World.h"
 #include "ThunderExpeditionSubsystem.h"
@@ -26,6 +27,15 @@ void AThunderMeadowHUD::DrawHUD()
     if (auto* Player = Cast<AWindseedCharacter>(UGameplayStatics::GetPlayerPawn(this, 0)))
     {
         const auto* Vitality = Player->GetVitality();
+        const auto* Launch = Player->GetLaunch();
+        if (Launch->IsAiming())
+        {
+            DrawRect(FLinearColor(.02f, .06f, .1f, .94f), 20, 205, FMath::Min(920.f, Canvas->SizeX - 40.f), 38);
+            DrawText(FString::Printf(TEXT("SKYBLOOM  %.0f deg   Mouse / right stick: aim   LMB / RT: launch   G / DOWN: leave"), Launch->GetAimPitch()), FLinearColor(1, .88f, .55f), 32, 214, GEngine->GetMediumFont(), .85f);
+            const float X = Canvas->SizeX * .5f, Y = Canvas->SizeY * .5f;
+            DrawLine(X - 12, Y, X + 12, Y, FLinearColor(1, .85f, .25f), 2);
+            DrawLine(X, Y - 12, X, Y + 12, FLinearColor(1, .85f, .25f), 2);
+        }
         const FLinearColor Color = Vitality->IsInvulnerable() ? FLinearColor(1, .4f, .35f) : FLinearColor(.85f, 1, .9f);
         DrawRect(FLinearColor(.02f, .06f, .1f, .9f), 20, 158, 215, 35);
         DrawText(FString::Printf(TEXT("VITALITY %d / %d%s"), Vitality->GetHealth(), Vitality->GetMaximumHealth(), Vitality->IsInvulnerable() ? TEXT("  !") : TEXT("")), Color, 30, 165, GEngine->GetMediumFont(), 1.1f);

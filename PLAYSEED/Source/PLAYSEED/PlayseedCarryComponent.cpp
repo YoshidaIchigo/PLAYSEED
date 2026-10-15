@@ -4,6 +4,7 @@
 #include "PlayseedVitalityComponent.h"
 #include "PlayseedCombatComponent.h"
 #include "PlayseedRideComponent.h"
+#include "PlayseedLaunchComponent.h"
 #include "WindseedCharacter.h"
 #include "Components/InputComponent.h"
 #include "EngineUtils.h"
@@ -29,6 +30,7 @@ void UPlayseedCarryComponent::TickComponent(float DeltaTime, ELevelTick TickType
 void UPlayseedCarryComponent::Interact()
 {
     auto* Player = Cast<AWindseedCharacter>(GetOwner());
+    if (Player && Player->GetLaunch()->IsAiming()) return;
     if (!Player || Player->GetRide()->IsRiding() || Player->GetVitality()->IsInvulnerable() || Player->GetActions()->IsGroundPounding() || Player->GetCombat()->IsAttacking()) return;
     if (Held.IsValid() && Held->IsHeldBy(Player)) { Held->Throw(); Held.Reset(); return; }
     Held.Reset();

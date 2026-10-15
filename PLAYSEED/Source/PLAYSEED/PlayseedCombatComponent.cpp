@@ -5,6 +5,7 @@
 #include "PlayseedClimbComponent.h"
 #include "PlayseedVitalityComponent.h"
 #include "PlayseedRideComponent.h"
+#include "PlayseedLaunchComponent.h"
 #include "WindseedCharacter.h"
 #include "Components/InputComponent.h"
 #include "EngineUtils.h"
@@ -25,6 +26,7 @@ void UPlayseedCombatComponent::SetupInput(UInputComponent* Input)
 void UPlayseedCombatComponent::BeginMelee()
 {
     auto* Player = Cast<AWindseedCharacter>(GetOwner());
+    if (Player && Player->GetLaunch()->IsAiming()) return;
     if (!Player || Player->GetRide()->IsRiding() || Cooldown > 0 || !Player->GetCharacterMovement()->IsMovingOnGround() || Player->GetVitality()->IsInvulnerable() || Player->GetClimb()->IsClimbing() || Player->GetActions()->IsGroundPounding() || Player->GetCarry()->GetHeldObject()) return;
     ComboStage = SinceLastAttack <= .75f ? ComboStage % 3 + 1 : 1;
     SinceLastAttack = 0;
