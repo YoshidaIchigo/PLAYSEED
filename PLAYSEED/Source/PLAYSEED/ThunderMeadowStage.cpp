@@ -532,6 +532,6 @@ void AThunderMeadowStage::BuildScarletTrail()
     ScarletTrail->Configure({FVector(-1800, -500, 712), FVector(-700, 1800, 362), FVector(-1850, -1200, 312),
         FVector(1250, 800, 282), FVector(0, -2100, 242), MountainRed,
         SkyIslandTop + FVector(-300, -150, 62), Court + FVector(-350, -100, 62)});
-    AddShape(Cylinder, Court + FVector(-250, 0, 3), FVector(220, 220, 6), FLinearColor(.7f, .15f, .25f));
+    AddShape(Cylinder, Court + FVector(0, 200, 3), FVector(220, 220, 6), FLinearColor(.7f, .15f, .25f));
     AddSign(Court + FVector(0, 250, 0), TEXT("THE BINDING COURT\nFind eight scarlet trail coins\nA lantern returns to this circle"));
 }

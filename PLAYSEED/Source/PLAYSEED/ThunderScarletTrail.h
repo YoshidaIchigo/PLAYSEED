@@ -23,7 +23,7 @@ public:
     const TArray<TObjectPtr<APlayseedCoin>>& GetCoins() const { return Coins; }
     APlayseedLantern* GetReward() const { return Reward.Get(); }
     int32 GetRewardGenerationCount() const { return RewardGenerationCount; }
-    FVector GetRewardRestLocation() const { return GetActorLocation() + FVector(-250, 0, 100); }
+    FVector GetRewardRestLocation() const { return GetActorLocation() + FVector(0, 200, 100); }
 private:
     void BindLedger();
     void HandleCoin(FName CoinId, EPlayseedCoinKind Kind);
