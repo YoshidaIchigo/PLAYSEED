@@ -12,6 +12,7 @@
 #include "ThunderWarpTestSubsystem.h"
 #include "ThunderDamageTestSubsystem.h"
 #include "ThunderPoundTestSubsystem.h"
+#include "ThunderCarryTestSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "GameFramework/PlayerController.h"
 #include "InputKeyEventArgs.h"
@@ -70,7 +71,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 10 || (Step >= 12 && Step <= 17) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 10 || (Step >= 12 && Step <= 18) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -139,6 +140,14 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             if (!Meadow || Meadow->GetMountainFootPath().Num() < 25) { Fail(TEXT("The mountain route was not created")); return; }
             GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>()->BeginMountainRoute(Player, Meadow->GetMountainFootPath(), bIslandTest);
             Step = 10;
+            Elapsed = 0;
+        }
+        else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderCarryTest")))
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+            if (!Meadow || !Meadow->GetCarryProp()) { Fail(TEXT("The carry prop was not created")); return; }
+            GetGameInstance()->GetSubsystem<UThunderCarryTestSubsystem>()->BeginTest(Player, Meadow->GetCarryProp());
+            Step = 18;
             Elapsed = 0;
         }
         else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderPoundTest")))
@@ -257,6 +266,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         auto* PoundTest = GetGameInstance()->GetSubsystem<UThunderPoundTestSubsystem>();
         const bool bComplete = PoundTest->UpdateTest(Player, DeltaSeconds);
         if (!PoundTest->GetError().IsEmpty()) { Fail(PoundTest->GetError()); return; }
+        if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
+    else if (Step == 18 && Player)
+    {
+        auto* CarryTest = GetGameInstance()->GetSubsystem<UThunderCarryTestSubsystem>();
+        const bool bComplete = CarryTest->UpdateTest(Player, DeltaSeconds);
+        if (!CarryTest->GetError().IsEmpty()) { Fail(CarryTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
     }
     else if (Step == 4 && Map == TEXT("StageSelect") && Elapsed > 3)

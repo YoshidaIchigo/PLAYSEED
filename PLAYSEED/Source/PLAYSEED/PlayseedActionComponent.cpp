@@ -1,5 +1,6 @@
 #include "PlayseedActionComponent.h"
 #include "PlayseedVitalityComponent.h"
+#include "PlayseedCarryComponent.h"
 #include "WindseedCharacter.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -22,6 +23,7 @@ void UPlayseedActionComponent::BeginGroundPound()
     if (!Player || bGroundPounding || Player->GetVitality()->IsInvulnerable()) return;
     auto* Movement = Player->GetCharacterMovement();
     if (!Movement->IsFalling()) return; // 地上では開始しません。ジャンプ中か落下中だけ使えます。
+    Player->GetCarry()->DropHeld();
     PreviousGravity = Movement->GravityScale;
     PreviousAirControl = Movement->AirControl;
     bGroundPounding = true;
