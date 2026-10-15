@@ -148,7 +148,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         auto* Traversal = GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>();
         const bool bComplete = Traversal->UpdateRoute(Player, DeltaSeconds);
         if (Traversal->HasFailed()) { Fail(Traversal->GetError()); return; }
-        if (bComplete) { Tap(PC, EKeys::M); Step = 4; }
+        if (bComplete)
+        {
+            // 長い徒歩検証の時間を、次のメニュー遷移のタイムアウトへ持ち越しません。
+            Elapsed = 0;
+            Tap(PC, EKeys::M);
+            Step = 4;
+        }
     }
     else if (Step == 4 && Map == TEXT("StageSelect") && Elapsed > 3)
     {
