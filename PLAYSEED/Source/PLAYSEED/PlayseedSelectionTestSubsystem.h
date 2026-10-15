@@ -18,8 +18,11 @@ public:
     bool HasPassed() const { return Step == 6; }
 private:
     void Fail(const FString& Message);
+    void RunProgressTestOnce();
     int32 Step = 0;
     float Elapsed = 0;
     FVector InputStart = FVector::ZeroVector;
     bool bSecondMissionEntry = false;
+    bool bProgressTestExecuted = false;
+    bool bProgressTest = false;
 };

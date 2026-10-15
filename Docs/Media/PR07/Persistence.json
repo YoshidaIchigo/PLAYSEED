@@ -1,0 +1,17 @@
+{
+  "source_commit": "4fd72012d1a7764b4dc8bb169a7d390f54004038",
+  "isolated_slot": "Validation_PR07_20261015_144135",
+  "fixture_reward_numbers": [
+    1,
+    7
+  ],
+  "fixture_is_actual_mission_completion": false,
+  "separate_write_and_read_processes": true,
+  "write_result": "PASS\nFall recovery, sprint, movement, camera follow, platform jumps, all 6 seeds, goal and restart passed.\nJumps: 6\nCaptureFrames: 682\nUTC: 2026-10-15T14:42:32.913Z\n",
+  "read_result": "PASS\nFall recovery, sprint, movement, camera follow, platform jumps, all 6 seeds, goal and restart passed.\nJumps: 6\nCaptureFrames: 682\nUTC: 2026-10-15T14:43:33.842Z\n",
+  "save_sha256_before_read": "4fb9c092f9d62639f05adf004627bfa64e20f8410bef56e6e243dd887bc773d7",
+  "save_sha256_after_read": "4fb9c092f9d62639f05adf004627bfa64e20f8410bef56e6e243dd887bc773d7",
+  "ordinary_save_sha256_before": null,
+  "ordinary_save_sha256_after": null,
+  "ordinary_save_unchanged": true
+}

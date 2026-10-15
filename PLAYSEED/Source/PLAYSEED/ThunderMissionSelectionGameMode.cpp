@@ -17,14 +17,19 @@ void AThunderMissionSelectionHUD::DrawHUD()
     { DrawText(Message, Color, X, Y * S, GEngine->GetMediumFont(), Scale * S, false); };
     Text(TEXT("THUNDER MEADOW"), 55, 2.7f, FLinearColor(.7f, .9f, 1));
     Text(TEXT("Choose your expedition"), 125, 1.6f, FLinearColor::White);
+    auto* Expedition = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
+    Text(FString::Printf(TEXT("LANTERNS  %d / 7"), Expedition->GetEarnedRewardCount()), 165, 1.1f, FLinearColor(.7f, 1, .8f));
     for (int32 Number = 1; Number <= UThunderExpeditionSubsystem::MainMissionCount; ++Number)
     {
         const float Y = 205 + (Number - 1) * 58;
-        Text(FString::Printf(TEXT("%d   %s"), Number, UThunderExpeditionSubsystem::GetMissionTitle(Number)), Y, 1.5f, FLinearColor(1, .86f, .52f));
+        const bool bEarned = Expedition->HasEarnedReward(Number);
+        Text(FString::Printf(TEXT("%d   %s%s"), Number, UThunderExpeditionSubsystem::GetMissionTitle(Number), bEarned ? TEXT("  [earned]") : TEXT("")), Y, 1.5f,
+            bEarned ? FLinearColor(.7f, 1, .8f) : FLinearColor(1, .86f, .52f));
         Text(UThunderExpeditionSubsystem::GetMissionGoal(Number), Y + 29, .95f, FLinearColor::White);
     }
-    Text(TEXT("Bonus lantern: gather 100 lightcoins during one visit."), 590, 1.2f, FLinearColor(.7f, 1, .8f));
+    Text(Expedition->HasEarnedReward(7) ? TEXT("Bonus lantern: 100 lightcoins  [earned]") : TEXT("Bonus lantern: gather 100 lightcoins during one visit."), 590, 1.2f, FLinearColor(.7f, 1, .8f));
     Text(TEXT("Press 1-6 to enter. M: stage selection. New expedition under construction."), 645, 1.15f, FLinearColor::White);
+    if (!Expedition->GetProgressProblem().IsEmpty()) Text(Expedition->GetProgressProblem(), 683, .9f, FLinearColor(1, .5f, .4f));
 }
 
 AThunderMissionSelectionGameMode::AThunderMissionSelectionGameMode()

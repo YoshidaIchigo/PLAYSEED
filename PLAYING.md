@@ -22,6 +22,10 @@ Unreal Engine **5.8.1**とC++開発環境が必要です。`PLAYSEED/PLAYSEED.up
 
 ## ビルドと実ゲーム検証
 
+雷鳴の丘の獲得済みランタンは `PLAYSEED/Saved/SaveGames/Playseed_ThunderProgress.sav` へ保存します。選択画面の `[earned]` と `LANTERNS n / 7` で確認できます。同じ報酬は一度だけ数え、Rでの再開や再入場では獲得状況を消しません。入場中のコイン数は保存対象に含めません。読めない既存セーブは上書きせず、HUDにエラーを表示します。現時点の報酬達成条件は後続PRで実装中です。
+
+保存の自動検証は `-StageSelectionSmokeTest -GardenSmokeTest -GardenCapture -ProgressWriteTest -PlayseedValidationSlot=Validation_<固有名>` で新しい専用スロットへ試験データを保存し、別プロセスで `-ProgressReadTest` に変えて読み直します。検証用フラグには `Validation_` で始まる英数字・下線だけの専用名が必須で、通常プレイの進行には触れません。この試験データはミッションの実クリアを意味しません。
+
 ```powershell
 & 'C:\Program Files\Epic Games\UE_5.8\Engine\Build\BatchFiles\Build.bat' PLAYSEEDEditor Win64 Development '-Project=C:\PLAYSEED\PLAYSEED\PLAYSEED.uproject' -WaitMutex -NoHotReloadFromIDE
 & 'C:\Program Files\Epic Games\UE_5.8\Engine\Build\BatchFiles\Build.bat' PLAYSEED Win64 Development '-Project=C:\PLAYSEED\PLAYSEED\PLAYSEED.uproject' -WaitMutex
