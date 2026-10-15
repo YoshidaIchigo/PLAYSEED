@@ -60,7 +60,7 @@ bool UThunderGaleleafTestSubsystem::UpdateTest(AWindseedCharacter* Player, float
     if (!Enemy.IsValid() || !PC || !Mode) { Error = TEXT("Galeleaf enemy or controller missing"); return false; }
     PhaseTime += DeltaSeconds;
     if (PhaseTime > 30) { Error = FString::Printf(TEXT("Galeleaf loop %d phase %d timed out at %s"), Loop, Phase, *Player->GetActorLocation().ToString()); return false; }
-    if (Player->GetVitality()->GetHealth() != 8) { Error = TEXT("Galeleaf test route unexpectedly took damage"); return false; }
+    if (Player->GetVitality()->GetHealth() != 8) { Error = FString::Printf(TEXT("Galeleaf loop %d phase %d took damage at %s, enemy %s, distance %.1f"), Loop, Phase, *Player->GetActorLocation().ToString(), *Enemy->GetActorLocation().ToString(), FVector::Dist2D(Player->GetActorLocation(), Enemy->GetActorLocation())); return false; }
     auto Next = [this](int32 Number) { Phase = Number; PhaseTime = 0; };
     if (Phase == 0)
     {
@@ -77,7 +77,8 @@ bool UThunderGaleleafTestSubsystem::UpdateTest(AWindseedCharacter* Player, float
         }
         else
         {
-            Player->AddMovementInput(Offset.GetSafeNormal2D());
+            // 描画が長いフレームでも相手へ突っ込まないよう、近距離はアナログ入力を弱めます。
+            Player->AddMovementInput(Offset.GetSafeNormal2D(), Offset.Size2D() < 350 ? .4f : 1.f);
             PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(), FRotator(-20, Offset.Rotation().Yaw, 0), DeltaSeconds, 3));
         }
     }
