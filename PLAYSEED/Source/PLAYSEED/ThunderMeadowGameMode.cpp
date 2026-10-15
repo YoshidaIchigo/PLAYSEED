@@ -33,7 +33,8 @@ AThunderMeadowGameMode::AThunderMeadowGameMode()
 
 void AThunderMeadowGameMode::StartPlay()
 {
-    // 床を先に生成してから BeginPlay を開始し、プレイヤーを空中へ取り残さないようにします。
+    // 地形 Actor を先に登録してから World の BeginPlay を開始します。
+    // 各 Actor の準備が終わってから最初の Tick が進みます。
     Stage = GetWorld()->SpawnActor<AThunderMeadowStage>();
     Super::StartPlay();
     if (auto* Player = Cast<AWindseedCharacter>(UGameplayStatics::GetPlayerPawn(this, 0)))

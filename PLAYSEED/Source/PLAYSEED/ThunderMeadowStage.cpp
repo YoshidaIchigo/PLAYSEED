@@ -7,6 +7,8 @@
 #include "Engine/DirectionalLight.h"
 #include "Engine/PostProcessVolume.h"
 #include "Engine/SkyLight.h"
+#include "Engine/StaticMesh.h"
+#include "Engine/World.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 
