@@ -64,6 +64,9 @@ void AWindseedGameMode::StartPlay()
     Super::StartPlay();
     if (auto* Player=Cast<AWindseedCharacter>(UGameplayStatics::GetPlayerPawn(this,0)))
     {
+        // GameMode は現在のステージのルールを担当します。
+        // Super::StartPlay() で Actor の BeginPlay が始まった後、存在するプレイヤーへ開始位置を渡します。
+        Player->SetTrailStartLocation(FVector(-450,-250,100));
         Player->ReturnToTrail();
         Player->RecoveryCount=0;
     }
@@ -89,6 +92,11 @@ void AWindseedGameMode::Tick(float DeltaSeconds)
     if (TestPhase==0 && PhaseTime>4)
     {
         if (Stage->CollectedCount!=0 || Stage->bFinished) { FinishTest(false,TEXT("Initial state is invalid")); return; }
+        if (FVector::Dist2D(Player->GetActorLocation(),FVector(-450,-250,100))>5)
+        { FinishTest(false,TEXT("The original stage start position changed")); return; }
+        // 落下復帰の設定を別の安全な座標に変えて、本当にその場所へ戻るかを確認します。
+        // 意図的に落とすのはこの復帰検証だけで、後の収集ルートは通常の移動・ジャンプで進みます。
+        Player->SetTrailStartLocation(FVector(-650,-350,100));
         Player->SetActorLocation(FVector(-450,-250,-1000));
         TestPhase=1;
         PhaseTime=0;
@@ -96,6 +104,12 @@ void AWindseedGameMode::Tick(float DeltaSeconds)
     else if (TestPhase==1 && PhaseTime>1)
     {
         if (Player->RecoveryCount!=1 || Player->GetActorLocation().Z<0) { FinishTest(false,TEXT("Fall recovery failed")); return; }
+        if (FVector::Dist2D(Player->GetActorLocation(),FVector(-650,-350,100))>5)
+        { FinishTest(false,TEXT("The configured recovery position was not used")); return; }
+        UE_LOG(LogTemp,Display,TEXT("WINDSEED TEST: configured recovery position passed."));
+        // 以後は従来の開始位置へ戻し、既存のステージ全体を回帰検証します。
+        Player->SetTrailStartLocation(FVector(-450,-250,100));
+        Player->ReturnToTrail();
         auto* PC=Cast<APlayerController>(Player->GetController());
         if (!PC) { FinishTest(false,TEXT("Player controller missing")); return; }
         InputTestStart=Player->GetActorLocation();

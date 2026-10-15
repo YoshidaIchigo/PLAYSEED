@@ -130,9 +130,13 @@ void AWindseedCharacter::StartSprint() { SetSprinting(true); }
 void AWindseedCharacter::StopSprint() { SetSprinting(false); }
 void AWindseedCharacter::ReturnToTrail()
 {
+    // 直前の落下速度やジャンプの長押し状態を残すと、復帰直後にまた飛び出してしまいます。
+    // CharacterMovementComponent が管理する速度を止めてから、安全な開始位置へ移します。
     StopJumping();
     GetCharacterMovement()->StopMovementImmediately();
-    SetActorLocation(FVector(-450,-250,100), false, nullptr, ETeleportType::TeleportPhysics);
+    // TeleportPhysics は復帰用の瞬間移動です。通常の探索やジャンプでは使いません。
+    // 座標を Character 内へ固定しないことで、別のステージでも同じ移動コードを再利用できます。
+    SetActorLocation(TrailStartLocation, false, nullptr, ETeleportType::TeleportPhysics);
     SetSprinting(false);
     ++RecoveryCount;
 }
