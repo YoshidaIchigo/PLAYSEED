@@ -6,6 +6,7 @@
 #include "PlayseedCombatComponent.h"
 #include "PlayseedRideComponent.h"
 #include "PlayseedLaunchComponent.h"
+#include "PlayseedFlightComponent.h"
 #include "WindseedCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
@@ -40,6 +41,7 @@ void UPlayseedClimbComponent::ToggleClimb()
         if (Candidate < Distance && Feet >= It->GetActorLocation().Z - 10 && Feet <= It->GetTopZ() + 20) { Closest = *It; Distance = Candidate; }
     }
     if (!Closest) return;
+    Player->GetFlight()->CancelFlight();
     Player->GetRide()->CancelRide();
     Player->GetCarry()->DropHeld();
     Player->GetCombat()->CancelMelee();

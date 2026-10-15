@@ -6,6 +6,7 @@
 #include "PlayseedCombatComponent.h"
 #include "PlayseedRideComponent.h"
 #include "PlayseedLaunchComponent.h"
+#include "PlayseedFlightComponent.h"
 #include "WindseedCharacter.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -34,6 +35,7 @@ bool UPlayseedVitalityComponent::TryTakeImpact(int32 Points, FVector AwayDirecti
     auto* Player = Cast<AWindseedCharacter>(GetOwner());
     if (!Player) return false;
     Player->GetLaunch()->CancelAim();
+    Player->GetFlight()->CancelFlight();
     Player->GetRide()->CancelRide();
     Player->GetActions()->CancelGroundPound();
     Player->GetCarry()->DropHeld();

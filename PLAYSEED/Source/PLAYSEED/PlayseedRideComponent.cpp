@@ -6,6 +6,7 @@
 #include "PlayseedCombatComponent.h"
 #include "PlayseedVitalityComponent.h"
 #include "PlayseedLaunchComponent.h"
+#include "PlayseedFlightComponent.h"
 #include "WindseedCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
@@ -27,6 +28,7 @@ void UPlayseedRideComponent::ToggleRide()
     auto* Player = Cast<AWindseedCharacter>(GetOwner());
     if (!Player) return;
     if (Player->GetLaunch()->IsAiming()) return;
+    if (Player->GetFlight()->IsFlying()) return;
     auto* Movement = Player->GetCharacterMovement();
     // 空中のQでは降りません。被弾や急降下などの中断はCancelRideを直接呼びます。
     if (!Movement->IsMovingOnGround()) return;

@@ -7,6 +7,7 @@
 #include "PlayseedRideComponent.h"
 #include "PlayseedVitalityComponent.h"
 #include "PlayseedInteractionComponent.h"
+#include "PlayseedFlightComponent.h"
 #include "WindseedCharacter.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/InputComponent.h"
@@ -25,6 +26,7 @@ bool UPlayseedLaunchComponent::TryBeginAim(AThunderLauncher* Launcher)
 {
     auto* Player = Cast<AWindseedCharacter>(GetOwner());
     auto* PC = Player ? Cast<APlayerController>(Player->GetController()) : nullptr;
+    if (Player && Player->GetFlight()->IsFlying()) return false;
     if (!Player || !PC || !PC->PlayerCameraManager || !Launcher || !Launcher->IsOpen() || bAiming || !Player->GetCharacterMovement()->IsMovingOnGround() || Player->GetVitality()->IsInvulnerable() || Player->GetRide()->IsRiding() || Player->GetClimb()->IsClimbing() || Player->GetCarry()->GetHeldObject() || Player->GetCombat()->IsAttacking() || Player->GetActions()->IsGroundPounding()) return false;
     const FVector Entry = Player->GetActorLocation();
     const float Yaw = Launcher->GetDefaultAimYaw();
@@ -84,6 +86,7 @@ void UPlayseedLaunchComponent::Fire()
     ++LaunchCount;
     // 座標で浮島へ移さず、初速だけを与えます。以後の重力・壁・着地は通常の物理移動です。
     Player->LaunchCharacter(LastLaunchVelocity, true, true);
+    Player->GetFlight()->RequestFlightAfterLaunch();
     UE_LOG(LogTemp, Display, TEXT("SKYBLOOM: actual launch %d from %s with velocity %s"), LaunchCount, *LastLaunchOrigin.ToString(), *LastLaunchVelocity.ToString());
 }
 void UPlayseedLaunchComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
