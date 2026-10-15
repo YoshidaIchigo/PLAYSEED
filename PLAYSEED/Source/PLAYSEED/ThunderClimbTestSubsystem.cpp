@@ -111,6 +111,7 @@ bool UThunderClimbTestSubsystem::UpdateTest(AWindseedCharacter* Player, float De
     else if (Phase == 7)
     {
         if (PhaseTime > .15f) ClimbKey(PC, EKeys::SpaceBar, false);
+        if (Movement->IsFalling()) Player->AddMovementInput(FVector::ForwardVector);
         if (PhaseTime > .2f && !bJumpVerified)
         {
             if (Climb->IsClimbing() || !Movement->IsFalling() || Player->GetVelocity().Z <= 0) { Error = TEXT("Space did not jump from the crown"); return false; }
