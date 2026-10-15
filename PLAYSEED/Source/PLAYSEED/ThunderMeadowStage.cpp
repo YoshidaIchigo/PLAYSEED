@@ -10,6 +10,7 @@
 #include "PlayseedCoin.h"
 #include "PlayseedBreakableBox.h"
 #include "ThunderRollingBoulder.h"
+#include "ThunderWaterBomb.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
@@ -219,6 +220,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (PracticeBox) PracticeBox->ResetBox();
     for (APlayseedCoin* Coin : TrailCoins) if (Coin) Coin->ResetCoin();
     if (RollingBoulder) RollingBoulder->ResetMotion();
+    if (WaterBomb) WaterBomb->ResetCycle();
 }
 
 void AThunderMeadowStage::BuildWarpCaves()
@@ -329,6 +331,12 @@ void AThunderMeadowStage::BuildRollingBoulder()
     AddSign(MountainFootPath[0] + FVector(-300, -100, 0), TEXT("THE STORMSTONE RUN\nWatch the rolling stones - use the edges"));
 }
 
+void AThunderMeadowStage::BuildWaterBomb()
+{
+    WaterBomb = GetWorld()->SpawnActor<AThunderWaterBomb>(FVector(-400, -2600, 0), FRotator::ZeroRotator);
+    AddSign(FVector(-100, -2850, 0), TEXT("THE RAINFALL PEARL\nLeave the amber circle before it falls"));
+}
+
 void AThunderMeadowStage::BuildShortcutGate()
 {
     const FVector Position(1600, 300, 0);
@@ -388,6 +396,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildPracticeBox();
     BuildCoinTrail();
     BuildRollingBoulder();
+    BuildWaterBomb();
     BuildSkyIsland();
     BuildLighting();
 }

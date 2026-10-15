@@ -19,6 +19,7 @@
 #include "ThunderCoinTestSubsystem.h"
 #include "ThunderBoxTestSubsystem.h"
 #include "ThunderBoulderTestSubsystem.h"
+#include "ThunderWaterTestSubsystem.h"
 #include "ThunderDamageThistle.h"
 #include "ThunderCoinLedger.h"
 #include "ThunderMeadowGameMode.h"
@@ -81,7 +82,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 10 || (Step >= 12 && Step <= 26) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 10 || (Step >= 12 && Step <= 27) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -171,6 +172,14 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             if (!Meadow || Meadow->GetMountainFootPath().Num() < 25) { Fail(TEXT("The mountain route was not created")); return; }
             GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>()->BeginMountainRoute(Player, Meadow->GetMountainFootPath(), bIslandTest);
             Step = 10;
+            Elapsed = 0;
+        }
+        else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderWaterTest")))
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+            if (!Meadow || !Meadow->GetWaterBomb()) { Fail(TEXT("The falling water bomb was not created")); return; }
+            GetGameInstance()->GetSubsystem<UThunderWaterTestSubsystem>()->BeginTest(Player, Meadow->GetWaterBomb());
+            Step = 27;
             Elapsed = 0;
         }
         else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderBoulderTest")))
@@ -389,6 +398,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         auto* BoxTest = GetGameInstance()->GetSubsystem<UThunderBoxTestSubsystem>();
         const bool bComplete = BoxTest->UpdateTest(Player, DeltaSeconds);
         if (!BoxTest->GetError().IsEmpty()) { Fail(BoxTest->GetError()); return; }
+        if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
+    else if (Step == 27 && Player)
+    {
+        auto* WaterTest = GetGameInstance()->GetSubsystem<UThunderWaterTestSubsystem>();
+        const bool bComplete = WaterTest->UpdateTest(Player, DeltaSeconds);
+        if (!WaterTest->GetError().IsEmpty()) { Fail(WaterTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
     }
     else if (Step == 25 && Player)
