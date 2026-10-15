@@ -65,7 +65,7 @@ void AWindseedGameMode::StartPlay()
     if (auto* Player=Cast<AWindseedCharacter>(UGameplayStatics::GetPlayerPawn(this,0)))
     {
         // GameMode は現在のステージのルールを担当します。
-        // Super::StartPlay() によってプレイヤーが用意された後、Character に開始位置を渡します。
+        // Super::StartPlay() で Actor の BeginPlay が始まった後、存在するプレイヤーへ開始位置を渡します。
         Player->SetTrailStartLocation(FVector(-450,-250,100));
         Player->ReturnToTrail();
         Player->RecoveryCount=0;
