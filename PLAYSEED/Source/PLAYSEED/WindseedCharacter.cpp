@@ -1,6 +1,7 @@
 #include "WindseedCharacter.h"
 #include "PlayseedGameModeBase.h"
 #include "PlayseedVitalityComponent.h"
+#include "PlayseedActionComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
@@ -16,6 +17,7 @@ AWindseedCharacter::AWindseedCharacter()
 {
     PrimaryActorTick.bCanEverTick = true;
     Vitality = CreateDefaultSubobject<UPlayseedVitalityComponent>(TEXT("Vitality"));
+    Actions = CreateDefaultSubobject<UPlayseedActionComponent>(TEXT("Actions"));
     GetCapsuleComponent()->InitCapsuleSize(34.f, 82.f);
     bUseControllerRotationYaw = false;
     GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -104,6 +106,7 @@ void AWindseedCharacter::Tick(float DeltaSeconds)
 void AWindseedCharacter::SetupPlayerInputComponent(UInputComponent* Input)
 {
     Super::SetupPlayerInputComponent(Input);
+    Actions->SetupInput(Input);
     Input->BindAxis(TEXT("MoveForward"), this, &AWindseedCharacter::MoveForward);
     Input->BindAxis(TEXT("MoveRight"), this, &AWindseedCharacter::MoveRight);
     Input->BindAxis(TEXT("LookYaw"), this, &AWindseedCharacter::LookYaw);
@@ -136,6 +139,7 @@ void AWindseedCharacter::StartSprint() { SetSprinting(true); }
 void AWindseedCharacter::StopSprint() { SetSprinting(false); }
 void AWindseedCharacter::ReturnToTrail()
 {
+    Actions->CancelGroundPound();
     // 直前の落下速度やジャンプの長押し状態を残すと、復帰直後にまた飛び出してしまいます。
     // CharacterMovementComponent が管理する速度を止めてから、安全な開始位置へ移します。
     StopJumping();
@@ -167,4 +171,16 @@ void AWindseedCharacter::ReleasePointer()
         if (PC->bShowMouseCursor) PC->SetInputMode(FInputModeGameAndUI());
         else PC->SetInputMode(FInputModeGameOnly());
     }
+}
+
+void AWindseedCharacter::Landed(const FHitResult& Hit)
+{
+    Super::Landed(Hit);
+    Actions->HandleLanded(Hit);
+}
+
+void AWindseedCharacter::SetPoundPose(bool bEnabled)
+{
+    // 見た目だけを縮めて急降下の姿勢を表現します。カプセル衝突の大きさは変えません。
+    SeedBody->SetRelativeScale3D(bEnabled ? FVector(1.2f, 1.2f, .65f) : FVector::OneVector);
 }

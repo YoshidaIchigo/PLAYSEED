@@ -11,6 +11,7 @@
 #include "ThunderGateTestSubsystem.h"
 #include "ThunderWarpTestSubsystem.h"
 #include "ThunderDamageTestSubsystem.h"
+#include "ThunderPoundTestSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "GameFramework/PlayerController.h"
 #include "InputKeyEventArgs.h"
@@ -69,7 +70,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 10 || (Step >= 12 && Step <= 16) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 10 || (Step >= 12 && Step <= 17) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -138,6 +139,12 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             if (!Meadow || Meadow->GetMountainFootPath().Num() < 25) { Fail(TEXT("The mountain route was not created")); return; }
             GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>()->BeginMountainRoute(Player, Meadow->GetMountainFootPath(), bIslandTest);
             Step = 10;
+            Elapsed = 0;
+        }
+        else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderPoundTest")))
+        {
+            GetGameInstance()->GetSubsystem<UThunderPoundTestSubsystem>()->BeginTest(Player);
+            Step = 17;
             Elapsed = 0;
         }
         else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderDamageTest")))
@@ -243,6 +250,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         auto* DamageTest = GetGameInstance()->GetSubsystem<UThunderDamageTestSubsystem>();
         const bool bComplete = DamageTest->UpdateTest(Player, DeltaSeconds);
         if (!DamageTest->GetError().IsEmpty()) { Fail(DamageTest->GetError()); return; }
+        if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
+    else if (Step == 17 && Player)
+    {
+        auto* PoundTest = GetGameInstance()->GetSubsystem<UThunderPoundTestSubsystem>();
+        const bool bComplete = PoundTest->UpdateTest(Player, DeltaSeconds);
+        if (!PoundTest->GetError().IsEmpty()) { Fail(PoundTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
     }
     else if (Step == 4 && Map == TEXT("StageSelect") && Elapsed > 3)
