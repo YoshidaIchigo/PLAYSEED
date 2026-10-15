@@ -262,7 +262,8 @@ void AThunderMeadowStage::BuildClimbTree()
 void AThunderMeadowStage::BuildPracticeEnemy()
 {
     PracticeEnemy = GetWorld()->SpawnActor<APlayseedEnemyBase>(FVector(300, -1500, 0), FRotator::ZeroRotator);
-    AddSign(FVector(550, -1750, 0), TEXT("THE TUFTLING\nJump onto it; keep clear of its side"));
+    if (PracticeEnemy) PracticeEnemy->ConfigureMeleeDurability(4);
+    AddSign(FVector(550, -1750, 0), TEXT("THE TUFTLING\nJump, or try punch - punch - kick"));
 }
 
 void AThunderMeadowStage::BuildShortcutGate()

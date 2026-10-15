@@ -67,6 +67,11 @@ void APlayseedEnemyBase::Tick(float DeltaSeconds)
         if (DefeatAge > .4f) { SetActorHiddenInGame(true); SetActorTickEnabled(false); }
         return;
     }
+    if (HurtDisplayRemaining > 0)
+    {
+        HurtDisplayRemaining -= DeltaSeconds;
+        if (HurtDisplayRemaining <= 0) Visual->SetRelativeScale3D(FVector::OneVector);
+    }
     auto* Player = Cast<AWindseedCharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
     if (!Player) return;
     const FVector Position = Player->GetActorLocation();
@@ -92,16 +97,24 @@ void APlayseedEnemyBase::Tick(float DeltaSeconds)
 
 void APlayseedEnemyBase::DefeatFromStomp(AWindseedCharacter* Player)
 {
+    DefeatEnemy(Player, true);
+}
+
+void APlayseedEnemyBase::DefeatEnemy(AWindseedCharacter* Player, bool bBounce)
+{
     if (bDefeated) return;
     bDefeated = true;
     DefeatAge = 0;
-    ++SuccessfulStomps;
     Visual->SetRelativeScale3D(FVector(1.2f, 1.2f, .25f));
-    Player->GetActions()->CancelGroundPound();
-    Player->StopJumping();
-    // 接触位置へテレポートせず、着地後の反動を通常の物理移動で与えます。
-    const FVector Velocity = Player->GetVelocity();
-    Player->LaunchCharacter(FVector(Velocity.X, Velocity.Y, 540), true, true);
+    if (bBounce)
+    {
+        ++SuccessfulStomps;
+        Player->GetActions()->CancelGroundPound();
+        Player->StopJumping();
+        // 接触位置へテレポートせず、着地後の反動を通常の物理移動で与えます。
+        const FVector Velocity = Player->GetVelocity();
+        Player->LaunchCharacter(FVector(Velocity.X, Velocity.Y, 540), true, true);
+    }
     OnDefeated(Player);
 }
 
@@ -110,8 +123,30 @@ void APlayseedEnemyBase::ResetEnemy()
     bDefeated = false;
     bHasPreviousPosition = false;
     DefeatAge = 0;
+    MeleeHealth = MaximumMeleeHealth;
+    HurtDisplayRemaining = 0;
     SetActorTransform(SpawnTransform, false, nullptr, ETeleportType::TeleportPhysics);
     Visual->SetRelativeScale3D(FVector::OneVector);
     SetActorHiddenInGame(false);
     SetActorTickEnabled(true);
+}
+
+void APlayseedEnemyBase::ConfigureMeleeDurability(int32 HitPoints)
+{
+    MaximumMeleeHealth = FMath::Max(1, HitPoints);
+    MeleeHealth = MaximumMeleeHealth;
+}
+
+bool APlayseedEnemyBase::ReceiveStrike(AWindseedCharacter* Player, int32 Damage)
+{
+    if (bDefeated || Damage <= 0) return false;
+    ++ReceivedStrikes;
+    MeleeHealth = FMath::Max(0, MeleeHealth - Damage);
+    if (MeleeHealth == 0) DefeatEnemy(Player, false);
+    else
+    {
+        HurtDisplayRemaining = .12f;
+        Visual->SetRelativeScale3D(FVector(.9f, 1.1f, .9f));
+    }
+    return true;
 }

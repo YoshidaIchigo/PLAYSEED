@@ -4,6 +4,7 @@
 #include "PlayseedActionComponent.h"
 #include "PlayseedCarryComponent.h"
 #include "PlayseedClimbComponent.h"
+#include "PlayseedCombatComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
@@ -22,6 +23,7 @@ AWindseedCharacter::AWindseedCharacter()
     Actions = CreateDefaultSubobject<UPlayseedActionComponent>(TEXT("Actions"));
     Carry = CreateDefaultSubobject<UPlayseedCarryComponent>(TEXT("Carry"));
     Climb = CreateDefaultSubobject<UPlayseedClimbComponent>(TEXT("Climb"));
+    Combat = CreateDefaultSubobject<UPlayseedCombatComponent>(TEXT("Combat"));
     GetCapsuleComponent()->InitCapsuleSize(34.f, 82.f);
     bUseControllerRotationYaw = false;
     GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -61,7 +63,9 @@ AWindseedCharacter::AWindseedCharacter()
     };
     Part(TEXT("AmberSeed"), FVector(0,0,0), FVector(.64f,.58f,1.05f));
     Part(TEXT("LeftBoot"), FVector(9,-21,-61), FVector(.42f,.31f,.25f));
-    Part(TEXT("RightBoot"), FVector(9,21,-61), FVector(.42f,.31f,.25f));
+    RightBoot = Part(TEXT("RightBoot"), FVector(9,21,-61), FVector(.42f,.31f,.25f));
+    LeftHand = Part(TEXT("LeftHand"), FVector(3,-36,-3), FVector(.22f));
+    RightHand = Part(TEXT("RightHand"), FVector(3,36,-3), FVector(.22f));
     Part(TEXT("LeftEye"), FVector(29,-12,17), FVector(.1f,.105f,.14f));
     Part(TEXT("RightEye"), FVector(29,12,17), FVector(.1f,.105f,.14f));
     auto* Leaf = Part(TEXT("Leaf"), FVector(-7,0,65), FVector(.6f,.19f,.18f));
@@ -80,7 +84,7 @@ void AWindseedCharacter::BeginPlay()
         auto* Material = UMaterialInstanceDynamic::Create(Palette, this);
         const FString Name = Part->GetName();
         const FLinearColor Color = Name.Contains(TEXT("Eye")) ? FLinearColor(.015f,.025f,.035f) :
-            Name.Contains(TEXT("Boot")) ? FLinearColor(.025f,.22f,.27f) :
+            (Name.Contains(TEXT("Boot")) || Name.Contains(TEXT("Hand"))) ? FLinearColor(.025f,.22f,.27f) :
             Name.Contains(TEXT("Leaf")) ? FLinearColor(.12f,.65f,.3f) : FLinearColor(1,.58f,.14f);
         Material->SetVectorParameterValue(TEXT("Tint"), Color);
         Part->SetMaterial(0, Material);
@@ -113,6 +117,7 @@ void AWindseedCharacter::SetupPlayerInputComponent(UInputComponent* Input)
     Actions->SetupInput(Input);
     Carry->SetupInput(Input);
     Climb->SetupInput(Input);
+    Combat->SetupInput(Input);
     Input->BindAxis(TEXT("MoveForward"), this, &AWindseedCharacter::MoveForward);
     Input->BindAxis(TEXT("MoveRight"), this, &AWindseedCharacter::MoveRight);
     Input->BindAxis(TEXT("LookYaw"), this, &AWindseedCharacter::LookYaw);
@@ -150,6 +155,7 @@ void AWindseedCharacter::ReturnToTrail()
     Actions->CancelGroundPound();
     Carry->DropHeld();
     Climb->CancelClimb();
+    Combat->CancelMelee();
     // 直前の落下速度やジャンプの長押し状態を残すと、復帰直後にまた飛び出してしまいます。
     // CharacterMovementComponent が管理する速度を止めてから、安全な開始位置へ移します。
     StopJumping();
@@ -199,10 +205,21 @@ void AWindseedCharacter::SetPoundPose(bool bEnabled)
 
 void AWindseedCharacter::Jump()
 {
+    Combat->CancelMelee();
     if (!Climb->JumpAway()) Super::Jump();
 }
 
 void AWindseedCharacter::SetClimbPose(bool bEnabled)
 {
     SeedBody->SetRelativeRotation(bEnabled ? FRotator(-12, 0, 0) : FRotator::ZeroRotator);
+}
+
+void AWindseedCharacter::SetMeleePose(int32 Stage, float Progress)
+{
+    // 描画用の手・靴だけを動かします。命中範囲はCombat Componentで別に管理します。
+    const float Swing = Stage ? FMath::Sin(FMath::Clamp(Progress, 0.f, 1.f) * PI) : 0;
+    LeftHand->SetRelativeLocation(FVector(3 + (Stage == 1 ? Swing * 55 : 0), -36, -3));
+    RightHand->SetRelativeLocation(FVector(3 + (Stage == 2 ? Swing * 55 : 0), 36, -3));
+    RightBoot->SetRelativeLocation(FVector(9 + (Stage == 3 ? Swing * 70 : 0), 21, -61 + (Stage == 3 ? Swing * 35 : 0)));
+    SeedBody->SetRelativeRotation(FRotator(Stage == 3 ? -Swing * 12 : 0, 0, 0));
 }
