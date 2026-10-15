@@ -216,6 +216,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (PracticeEnemy) PracticeEnemy->ResetEnemy();
     for (APlayseedCoin* Coin : TrainingCoins) if (Coin) Coin->ResetCoin();
     if (PracticeBox) PracticeBox->ResetBox();
+    for (APlayseedCoin* Coin : TrailCoins) if (Coin) Coin->ResetCoin();
 }
 
 void AThunderMeadowStage::BuildWarpCaves()
@@ -290,6 +291,33 @@ void AThunderMeadowStage::BuildPracticeBox()
     AddSign(FVector(1050, -800, 0), TEXT("THE COPPER CACHE\nStrike, or dive onto the top"));
 }
 
+void AThunderMeadowStage::BuildCoinTrail()
+{
+    // 草原の四つの花輪と山道へ、固有IDを持つ金コインを100個配置します。
+    // 地形と同じ足元の点を残し、検証でも実際の配置へ歩いて向かえます。
+    const FVector RosetteCenters[] = {FVector(-2400, 2500, 0), FVector(-1400, 2650, 0), FVector(-450, 2650, 0), FVector(550, 2400, 0)};
+    auto SpawnTrailCoin = [this](FVector FootPoint)
+    {
+        const int32 CoinIndex = TrailCoins.Num();
+        auto* Coin = GetWorld()->SpawnActor<APlayseedCoin>(FootPoint + FVector(0, 0, 62), FRotator::ZeroRotator);
+        if (!Coin) return;
+        Coin->ConfigureCoin(*FString::Printf(TEXT("TrailGold_%03d"), CoinIndex), EPlayseedCoinKind::Gold);
+        TrailCoins.Add(Coin);
+    };
+    for (const FVector& Center : RosetteCenters)
+    {
+        for (int32 Index = 0; Index < 20; ++Index)
+        {
+            const float Angle = Index * 2 * PI / 20;
+            const FVector FootPoint = Center + FVector(FMath::Cos(Angle) * 260, FMath::Sin(Angle) * 260, 0);
+            SpawnTrailCoin(FootPoint);
+            MeadowCoinFootPath.Add(FootPoint);
+        }
+    }
+    for (int32 Index = 0; Index < 20 && Index < MountainFootPath.Num(); ++Index) SpawnTrailCoin(MountainFootPath[Index]);
+    AddSign(FVector(-2700, 2150, 0), TEXT("THE GLOWING ROSETTES\nFollow four circles, then the summit trail"));
+}
+
 void AThunderMeadowStage::BuildShortcutGate()
 {
     const FVector Position(1600, 300, 0);
@@ -347,6 +375,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildPracticeEnemy();
     BuildTrainingCoins();
     BuildPracticeBox();
+    BuildCoinTrail();
     BuildSkyIsland();
     BuildLighting();
 }

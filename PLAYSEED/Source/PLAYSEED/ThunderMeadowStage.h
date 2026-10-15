@@ -43,6 +43,8 @@ public:
     APlayseedEnemyBase* GetPracticeEnemy() const { return PracticeEnemy; }
     const TArray<TObjectPtr<APlayseedCoin>>& GetTrainingCoins() const { return TrainingCoins; }
     APlayseedBreakableBox* GetPracticeBox() const { return PracticeBox; }
+    const TArray<TObjectPtr<APlayseedCoin>>& GetTrailCoins() const { return TrailCoins; }
+    const TArray<FVector>& GetMeadowCoinFootPath() const { return MeadowCoinFootPath; }
     void ResetMechanisms();
 private:
     UStaticMeshComponent* AddShape(UStaticMesh* Mesh, FVector Position, FVector Dimensions, FLinearColor Color, bool bSolid = false, FRotator Rotation = FRotator::ZeroRotator);
@@ -63,6 +65,7 @@ private:
     void BuildPracticeEnemy();
     void BuildTrainingCoins();
     void BuildPracticeBox();
+    void BuildCoinTrail();
     void AddRamp(FVector Start, FVector End, float Width);
     void BuildLighting();
 
@@ -84,6 +87,8 @@ private:
     UPROPERTY() TObjectPtr<APlayseedEnemyBase> PracticeEnemy;
     UPROPERTY() TArray<TObjectPtr<APlayseedCoin>> TrainingCoins;
     UPROPERTY() TObjectPtr<APlayseedBreakableBox> PracticeBox;
+    UPROPERTY() TArray<TObjectPtr<APlayseedCoin>> TrailCoins;
+    TArray<FVector> MeadowCoinFootPath;
     TArray<FVector> MountainFootPath;
     TArray<FVector> BridgeFootPath;
     // cm単位の上面中央。発射台や着地判定でも同じ目標を参照できます。

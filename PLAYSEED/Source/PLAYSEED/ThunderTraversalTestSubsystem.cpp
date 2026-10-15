@@ -1,6 +1,9 @@
 #include "ThunderTraversalTestSubsystem.h"
 #include "WindseedCharacter.h"
 #include "ThunderMeadowStage.h"
+#include "ThunderMeadowGameMode.h"
+#include "ThunderCoinLedger.h"
+#include "PlayseedCoin.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
@@ -57,6 +60,21 @@ void UThunderTraversalTestSubsystem::BeginBridgeRoute(AWindseedCharacter* Player
     ResetProgress(Player);
 }
 
+void UThunderTraversalTestSubsystem::BeginCoinTrailRoute(AWindseedCharacter* Player, const TArray<FVector>& MeadowFootPath, const TArray<FVector>& MountainPath)
+{
+    Route = {FVector(-2800, -600, 82), FVector(-2800, 2500, 82)};
+    const float HalfHeight = Player->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+    for (const FVector& FootPoint : MeadowFootPath) Route.Add(FootPoint + FVector(0, 0, HalfHeight));
+    for (const FVector& FootPoint : MountainPath) Route.Add(FootPoint + FVector(0, 0, HalfHeight));
+    bJumpForSteps = false;
+    MinimumJumps = 0;
+    bInspectSkyIsland = false;
+    bBridgeRoute = false;
+    AutoJumpWaypointLimit = 0;
+    CaptureName = TEXT("ThunderCoinTrail");
+    ResetProgress(Player);
+}
+
 void UThunderTraversalTestSubsystem::ResetProgress(AWindseedCharacter* Player)
 {
     Waypoint = 0;
@@ -79,6 +97,7 @@ bool UThunderTraversalTestSubsystem::UpdateRoute(AWindseedCharacter* Player, flo
     auto* PC = Cast<APlayerController>(Player->GetController());
     if (Waypoint == Route.Num())
     {
+        if (CaptureName == TEXT("ThunderCoinTrail") && FinishTime == 0 && !VerifyCoinTrail(Player)) return false;
         if (bInspectSkyIsland && !bIslandCollisionVerified)
         {
             if (!VerifyIslandCollision(Player)) return false;
@@ -122,6 +141,18 @@ bool UThunderTraversalTestSubsystem::UpdateRoute(AWindseedCharacter* Player, flo
     else if (Player->GetVelocity().Z < 0) Player->StopJumping();
     if (PC) PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(), FRotator(-23, Offset.Rotation().Yaw, 0), DeltaSeconds, 2));
     return false;
+}
+
+bool UThunderTraversalTestSubsystem::VerifyCoinTrail(AWindseedCharacter* Player)
+{
+    const auto* Mode = Cast<AThunderMeadowGameMode>(Player->GetWorld()->GetAuthGameMode());
+    const auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(Player, AThunderMeadowStage::StaticClass()));
+    if (!Mode || !Meadow || Meadow->GetTrailCoins().Num() != 100 || Mode->GetCoinLedger()->GetTotal() != 100 || Mode->GetCoinLedger()->GetRedCount() != 0)
+    { Error = TEXT("Continuous walking route did not collect exactly 100 placed gold coins"); return false; }
+    for (const APlayseedCoin* Coin : Meadow->GetTrailCoins())
+        if (!Coin || !Coin->IsCollected()) { Error = TEXT("A placed trail coin was not reached by normal movement"); return false; }
+    UE_LOG(LogTemp, Display, TEXT("COIN TRAIL TEST PASS: all 80 meadow and 20 mountain coins collected by continuous normal walking, total 100, no recovery."));
+    return true;
 }
 
 bool UThunderTraversalTestSubsystem::VerifyIslandCollision(AWindseedCharacter* Player)
