@@ -7,6 +7,7 @@
 #include "PlayseedCarryable.h"
 #include "PlayseedClimbTree.h"
 #include "PlayseedEnemyBase.h"
+#include "PlayseedCoin.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
@@ -212,6 +213,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (WarpPair) WarpPair->ResetWarps();
     if (CarryProp) CarryProp->ResetToSpawn();
     if (PracticeEnemy) PracticeEnemy->ResetEnemy();
+    for (APlayseedCoin* Coin : TrainingCoins) if (Coin) Coin->ResetCoin();
 }
 
 void AThunderMeadowStage::BuildWarpCaves()
@@ -264,6 +266,19 @@ void AThunderMeadowStage::BuildPracticeEnemy()
     PracticeEnemy = GetWorld()->SpawnActor<APlayseedEnemyBase>(FVector(300, -1500, 0), FRotator::ZeroRotator);
     if (PracticeEnemy) PracticeEnemy->ConfigureMeleeDurability(4);
     AddSign(FVector(550, -1750, 0), TEXT("THE TUFTLING\nJump, or try punch - punch - kick"));
+}
+
+void AThunderMeadowStage::BuildTrainingCoins()
+{
+    const EPlayseedCoinKind TrainingKinds[] = {EPlayseedCoinKind::Gold, EPlayseedCoinKind::Scarlet, EPlayseedCoinKind::Azure};
+    for (int32 Index = 0; Index < 3; ++Index)
+    {
+        auto* Coin = GetWorld()->SpawnActor<APlayseedCoin>(FVector(-350 + Index * 300, -300, 62), FRotator::ZeroRotator);
+        if (!Coin) continue;
+        Coin->ConfigureCoin(*FString::Printf(TEXT("TrainingCoin_%d"), Index), TrainingKinds[Index]);
+        TrainingCoins.Add(Coin);
+    }
+    AddSign(FVector(-50, -60, 0), TEXT("LIGHTCOINS\nGold 1 - Scarlet 2 - Azure 5"));
 }
 
 void AThunderMeadowStage::BuildShortcutGate()
@@ -321,6 +336,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildCarryProp();
     BuildClimbTree();
     BuildPracticeEnemy();
+    BuildTrainingCoins();
     BuildSkyIsland();
     BuildLighting();
 }

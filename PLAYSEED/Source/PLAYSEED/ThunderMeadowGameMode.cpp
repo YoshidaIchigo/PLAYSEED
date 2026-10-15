@@ -1,4 +1,5 @@
 #include "ThunderMeadowGameMode.h"
+#include "ThunderCoinLedger.h"
 #include "WindseedCharacter.h"
 #include "PlayseedVitalityComponent.h"
 #include "ThunderMeadowStage.h"
@@ -30,12 +31,19 @@ void AThunderMeadowHUD::DrawHUD()
     }
     DrawText(TEXT("WASD: move  SPACE: jump  CTRL/RB: dive  LMB/RT: strike"), FLinearColor::White, 30, Canvas->SizeY - 62, GEngine->GetMediumFont(), 1.05f);
     DrawText(TEXT("E/X: lift/throw  F/Y: climb  R: restart  M: menu"), FLinearColor::White, 30, Canvas->SizeY - 38, GEngine->GetMediumFont(), 1.05f);
+    if (auto* Mode = Cast<AThunderMeadowGameMode>(GetWorld()->GetAuthGameMode()))
+    {
+        const auto* Coins = Mode->GetCoinLedger();
+        DrawRect(FLinearColor(.02f, .06f, .1f, .9f), 245, 158, 310, 35);
+        DrawText(FString::Printf(TEXT("LIGHTCOINS %d   SCARLET %d"), Coins->GetTotal(), Coins->GetRedCount()), FLinearColor(1, .9f, .4f), 255, 165, GEngine->GetMediumFont(), 1.1f);
+    }
     if (!Expedition->GetProgressProblem().IsEmpty())
         DrawText(Expedition->GetProgressProblem(), FLinearColor(1, .5f, .4f), 30, Canvas->SizeY - 80, GEngine->GetMediumFont(), 1);
 }
 
 AThunderMeadowGameMode::AThunderMeadowGameMode()
 {
+    CoinLedger = CreateDefaultSubobject<UThunderCoinLedger>(TEXT("VisitCoinLedger"));
     DefaultPawnClass = AWindseedCharacter::StaticClass();
     HUDClass = AThunderMeadowHUD::StaticClass();
 }
@@ -57,6 +65,7 @@ void AThunderMeadowGameMode::StartPlay()
 void AThunderMeadowGameMode::RestartStage(AWindseedCharacter* Player)
 {
     // このステージが生成した仕掛けだけを初期化し、永続の獲得済み報酬には触れません。
+    CoinLedger->ResetVisit();
     if (Stage) Stage->ResetMechanisms();
     Super::RestartStage(Player);
 }

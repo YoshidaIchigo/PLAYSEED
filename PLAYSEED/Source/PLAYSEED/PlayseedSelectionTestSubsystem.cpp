@@ -16,6 +16,10 @@
 #include "ThunderClimbTestSubsystem.h"
 #include "ThunderStompTestSubsystem.h"
 #include "ThunderCombatTestSubsystem.h"
+#include "ThunderCoinTestSubsystem.h"
+#include "ThunderCoinLedger.h"
+#include "ThunderMeadowGameMode.h"
+#include "PlayseedCoin.h"
 #include "Engine/GameInstance.h"
 #include "GameFramework/PlayerController.h"
 #include "InputKeyEventArgs.h"
@@ -74,7 +78,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 10 || (Step >= 12 && Step <= 21) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 10 || (Step >= 12 && Step <= 22) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -103,6 +107,16 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         { Fail(TEXT("Mission selection did not survive travel or accepted an invalid number")); return; }
         if (bSecondMissionEntry)
         {
+            if (FParse::Param(FCommandLine::Get(), TEXT("ThunderCoinTest")))
+            {
+                auto* MeadowMode = Cast<AThunderMeadowGameMode>(CurrentMode);
+                auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+                if (!MeadowMode || !Meadow || MeadowMode->GetCoinLedger()->GetTotal() != 0 || MeadowMode->GetCoinLedger()->GetRedCount() != 0)
+                { Fail(TEXT("Coin totals survived a new stage entry")); return; }
+                for (APlayseedCoin* Coin : Meadow->GetTrainingCoins())
+                    if (!Coin || Coin->IsCollected()) { Fail(TEXT("Collected coin visibility survived a new entry")); return; }
+                UE_LOG(LogTemp, Display, TEXT("COIN TEST: fresh re-entry cleared totals and restored all three coin actors."));
+            }
             Tap(PC, EKeys::M);
             Step = 8;
             UE_LOG(LogTemp, Display, TEXT("SELECTION TEST: re-entry with mission 2 passed after mission 6."));
@@ -143,6 +157,14 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             if (!Meadow || Meadow->GetMountainFootPath().Num() < 25) { Fail(TEXT("The mountain route was not created")); return; }
             GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>()->BeginMountainRoute(Player, Meadow->GetMountainFootPath(), bIslandTest);
             Step = 10;
+            Elapsed = 0;
+        }
+        else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderCoinTest")))
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+            if (!Meadow) { Fail(TEXT("The coin stage was not created")); return; }
+            GetGameInstance()->GetSubsystem<UThunderCoinTestSubsystem>()->BeginTest(Player, Meadow);
+            Step = 22;
             Elapsed = 0;
         }
         else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderCombatTest")))
@@ -321,6 +343,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         auto* CombatTest = GetGameInstance()->GetSubsystem<UThunderCombatTestSubsystem>();
         const bool bComplete = CombatTest->UpdateTest(Player, DeltaSeconds);
         if (!CombatTest->GetError().IsEmpty()) { Fail(CombatTest->GetError()); return; }
+        if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
+    else if (Step == 22 && Player)
+    {
+        auto* CoinTest = GetGameInstance()->GetSubsystem<UThunderCoinTestSubsystem>();
+        const bool bComplete = CoinTest->UpdateTest(Player, DeltaSeconds);
+        if (!CoinTest->GetError().IsEmpty()) { Fail(CoinTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
     }
     else if (Step == 4 && Map == TEXT("StageSelect") && Elapsed > 3)

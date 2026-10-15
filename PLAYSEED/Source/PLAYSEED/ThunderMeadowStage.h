@@ -16,6 +16,7 @@ class AThunderDamageThistle;
 class APlayseedCarryable;
 class APlayseedClimbTree;
 class APlayseedEnemyBase;
+class APlayseedCoin;
 
 // Actor は World 内の一つの存在です。この Actor が地形・装飾の Component を所有します。
 // ミッションのルールやセーブは GameMode / Subsystem に任せ、形状の生成だけを担当します。
@@ -39,6 +40,7 @@ public:
     APlayseedCarryable* GetCarryProp() const { return CarryProp; }
     APlayseedClimbTree* GetClimbTree() const { return ClimbTree; }
     APlayseedEnemyBase* GetPracticeEnemy() const { return PracticeEnemy; }
+    const TArray<TObjectPtr<APlayseedCoin>>& GetTrainingCoins() const { return TrainingCoins; }
     void ResetMechanisms();
 private:
     UStaticMeshComponent* AddShape(UStaticMesh* Mesh, FVector Position, FVector Dimensions, FLinearColor Color, bool bSolid = false, FRotator Rotation = FRotator::ZeroRotator);
@@ -57,6 +59,7 @@ private:
     void BuildCarryProp();
     void BuildClimbTree();
     void BuildPracticeEnemy();
+    void BuildTrainingCoins();
     void AddRamp(FVector Start, FVector End, float Width);
     void BuildLighting();
 
@@ -76,6 +79,7 @@ private:
     UPROPERTY() TObjectPtr<APlayseedCarryable> CarryProp;
     UPROPERTY() TObjectPtr<APlayseedClimbTree> ClimbTree;
     UPROPERTY() TObjectPtr<APlayseedEnemyBase> PracticeEnemy;
+    UPROPERTY() TArray<TObjectPtr<APlayseedCoin>> TrainingCoins;
     TArray<FVector> MountainFootPath;
     TArray<FVector> BridgeFootPath;
     // cm単位の上面中央。発射台や着地判定でも同じ目標を参照できます。
