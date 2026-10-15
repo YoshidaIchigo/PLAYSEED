@@ -1,4 +1,5 @@
 #include "ThunderMeadowStage.h"
+#include "Camera/PlayerCameraManager.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/SkyLightComponent.h"
@@ -9,11 +10,13 @@
 #include "Engine/SkyLight.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
+#include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 
 AThunderMeadowStage::AThunderMeadowStage()
 {
+    PrimaryActorTick.bCanEverTick = true;
     RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("MeadowRoot"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeAsset(TEXT("/Engine/BasicShapes/Cube.Cube"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereAsset(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
@@ -75,6 +78,7 @@ void AThunderMeadowStage::AddSign(FVector Position, const FString& Text)
     Label->SetHorizontalAlignment(EHTA_Center);
     Label->SetTextRenderColor(FColor(255, 235, 180));
     Label->RegisterComponent();
+    Signs.Add(Label);
 }
 
 void AThunderMeadowStage::BuildMeadow()
@@ -115,4 +119,19 @@ void AThunderMeadowStage::BeginPlay()
     Super::BeginPlay();
     BuildMeadow();
     BuildLighting();
+}
+
+void AThunderMeadowStage::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+    if (auto* Camera = UGameplayStatics::GetPlayerCameraManager(this, 0))
+    {
+        // 文字の裏面を見せると鏡文字になるため、案内だけをカメラへ向けます。
+        // 地形や看板の柱は回さず、文字は垂直に保ちます。
+        for (UTextRenderComponent* Sign : Signs)
+        {
+            const float Yaw = (Camera->GetCameraLocation() - Sign->GetComponentLocation()).Rotation().Yaw;
+            Sign->SetWorldRotation(FRotator(0, Yaw, 0));
+        }
+    }
 }

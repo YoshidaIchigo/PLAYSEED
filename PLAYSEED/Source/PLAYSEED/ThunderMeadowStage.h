@@ -7,6 +7,7 @@
 class UStaticMesh;
 class UStaticMeshComponent;
 class UMaterialInterface;
+class UTextRenderComponent;
 
 // Actor は World 内の一つの存在です。この Actor が地形・装飾の Component を所有します。
 // ミッションのルールやセーブは GameMode / Subsystem に任せ、形状の生成だけを担当します。
@@ -17,6 +18,7 @@ class PLAYSEED_API AThunderMeadowStage : public AActor
 public:
     AThunderMeadowStage();
     virtual void BeginPlay() override;
+    virtual void Tick(float DeltaSeconds) override;
 private:
     UStaticMeshComponent* AddShape(UStaticMesh* Mesh, FVector Position, FVector Dimensions, FLinearColor Color, bool bSolid = false);
     void AddTerrace(FVector TopCenter, FVector2D Size, FLinearColor GrassColor);
@@ -31,4 +33,5 @@ private:
     UPROPERTY() TObjectPtr<UStaticMesh> Cylinder;
     UPROPERTY() TObjectPtr<UMaterialInterface> Palette;
     UPROPERTY() TObjectPtr<UMaterialInterface> SkyMaterial;
+    UPROPERTY() TArray<TObjectPtr<UTextRenderComponent>> Signs;
 };
