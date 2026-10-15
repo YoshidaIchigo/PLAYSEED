@@ -7,6 +7,7 @@
 #include "ThunderMeadowStage.h"
 #include "ThunderTraversalTestSubsystem.h"
 #include "ThunderPlatformTestSubsystem.h"
+#include "ThunderBalanceTestSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "GameFramework/PlayerController.h"
 #include "InputKeyEventArgs.h"
@@ -65,7 +66,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 10 || Step == 12 ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 10 || Step == 12 || Step == 13 ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -136,6 +137,14 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             Step = 10;
             Elapsed = 0;
         }
+        else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderBalanceTest")))
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+            if (!Meadow || !Meadow->GetTiltingBridge()) { Fail(TEXT("The tilting bridge was not created")); return; }
+            GetGameInstance()->GetSubsystem<UThunderBalanceTestSubsystem>()->BeginTest(Player, Meadow->GetTiltingBridge());
+            Step = 13;
+            Elapsed = 0;
+        }
         else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderPlatformTest")))
         {
             auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
@@ -179,6 +188,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         auto* PlatformTest = GetGameInstance()->GetSubsystem<UThunderPlatformTestSubsystem>();
         const bool bComplete = PlatformTest->UpdateTest(Player, DeltaSeconds);
         if (!PlatformTest->GetError().IsEmpty()) { Fail(PlatformTest->GetError()); return; }
+        if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
+    else if (Step == 13 && Player)
+    {
+        auto* BalanceTest = GetGameInstance()->GetSubsystem<UThunderBalanceTestSubsystem>();
+        const bool bComplete = BalanceTest->UpdateTest(Player, DeltaSeconds);
+        if (!BalanceTest->GetError().IsEmpty()) { Fail(BalanceTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
     }
     else if (Step == 4 && Map == TEXT("StageSelect") && Elapsed > 3)
