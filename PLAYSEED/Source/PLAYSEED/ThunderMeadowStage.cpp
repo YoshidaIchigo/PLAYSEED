@@ -16,6 +16,7 @@
 #include "PlayseedGaleleafEnemy.h"
 #include "ThunderGuide.h"
 #include "ThunderLauncher.h"
+#include "ThunderFlightBloom.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SceneComponent.h"
@@ -230,6 +231,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (BurstEnemy) BurstEnemy->ResetEnemy();
     if (GaleleafEnemy) GaleleafEnemy->ResetEnemy();
     if (Guide) Guide->ResetDialogue();
+    if (FlightBloom) FlightBloom->ResetBloom();
 }
 
 void AThunderMeadowStage::BuildWarpCaves()
@@ -371,6 +373,12 @@ void AThunderMeadowStage::BuildGuideAndLauncher()
     AddSign(FVector(-3050, 1500, 0), TEXT("AERI'S SKYBLOOM\nG / D-pad Down: talk or interact nearby"));
 }
 
+void AThunderMeadowStage::BuildFlightBloom()
+{
+    FlightBloom = GetWorld()->SpawnActor<AThunderFlightBloom>(FVector(-2600, 2800, 0), FRotator::ZeroRotator);
+    AddSign(FVector(-2850, 2850, 0), TEXT("LEAFWINGS\nSPACE in the air: glide / fall\nMouse or right stick: steer - W/S: speed"));
+}
+
 void AThunderMeadowStage::BuildShortcutGate()
 {
     const FVector Position(1600, 300, 0);
@@ -435,6 +443,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildBurstEnemy();
     BuildGaleleafEnemy();
     BuildGuideAndLauncher();
+    BuildFlightBloom();
     BuildSkyIsland();
     BuildLighting();
 }

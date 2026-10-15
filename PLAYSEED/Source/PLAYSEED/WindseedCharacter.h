@@ -14,6 +14,7 @@ class UPlayseedCombatComponent;
 class UPlayseedRideComponent;
 class UPlayseedInteractionComponent;
 class UPlayseedLaunchComponent;
+class UPlayseedFlightComponent;
 class UStaticMeshComponent;
 
 // Character は「入力で操作される Pawn」に、カプセル衝突と移動用 Component を加えた UE のクラスです。
@@ -43,6 +44,7 @@ public:
     UPlayseedRideComponent* GetRide() const { return Ride; }
     UPlayseedInteractionComponent* GetInteraction() const { return Interaction; }
     UPlayseedLaunchComponent* GetLaunch() const { return Launch; }
+    UPlayseedFlightComponent* GetFlight() const { return Flight; }
     bool WantsToSprint() const { return bSprintRequested; }
     void SetPoundPose(bool bEnabled);
     void SetClimbPose(bool bEnabled);
@@ -65,6 +67,7 @@ private:
     UPROPERTY() TObjectPtr<UPlayseedRideComponent> Ride;
     UPROPERTY() TObjectPtr<UPlayseedInteractionComponent> Interaction;
     UPROPERTY() TObjectPtr<UPlayseedLaunchComponent> Launch;
+    UPROPERTY() TObjectPtr<UPlayseedFlightComponent> Flight;
     bool bSprintRequested = false;
     UPROPERTY() TObjectPtr<UStaticMeshComponent> LeftHand;
     UPROPERTY() TObjectPtr<UStaticMeshComponent> RightHand;

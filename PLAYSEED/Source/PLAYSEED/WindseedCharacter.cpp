@@ -8,6 +8,7 @@
 #include "PlayseedRideComponent.h"
 #include "PlayseedInteractionComponent.h"
 #include "PlayseedLaunchComponent.h"
+#include "PlayseedFlightComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
@@ -30,6 +31,7 @@ AWindseedCharacter::AWindseedCharacter()
     Ride = CreateDefaultSubobject<UPlayseedRideComponent>(TEXT("GaleleafRide"));
     Interaction = CreateDefaultSubobject<UPlayseedInteractionComponent>(TEXT("Interaction"));
     Launch = CreateDefaultSubobject<UPlayseedLaunchComponent>(TEXT("SkybloomLaunch"));
+    Flight = CreateDefaultSubobject<UPlayseedFlightComponent>(TEXT("LeafwingFlight"));
     GetCapsuleComponent()->InitCapsuleSize(34.f, 82.f);
     bUseControllerRotationYaw = false;
     GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -144,19 +146,21 @@ void AWindseedCharacter::SetupPlayerInputComponent(UInputComponent* Input)
 void AWindseedCharacter::MoveForward(float Value)
 {
     if (Launch->IsAiming()) return;
+    if (Flight->IsFlying()) { Flight->SetSpeedInput(Value); return; }
     if (Climb->IsClimbing()) { Climb->SetClimbInput(Value); return; }
     if (Controller) AddMovementInput(FRotationMatrix(FRotator(0,Controller->GetControlRotation().Yaw,0)).GetUnitAxis(EAxis::X), Value);
 }
 void AWindseedCharacter::MoveRight(float Value)
 {
     if (Launch->IsAiming()) return;
+    if (Flight->IsFlying()) { Flight->SetTurnInput(Value); return; }
     if (Climb->IsClimbing()) return;
     if (Controller) AddMovementInput(FRotationMatrix(FRotator(0,Controller->GetControlRotation().Yaw,0)).GetUnitAxis(EAxis::Y), Value);
 }
-void AWindseedCharacter::LookYaw(float Value) { if (Launch->IsAiming()) Launch->AdjustAim(Value * 1.2f, 0); else AddControllerYawInput(Value); }
-void AWindseedCharacter::LookPitch(float Value) { if (Launch->IsAiming()) Launch->AdjustAim(0, Value * 1.2f); else AddControllerPitchInput(Value); }
-void AWindseedCharacter::LookYawRate(float Value) { if (Launch->IsAiming()) Launch->AdjustAim(Value * 100 * GetWorld()->GetDeltaSeconds(), 0); else AddControllerYawInput(Value*120.f*GetWorld()->GetDeltaSeconds()); }
-void AWindseedCharacter::LookPitchRate(float Value) { if (Launch->IsAiming()) Launch->AdjustAim(0, Value * 80 * GetWorld()->GetDeltaSeconds()); else AddControllerPitchInput(Value*90.f*GetWorld()->GetDeltaSeconds()); }
+void AWindseedCharacter::LookYaw(float Value) { if (Launch->IsAiming()) Launch->AdjustAim(Value * 1.2f, 0); else if (Flight->IsFlying()) Flight->AdjustDirection(Value * 1.2f, 0); else AddControllerYawInput(Value); }
+void AWindseedCharacter::LookPitch(float Value) { if (Launch->IsAiming()) Launch->AdjustAim(0, Value * 1.2f); else if (Flight->IsFlying()) Flight->AdjustDirection(0, Value * 1.2f); else AddControllerPitchInput(Value); }
+void AWindseedCharacter::LookYawRate(float Value) { if (Launch->IsAiming()) Launch->AdjustAim(Value * 100 * GetWorld()->GetDeltaSeconds(), 0); else if (Flight->IsFlying()) Flight->AdjustDirection(Value * 100 * GetWorld()->GetDeltaSeconds(), 0); else AddControllerYawInput(Value*120.f*GetWorld()->GetDeltaSeconds()); }
+void AWindseedCharacter::LookPitchRate(float Value) { if (Launch->IsAiming()) Launch->AdjustAim(0, Value * 80 * GetWorld()->GetDeltaSeconds()); else if (Flight->IsFlying()) Flight->AdjustDirection(0, Value * 80 * GetWorld()->GetDeltaSeconds()); else AddControllerPitchInput(Value*90.f*GetWorld()->GetDeltaSeconds()); }
 void AWindseedCharacter::Zoom(float Value) { if (!Launch->IsAiming()) CameraBoom->TargetArmLength = FMath::Clamp(CameraBoom->TargetArmLength-Value*40, 300.f, 800.f); }
 void AWindseedCharacter::SetSprinting(bool bEnabled)
 {
@@ -169,6 +173,7 @@ void AWindseedCharacter::StopSprint() { SetSprinting(false); }
 void AWindseedCharacter::ReturnToTrail()
 {
     Launch->CancelAim();
+    Flight->ResetPower();
     Interaction->ClearMessage();
     Ride->CancelRide();
     Actions->CancelGroundPound();
@@ -225,6 +230,8 @@ void AWindseedCharacter::SetPoundPose(bool bEnabled)
 void AWindseedCharacter::Jump()
 {
     if (Launch->IsAiming()) return;
+    if (Flight->IsFlying()) { Flight->CancelFlight(); return; }
+    if (Flight->TryBeginFlight()) return;
     Combat->CancelMelee();
     if (!Climb->JumpAway()) Super::Jump();
 }

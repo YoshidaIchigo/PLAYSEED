@@ -4,6 +4,7 @@
 #include "PlayseedVitalityComponent.h"
 #include "PlayseedInteractionComponent.h"
 #include "PlayseedLaunchComponent.h"
+#include "PlayseedFlightComponent.h"
 #include "ThunderMeadowStage.h"
 #include "Engine/World.h"
 #include "ThunderExpeditionSubsystem.h"
@@ -28,6 +29,12 @@ void AThunderMeadowHUD::DrawHUD()
     {
         const auto* Vitality = Player->GetVitality();
         const auto* Launch = Player->GetLaunch();
+        if (Player->GetFlight()->HasPower())
+        {
+            DrawRect(FLinearColor(.02f, .06f, .1f, .9f), 570, 158, 260, 35);
+            DrawText(FString::Printf(TEXT("LEAFWINGS %.1fs%s"), Player->GetFlight()->GetRemaining(), Player->GetFlight()->IsFlying() ? TEXT("  GLIDE") : TEXT("")), FLinearColor(.6f, 1, .75f), 580, 165, GEngine->GetMediumFont(), 1.1f);
+            if (Expedition->GetProgressProblem().IsEmpty()) DrawText(TEXT("LEAFWINGS: air SPACE glide/fall | Mouse/stick: steer | W/S: speed"), FLinearColor(.6f, 1, .75f), 30, Canvas->SizeY - 84, GEngine->GetMediumFont(), .9f);
+        }
         if (Launch->IsAiming())
         {
             DrawRect(FLinearColor(.02f, .06f, .1f, .94f), 20, 205, FMath::Min(920.f, Canvas->SizeX - 40.f), 38);

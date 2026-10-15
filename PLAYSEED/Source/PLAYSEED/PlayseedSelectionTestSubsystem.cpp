@@ -26,6 +26,7 @@
 #include "ThunderRideTestSubsystem.h"
 #include "ThunderGuideTestSubsystem.h"
 #include "ThunderLaunchTestSubsystem.h"
+#include "ThunderFlightTestSubsystem.h"
 #include "ThunderLauncher.h"
 #include "ThunderDamageThistle.h"
 #include "ThunderCoinLedger.h"
@@ -89,7 +90,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 31 || Step == 33 ? 300 : Step == 10 || (Step >= 12 && Step <= 32) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 31 || Step == 33 || Step == 34 ? 300 : Step == 10 || (Step >= 12 && Step <= 32) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -186,6 +187,14 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             if (!Meadow || Meadow->GetMountainFootPath().Num() < 25) { Fail(TEXT("The mountain route was not created")); return; }
             GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>()->BeginMountainRoute(Player, Meadow->GetMountainFootPath(), bIslandTest);
             Step = 10;
+            Elapsed = 0;
+        }
+        else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderFlightTest")))
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+            if (!Meadow || !Meadow->GetFlightBloom() || !Meadow->GetLauncher() || !Meadow->GetGuide()) { Fail(TEXT("Flight bloom, launcher and guide were not created")); return; }
+            GetGameInstance()->GetSubsystem<UThunderFlightTestSubsystem>()->BeginTest(Player, Meadow);
+            Step = 34;
             Elapsed = 0;
         }
         else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderLaunchTest")))
@@ -460,6 +469,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         auto* BoxTest = GetGameInstance()->GetSubsystem<UThunderBoxTestSubsystem>();
         const bool bComplete = BoxTest->UpdateTest(Player, DeltaSeconds);
         if (!BoxTest->GetError().IsEmpty()) { Fail(BoxTest->GetError()); return; }
+        if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
+    else if (Step == 34 && Player)
+    {
+        auto* FlightTest = GetGameInstance()->GetSubsystem<UThunderFlightTestSubsystem>();
+        const bool bComplete = FlightTest->UpdateTest(Player, DeltaSeconds);
+        if (!FlightTest->GetError().IsEmpty()) { Fail(FlightTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
     }
     else if (Step == 33 && Player)
