@@ -4,7 +4,9 @@ PLAYSEED最初の小さな3D探索アクションステージです。種の探�
 
 ## 起動
 
-Unreal Engine **5.8.1**とC++開発環境が必要です。`PLAYSEED/PLAYSEED.uproject`を開き、モジュールのビルド後にPlayを押してください。既定マップは`/Game/Windseed/WindseedGarden`です。PIE開始後にゲーム画面をクリックするとマウス操作できます。
+Unreal Engine **5.8.1**とC++開発環境が必要です。`PLAYSEED/PLAYSEED.uproject`を開き、モジュールのビルド後にPlayを押してください。既定マップは`/Game/Playseed/StageSelect`です。1でWindseed Garden、2で追加ステージ「雷鳴の丘」（THUNDER MEADOW）へ入場します。プレイ中はMでステージ選択へ戻れます。PIE開始後にゲーム画面をクリックするとマウス操作できます。
+
+雷鳴の丘は入口確認用の床から順次開発中です。現時点で地形・仕掛け・ミッションの完成を示すものではありません。ステージ選択にはキーボードを使います。
 
 | 操作 | キーボード・マウス | ゲームパッド |
 |---|---|---|
@@ -28,12 +30,14 @@ Unreal Engine **5.8.1**とC++開発環境が必要です。`PLAYSEED/PLAYSEED.up
 開発ビルドの`-GardenSmokeTest`は、実際のゲームワールド内で落下復帰、W・Shift・Space・マウス・ホイールの入力イベント、移動入力によるルート探索、ジャンプ、6個の収集、ゴールとリスタートを検証して終了します。ルート上の移動にはCharacterMovementの通常の移動入力を使い、島間をテレポートしません。落下復帰の検証では意図的にプレイヤーを島の下へ移し、キー割り当ての検証後はスタートへ戻します。通常プレイでは自動操作されません。
 
 ```powershell
-& 'C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor.exe' 'C:\PLAYSEED\PLAYSEED\PLAYSEED.uproject' -game -windowed -ResX=960 -ResY=540 -GardenSmokeTest -GardenCapture -unattended -nosound -NoSplash -log
+& 'C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor.exe' 'C:\PLAYSEED\PLAYSEED\PLAYSEED.uproject' /Game/Windseed/WindseedGarden -game -windowed -ResX=960 -ResY=540 -GardenSmokeTest -GardenCapture -unattended -nosound -NoSplash -log
 ```
 
 `-GardenCapture`を付けると実ゲームのビューポートとHUDをAVIへ記録します。出力は`PLAYSEED/Saved/Validation/`の`Result.txt`、`GardenComplete.png`、`WindseedPlaythrough.avi`です。録画は開発用で、通常プレイでは動作しません。これらの生成物はGitへ追加しません。PRには検証済み動画へのリンクを別途添付します。自動操作での検証と、人がキーボードやゲームパッドで行う確認は区別して記録してください。
 
 ## アセットの再生成
+
+`/Game/Playseed/StageSelect`から`-StageSelectionSmokeTest -GardenSmokeTest -GardenCapture`で起動すると、2→追加ステージの移動・ジャンプ・R→M→1→既存ステージ走破を連続検証します。録画はレベル移動をまたいで継続します。`-GardenCaptureTravelTest`は既存ステージを一度再読込して録画の寿命を確認する追加検証です。
 
 マップ・配色・空のマテリアルはリポジトリに含めます。失われた場合のみ、Editorを閉じて次を実行してください。既存アセットを上書きしません。
 

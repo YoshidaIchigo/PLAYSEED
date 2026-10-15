@@ -13,7 +13,14 @@ class PLAYSEED_API APlayseedGameModeBase : public AGameModeBase
 {
     GENERATED_BODY()
 public:
+    APlayseedGameModeBase();
+    virtual void StartPlay() override;
+    virtual void Tick(float DeltaSeconds) override;
+    bool HasPassedSelectionTest() const;
     // virtual により、子クラスは自分のステージを初期化してから共通の復帰処理を呼べます。
     // 引数は操作中の Character です。所有権は World にあり、この関数で生成・破棄しません。
     virtual void RestartStage(AWindseedCharacter* Player);
+private:
+    void ReturnToStageSelection();
+    bool bSelectionTest = false;
 };
