@@ -19,6 +19,7 @@ public:
 private:
     void Tap(APlayerController* PC,FKey Key);
     void Finish(bool bPassed,const FString& Message);
+    void UpdateReferenceRain(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceBoulders(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceHundred(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateHundredFlight(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
@@ -33,6 +34,10 @@ private:
     void ObserveFade(APlayerController* PC);
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
+    bool bRainTest=false,bRainContactVerified=false,bRainDodgeVerified=false,bRainResetVerified=false;
+    int32 RainWaypoint=0,RainSpawnBaseline=0,RainBurstBaseline=0;
+    float RainLegElapsed=0;
+    FVector RainDodgeTarget=FVector::ZeroVector;
     bool bBoulderTest=false,bBoulderPitVerified=false,bBoulderRoadVerified=false,bBoulderResetVerified=false;
     int32 BoulderWaypoint=0,BoulderRoadHitIndex=-1;
     float BoulderLegElapsed=0;

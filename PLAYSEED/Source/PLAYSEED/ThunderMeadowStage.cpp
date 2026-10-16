@@ -22,6 +22,7 @@
 #include "ReferenceWingBox.h"
 #include "ReferenceCoinField.h"
 #include "ReferenceBoulderField.h"
+#include "ReferenceRainSpawner.h"
 #include "ThunderFlightSwitch.h"
 #include "ThunderStormkeeper.h"
 #include "ThunderCloudflagRace.h"
@@ -266,6 +267,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (HundredLantern) HundredLantern->ResetBonus();
     if (ReferenceCoinField) ReferenceCoinField->ResetCoins();
     if (ReferenceBoulderField) ReferenceBoulderField->ResetBoulders();
+    for(AReferenceRainSpawner* Rain:ReferenceRainSpawners)if(Rain)Rain->ResetRain();
     if (MountainRest) MountainRest->ResetRest();
 }
 
@@ -523,6 +525,10 @@ void AThunderMeadowStage::BeginPlay()
     {
         GetWorld()->SpawnActor<AReferenceBattlefieldTerrain>();
         ReferenceBoulderField=GetWorld()->SpawnActor<AReferenceBoulderField>();
+        const FVector RainSources[]={FVector(3620,-4800,4000),FVector(-5141,743,3764),FVector(-4208,2036,3769)};
+        const float RainRanges[]={950,1450,700};
+        for(int32 I=0;I<3;++I)
+        {auto* Rain=GetWorld()->SpawnActor<AReferenceRainSpawner>(RainSources[I],FRotator::ZeroRotator);Rain->ConfigureRange(RainRanges[I]);ReferenceRainSpawners.Add(Rain);}
         BuildReferenceChain();
         BuildStormkeeper();
         BuildCloudflagRace();

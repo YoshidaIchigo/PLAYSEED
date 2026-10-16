@@ -51,6 +51,7 @@ void UReferencePaintingTestSubsystem::Initialize(FSubsystemCollectionBase& Colle
 {
     Super::Initialize(Collection);
 #if !UE_BUILD_SHIPPING
+    bRainTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceRainTest"));
     bBoulderTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceBoulderTest"));
     bHundredTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceHundredTest"));
     bSequentialChainTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderSequentialChainTest"));
@@ -71,11 +72,11 @@ void UReferencePaintingTestSubsystem::Initialize(FSubsystemCollectionBase& Colle
     BeforeRewardCount=(bHundredTest||bAllStarReadTest)?6:bSequentialChainTest?5:bReferenceSkyTest?4:bReferenceRedTest?3:bReferenceCannonTest?2:bReferenceRaceTest?1:0;AfterRewardCount=BeforeRewardCount+1;
     // 獲得済みの実セーブを消さずに再プレイし、同じスターで数が増えないことも検証します。
     if(bWingOwnedReplay)BeforeRewardCount=AfterRewardCount=5;
-    if(bBoulderTest)BeforeRewardCount=AfterRewardCount=7;
+    if(bBoulderTest||bRainTest)BeforeRewardCount=AfterRewardCount=7;
     bStarTest=bSequentialChainTest||bReferenceSkyTest||bReferenceRedTest||bReferenceCannonTest||bReferenceRaceTest||bReferenceBossTest||bSelectionTest||bSaveFailureTest||bFadeTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest"));
     bReadMode=bAllStarReadTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderStarReadTest"));
     bChainTest=bStarTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderChainTest"));
-    bDropTest=bBoulderTest||bGroundCoinTest||bDefaultStartTest||bChainTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderDropTest"));
+    bDropTest=bRainTest||bBoulderTest||bGroundCoinTest||bDefaultStartTest||bChainTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderDropTest"));
     bEnabled=bReadMode||bDropTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderPaintingTest"));
 #endif
 }
@@ -83,6 +84,7 @@ void UReferencePaintingTestSubsystem::Tap(APlayerController* PC,FKey Key)
 {PC->InputKey(FInputKeyEventArgs::CreateSimulated(Key,IE_Pressed,1));PC->InputKey(FInputKeyEventArgs::CreateSimulated(Key,IE_Released,0));}
 void UReferencePaintingTestSubsystem::Finish(bool bPassed,const FString& Message)
 {
+    if(bRainTest&&bPassed&&(!bRainContactVerified||!bRainDodgeVerified||!bRainResetVerified))bPassed=false;
     if(bBoulderTest&&bPassed&&(!bBoulderPitVerified||!bBoulderRoadVerified||!bBoulderResetVerified))bPassed=false;
     if(bGroundCoinTest&&bPassed&&(!bGroundCoinsVerified||(!bHundredTest&&!bGroundResetVerified)))bPassed=false;
     if(bReferenceSkyTest&&bPassed&&(!bWingHubChecked||!bWingPowerObserved||!bWingFlightObserved||!bWingCameraHidden)){bPassed=false;UE_LOG(LogTemp,Error,TEXT("WING QA missing actual hub/cap/flight/camera proof"));}
@@ -96,7 +98,7 @@ void UReferencePaintingTestSubsystem::Finish(bool bPassed,const FString& Message
     if(bHundredTest&&bPassed&&(!bHundredMountainGold||!bHundredHighGold||!bHundredSkyComplete))bPassed=false;
     bFinished=true;auto* Recording=GetGameInstance()->GetSubsystem<UPlayseedRecordingSubsystem>();const int32 Frames=Recording->FinishRecording();
     bPassed=bPassed&&!Recording->HasCaptureError()&&Frames>=150;
-    const FString Details=(bBoulderTest&&bPassed?TEXT("Reference metal balls: two source mountain paths and three actual-floor pit loops; normal walking into a moving pit ball and actual mountain ball caused real damage/knockback, R restored hero and all five mechanisms twice, M returned to painting with legitimate earned1..7 unchanged. No injected hero position, velocity, health or progress."):bAllStarReadTest&&bPassed?TEXT("Separate process loaded the same actual save with earned stars1..7, walked/jumped into the painting, and displayed all six main stars earned with total7, without awarding progress."):bSequentialChainTest&&bPassed?TEXT("Actual sequential star6 visit after legitimate earned1..5: ordinary post3 ground pounds, released Chomp breaks gate, real star6 new save total6, pose/white fades/painting return and earned1..6 menu."):bHundredTest&&bPassed?TEXT("Actual hundred-star visit after legitimate earned1..6: real36 field golds, all eight reds, both mountain gold lines, island cap and ordinary second cannon launch, actual sky golds reaching100, one threshold100 star7, actual new save total7, pose/white fades/painting return and all main stars earned. No injected coins, position, velocity, power or progress."):bGroundCoinTest&&bPassed?TEXT("Actual36 field golds: normal wooden box punch and three pickups, source ground line5 and ring8, four posts with actual3circles under200/30 seconds and five pickups each, one generation per post. Real R restored score0/static coins/posts/box and removed only own drops, then M returned to painting. No progress awarded or injected. Mountain/island10 golds are placed but their actual pickup follows in the hundred-star visit."):bWingOwnedReplay&&bPassed?TEXT("Owned star5 full replay: legitimate saved wing unlock, ordinary cap-box head bump and actual pickup, normal G/mouse/LMB cannon, mouse/W/S flight through five actual centre coins, one fixed blue owned star5, NEW0 and earned count unchanged5, visible pose, white fades, painting return and next6 menu. No save copy/reset/injection."):Message)+(bSaveFailureTest&&bPassed?TEXT(" Actual SaveGameToSlot failure from own empty QA directory, rollback0 and visible star, physical exit, nonrecursive removal of own empty obstacle, real recontact saved6 once and returned to painting."):TEXT(""));
+    const FString Details=(bRainTest&&bPassed?TEXT("Three reference rain spawners at original positions/ranges: ordinary walking into a real falling drop caused one damage and physical knockback, normal R restored health and cleared all three, ordinary movement left the next real shadow before the actual burst with no extra hit, second R cleared all rain and M returned to painting with actual earned7 unchanged. No injected position, velocity, health or progress."):bBoulderTest&&bPassed?TEXT("Reference metal balls: two source mountain paths and three actual-floor pit loops; normal walking into a moving pit ball and actual mountain ball caused real damage/knockback, R restored hero and all five mechanisms twice, M returned to painting with legitimate earned1..7 unchanged. No injected hero position, velocity, health or progress."):bAllStarReadTest&&bPassed?TEXT("Separate process loaded the same actual save with earned stars1..7, walked/jumped into the painting, and displayed all six main stars earned with total7, without awarding progress."):bSequentialChainTest&&bPassed?TEXT("Actual sequential star6 visit after legitimate earned1..5: ordinary post3 ground pounds, released Chomp breaks gate, real star6 new save total6, pose/white fades/painting return and earned1..6 menu."):bHundredTest&&bPassed?TEXT("Actual hundred-star visit after legitimate earned1..6: real36 field golds, all eight reds, both mountain gold lines, island cap and ordinary second cannon launch, actual sky golds reaching100, one threshold100 star7, actual new save total7, pose/white fades/painting return and all main stars earned. No injected coins, position, velocity, power or progress."):bGroundCoinTest&&bPassed?TEXT("Actual36 field golds: normal wooden box punch and three pickups, source ground line5 and ring8, four posts with actual3circles under200/30 seconds and five pickups each, one generation per post. Real R restored score0/static coins/posts/box and removed only own drops, then M returned to painting. No progress awarded or injected. Mountain/island10 golds are placed but their actual pickup follows in the hundred-star visit."):bWingOwnedReplay&&bPassed?TEXT("Owned star5 full replay: legitimate saved wing unlock, ordinary cap-box head bump and actual pickup, normal G/mouse/LMB cannon, mouse/W/S flight through five actual centre coins, one fixed blue owned star5, NEW0 and earned count unchanged5, visible pose, white fades, painting return and next6 menu. No save copy/reset/injection."):Message)+(bSaveFailureTest&&bPassed?TEXT(" Actual SaveGameToSlot failure from own empty QA directory, rollback0 and visible star, physical exit, nonrecursive removal of own empty obstacle, real recontact saved6 once and returned to painting."):TEXT(""));
     const FString Result=FString::Printf(TEXT("%s\n%s\nCaptureFrames: %d\nUTC: %s\n"),bPassed?TEXT("PASS"):TEXT("FAIL"),*Details,Frames,*FDateTime::UtcNow().ToIso8601());
     FFileHelper::SaveStringToFile(Result,*(FPaths::ProjectSavedDir()/TEXT("Validation/Result.txt")),FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
     UE_LOG(LogTemp,Display,TEXT("PAINTING TEST %s"),*Result);FPlatformMisc::RequestExit(false);
@@ -105,7 +107,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
 {
     if(!GetWorld()||!GetWorld()->IsGameWorld())return;
     auto* PC=UGameplayStatics::GetPlayerController(GetWorld(),0);if(!PC)return;Elapsed+=DeltaSeconds;
-    if(Elapsed>(bBoulderTest?900:bHundredTest?1800:bGroundCoinTest?900:bChainTest?420:35)){Finish(false,TEXT("Painting or reference challenge timed out"));return;}
+    if(Elapsed>((bRainTest||bBoulderTest)?900:bHundredTest?1800:bGroundCoinTest?900:bChainTest?420:35)){Finish(false,TEXT("Painting or reference challenge timed out"));return;}
     auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
     const FString Map=UGameplayStatics::GetCurrentLevelName(GetWorld(),true);
     auto* Hero=Cast<AReferenceHero>(PC->GetPawn());auto* Mode=Cast<AReferenceEntranceGameMode>(GetWorld()->GetAuthGameMode());
@@ -118,6 +120,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
     }
     if(bFadeTest&&Phase>0)ObserveFade(PC);
     if(bFinished)return;
+    if(bRainTest&&Phase>=140&&Phase<=147){UpdateReferenceRain(DeltaSeconds,Hero,PC);return;}
     if(Phase>=130&&Phase<=137){UpdateReferenceBoulders(DeltaSeconds,Hero,PC);return;}
     if(bHundredTest&&Phase>=120){UpdateReferenceHundred(DeltaSeconds,Hero,PC);return;}
     if(bHundredTest&&(Phase==98||Phase==99)){UpdateHundredFlight(DeltaSeconds,Hero,PC);return;}
@@ -243,7 +246,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
                 if(!bSelectionInitialShot){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderSelectionInitial.png"),false,false);bSelectionInitialShot=true;}
             }
             else FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderPaintingSelection.png"),false,false);
-            Tap(PC,(bBoulderTest||bHundredTest||bSequentialChainTest)?EKeys::Six:bReferenceSkyTest?EKeys::Five:bReferenceRedTest?EKeys::Four:bReferenceCannonTest?EKeys::Three:bReferenceRaceTest?EKeys::Two:EKeys::One);Phase=6;Elapsed=0;return;
+            Tap(PC,(bRainTest||bBoulderTest||bHundredTest||bSequentialChainTest)?EKeys::Six:bReferenceSkyTest?EKeys::Five:bReferenceRedTest?EKeys::Four:bReferenceCannonTest?EKeys::Three:bReferenceRaceTest?EKeys::Two:EKeys::One);Phase=6;Elapsed=0;return;
         }
         if(Elapsed>10)
         {
@@ -298,6 +301,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
             if(!bSawJump||!Hero->GetCharacterMovement()->IsMovingOnGround()){Finish(false,TEXT("Ordinary jump was not available after drop landing"));return;}
             if(bStarTest&&VerifiedDropVisits==1){Tap(PC,EKeys::M);Phase=13;Elapsed=0;return;}
             if(bStarTest&&VerifiedDropVisits>=2)bMReentryChecked=true;
+            if(bRainTest){Phase=140;Elapsed=0;RainWaypoint=0;RainLegElapsed=0;return;}
             if(bBoulderTest){Phase=130;Elapsed=0;BoulderWaypoint=0;BoulderLegElapsed=0;return;}
             if(bGroundCoinTest){Phase=110;Elapsed=0;GroundWaypoint=0;GroundLegElapsed=0;return;}
             if(bReferenceSkyTest){Phase=93;Elapsed=0;WingWaypoint=0;WingLegElapsed=0;return;}
