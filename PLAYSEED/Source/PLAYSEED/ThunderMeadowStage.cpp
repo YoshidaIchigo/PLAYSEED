@@ -28,6 +28,7 @@
 #include "ThunderPrisonGate.h"
 #include "ThunderHundredLantern.h"
 #include "ThunderMountainRest.h"
+#include "ThunderLifeseed.h"
 #include "ThunderExpeditionSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Camera/PlayerCameraManager.h"
@@ -505,6 +506,8 @@ void AThunderMeadowStage::BeginPlay()
     const FVector RestSpot = RestFoot + (RestFoot - FVector(2200,2100,0)).GetSafeNormal2D() * 140;
     MountainRest = GetWorld()->SpawnActor<AThunderMountainRest>(RestSpot, FRotator::ZeroRotator);
     AddSign(RestSpot + FVector(0,0,30), TEXT("DEWREST BLOOM\nGround contact restores 2 vitality\nWait 5 seconds, leave and return"));
+    Lifeseed = GetWorld()->SpawnActor<AThunderLifeseed>(FVector(-2200,800,62),FRotator::ZeroRotator);
+    AddSign(FVector(-2350,1000,0),TEXT("A LIFESEED\nTouch its amber heart: +1 life\nOnce per visit - R keeps it collected"));
     BuildLighting();
 }
 

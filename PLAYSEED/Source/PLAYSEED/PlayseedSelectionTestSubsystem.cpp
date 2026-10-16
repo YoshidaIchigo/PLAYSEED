@@ -37,6 +37,9 @@
 #include "ThunderPostTestSubsystem.h"
 #include "ThunderHundredTestSubsystem.h"
 #include "ThunderRestTestSubsystem.h"
+#include "ThunderLivesTestSubsystem.h"
+#include "ThunderLivesComponent.h"
+#include "ThunderLifeseed.h"
 #include "ThunderMountainRest.h"
 #include "ThunderCampaignValidation.h"
 #include "ThunderFlightSwitch.h"
@@ -104,7 +107,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 44 ? 300 : Step == 43 ? 300 : Step == 42 ? 300 : Step == 41 ? 180 : Step == 40 ? 420 : Step == 37 || Step == 39 ? 360 : Step == 31 || Step == 33 || Step == 34 || Step == 35 || Step == 36 || Step == 38 ? 300 : Step == 10 || (Step >= 12 && Step <= 32) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 45 ? 180 : Step == 44 ? 300 : Step == 43 ? 300 : Step == 42 ? 300 : Step == 41 ? 180 : Step == 40 ? 420 : Step == 37 || Step == 39 ? 360 : Step == 31 || Step == 33 || Step == 34 || Step == 35 || Step == 36 || Step == 38 ? 300 : Step == 10 || (Step >= 12 && Step <= 32) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -114,6 +117,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     auto* Expedition = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
     const bool bCampaignRun = FParse::Param(FCommandLine::Get(), TEXT("ThunderCampaignTest"));
     const bool bCampaignRead = FParse::Param(FCommandLine::Get(), TEXT("ThunderCampaignReadTest"));
+    const bool bLivesTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderLivesTest"));
     const bool bRestTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderRestTest"));
     const bool bHundredTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderHundredTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderHundredReadTest"));
     const int32 CampaignTargets[] = {1, 2, 3, 5, 6, 4};
@@ -146,6 +150,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         { Fail(TEXT("Mission selection did not survive travel or accepted an invalid number")); return; }
         if (bSecondMissionEntry)
         {
+            if (bLivesTest)
+            {
+                auto* RetryMode=Cast<AThunderMeadowGameMode>(CurrentMode); auto* RetryStage=Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode,AThunderMeadowStage::StaticClass()));
+                if(!ThunderHasExactRewards(Expedition,{1,2,3,4,5,6,7}) || !RetryMode || RetryMode->GetLives()->GetRemaining()!=3 || RetryMode->GetLives()->GetConsumedLives()!=0 || !RetryStage || !RetryStage->GetLifeseed() || RetryStage->GetLifeseed()->IsCollected() || Player->GetVitality()->GetHealth()!=8) { Fail(TEXT("Game over retry did not restore fresh3/1up/health8 with actual all7")); return; }
+                FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderLivesRetry.png"),false,false);
+                UE_LOG(LogTemp,Display,TEXT("LIVES RETRY TEST PASS: actual gameover returned to menu, new World3 lives/available1up/health8 and same actual all7 saved rewards."));
+            }
             if (bRestTest)
             {
                 auto* RestStage = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
@@ -249,7 +260,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             || Expedition->GetSelectedMissionNumber() != (bBossTest ? 1 : bRaceTest ? 2 : bSkyCacheTest ? 3 : bScarletTest ? 4 : bChimeTest ? 5 : 6))
         { Fail(TEXT("Restart in the new stage failed")); return; }
         const bool bIslandTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderIslandTest"));
-        if (bRestTest)
+        if (bLivesTest)
+        {
+            auto* Meadow=Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode,AThunderMeadowStage::StaticClass()));
+            if(!Meadow || !Meadow->GetLifeseed()) { Fail(TEXT("Lifeseed missing")); return; }
+            GetGameInstance()->GetSubsystem<UThunderLivesTestSubsystem>()->BeginTest(Player,Meadow);Step=45;Elapsed=0;
+        }
+        else if (bRestTest)
         {
             auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode,AThunderMeadowStage::StaticClass()));
             if (!Meadow || !Meadow->GetMountainRest()) { Fail(TEXT("Mountain rest missing")); return; }
@@ -617,6 +634,17 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         const bool bComplete = BoxTest->UpdateTest(Player, DeltaSeconds);
         if (!BoxTest->GetError().IsEmpty()) { Fail(BoxTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
+    else if (Step == 45)
+    {
+        auto* Test=GetGameInstance()->GetSubsystem<UThunderLivesTestSubsystem>();
+        if(Map==TEXT("ThunderMeadow") && Player) Test->UpdateTest(Player,DeltaSeconds);
+        else if(Map==TEXT("StageSelect"))
+        {
+            if(!Test->HasObservedGameOver()) { Fail(TEXT("Returned to menu before observing actual game over")); return; }
+            bSecondMissionEntry=true;Tap(PC,EKeys::Two);Step=1;Elapsed=0;
+        }
+        if(!Test->GetError().IsEmpty()) { Fail(Test->GetError()); return; }
     }
     else if (Step == 44 && Player)
     {

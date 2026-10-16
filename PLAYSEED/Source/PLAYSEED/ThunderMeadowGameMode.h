@@ -7,6 +7,7 @@
 
 class AThunderMeadowStage;
 class UThunderCoinLedger;
+class UThunderLivesComponent;
 
 UCLASS()
 class PLAYSEED_API AThunderMeadowHUD : public AHUD
@@ -25,10 +26,13 @@ public:
     AThunderMeadowGameMode();
     virtual void StartPlay() override;
     virtual void RestartStage(AWindseedCharacter* Player) override;
+    virtual void HandlePlayerDefeat(AWindseedCharacter* Player) override;
+    UThunderLivesComponent* GetLives() const { return Lives; }
     virtual void HandlePlayerFall(AWindseedCharacter* Player) override;
     UThunderCoinLedger* GetCoinLedger() const { return CoinLedger; }
 private:
     UPROPERTY() TObjectPtr<UThunderCoinLedger> CoinLedger;
+    UPROPERTY() TObjectPtr<UThunderLivesComponent> Lives;
     // World が Stage を所有します。UPROPERTY は参照を UE に伝えます。
     UPROPERTY() TObjectPtr<AThunderMeadowStage> Stage;
 };
