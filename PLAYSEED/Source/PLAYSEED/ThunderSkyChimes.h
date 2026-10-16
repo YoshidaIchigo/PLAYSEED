@@ -6,7 +6,7 @@ class APlayseedCoin;
 class APlayseedLantern;
 class UThunderCoinLedger;
 class UStaticMesh;
-class UInstancedStaticMeshComponent;
+class UStaticMeshComponent;
 class UMaterialInstanceDynamic;
 enum class EPlayseedCoinKind : uint8;
 
@@ -31,7 +31,7 @@ private:
     void BindLedger();
     void HandleCoin(FName CoinId, EPlayseedCoinKind Kind);
     UPROPERTY() TObjectPtr<UStaticMesh> BeadMesh;
-    UPROPERTY() TArray<TObjectPtr<UInstancedStaticMeshComponent>> Rings;
+    UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Beads;
     UPROPERTY() TArray<TObjectPtr<UMaterialInstanceDynamic>> Tints;
     UPROPERTY() TArray<TObjectPtr<APlayseedCoin>> Coins;
     TSet<FName> TargetIds;

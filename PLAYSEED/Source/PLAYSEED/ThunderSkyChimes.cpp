@@ -4,7 +4,7 @@
 #include "PlayseedCoin.h"
 #include "PlayseedLantern.h"
 #include "Components/SceneComponent.h"
-#include "Components/InstancedStaticMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -34,16 +34,16 @@ void AThunderSkyChimes::Configure(const TArray<FVector>& Centres, FVector Reward
         const FName Id(*FString::Printf(TEXT("ThunderChimeCentre_%d"), Index + 1)); TargetIds.Add(Id);
         auto* Coin = GetWorld()->SpawnActor<APlayseedCoin>(Centres[Index], FRotator::ZeroRotator);
         if (Coin) { Coin->ConfigureCoin(Id, EPlayseedCoinKind::Gold); Coins.Add(Coin); }
-        // 24個の小さな球を一つの部品で描き、オリジナルの鈴の輪を構成します。
-        auto* Ring = NewObject<UInstancedStaticMeshComponent>(this); Ring->SetupAttachment(RootComponent); Ring->SetStaticMesh(BeadMesh);
-        Ring->SetCollisionEnabled(ECollisionEnabled::NoCollision); Ring->RegisterComponent(); Rings.Add(Ring);
         auto* Tint = Palette ? UMaterialInstanceDynamic::Create(Palette, this) : nullptr; Tints.Add(Tint);
-        if (Tint) { Tint->SetVectorParameterValue(TEXT("Tint"), FLinearColor(1, .65f, .12f)); Ring->SetMaterial(0, Tint); }
+        if (Tint) Tint->SetVectorParameterValue(TEXT("Tint"), FLinearColor(1, .65f, .12f));
+        // 通常のメッシュで既存パレットの色を表示します。輪ごとに一つの素材を24球で共有します。
         for (int32 Bead = 0; Bead < 24; ++Bead)
         {
             const float Angle = Bead * 2 * PI / 24;
             const FVector Position = Centres[Index] + FVector(0, FMath::Cos(Angle) * 280, FMath::Sin(Angle) * 280);
-            Ring->AddInstance(FTransform(FRotator::ZeroRotator, GetActorTransform().InverseTransformPosition(Position), FVector(.18f)));
+            auto* Bead = NewObject<UStaticMeshComponent>(this); Bead->SetupAttachment(RootComponent); Bead->SetStaticMesh(BeadMesh);
+            Bead->SetMobility(EComponentMobility::Movable); Bead->SetRelativeLocation(GetActorTransform().InverseTransformPosition(Position)); Bead->SetRelativeScale3D(FVector(.18f));
+            Bead->SetCollisionEnabled(ECollisionEnabled::NoCollision); if (Tint) Bead->SetMaterial(0, Tint); Bead->RegisterComponent(); Beads.Add(Bead);
         }
     }
 }
