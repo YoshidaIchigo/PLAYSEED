@@ -10,6 +10,13 @@ FBattlefieldUI::FBattlefieldUI(UCanvas* InCanvas):Canvas(InCanvas)
 {
     Scale=FMath::Min(Canvas->SizeX/320.f,Canvas->SizeY/240.f);
     Origin=FVector2D((Canvas->SizeX-320*Scale)*.5f,(Canvas->SizeY-240*Scale)*.5f);
+    // 新Worldのカメラが準備中でも4:3の外側へ旧場面や仮の視点を出さないよう、黒帯を毎回描きます。
+    auto Bar=[this](FVector2D Position,FVector2D Size)
+    {if(Size.X<=0||Size.Y<=0)return;FCanvasTileItem Item(Position,Size,FLinearColor::Black);Item.BlendMode=SE_BLEND_Opaque;Canvas->DrawItem(Item);};
+    Bar(FVector2D::ZeroVector,FVector2D(Origin.X,Canvas->SizeY));
+    Bar(FVector2D(Canvas->SizeX-Origin.X,0),FVector2D(Origin.X,Canvas->SizeY));
+    Bar(FVector2D::ZeroVector,FVector2D(Canvas->SizeX,Origin.Y));
+    Bar(FVector2D(0,Canvas->SizeY-Origin.Y),FVector2D(Canvas->SizeX,Origin.Y));
 }
 FVector2D FBattlefieldUI::Screen(float X,float Y) const {return Origin+FVector2D(X,Y)*Scale;}
 void FBattlefieldUI::Rect(float X,float Y,float W,float H,FLinearColor Color) const
