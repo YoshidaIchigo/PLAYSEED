@@ -624,7 +624,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBoss(float DeltaSeconds,AWi
     }
     if(Phase==47)
     {
-        WalkHeart(FVector(3603,7070,3659));
+        WalkHeart(FVector(3603,7070,3580)); // 3659cmはハートの中心で、実際の足元は約3580cmです。
         if(Hero->GetVitality()->GetHealth()==8)
         {if(Elapsed<.5f)return;FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderBossHeart.png"),false,false);BossHeartWaypoint=UE_ARRAY_COUNT(ReferenceBossHeartWalk)-1;Phase=48;Elapsed=0;BossLegElapsed=0;return;}
         if(Elapsed>22)Finish(false,TEXT("Actual rotating-heart contact did not restore real health"));return;
