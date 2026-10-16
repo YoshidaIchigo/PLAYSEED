@@ -28,5 +28,6 @@ private:
     float JumpStartZ=0,JumpPeak=0,JumpObservationTime=0;
     bool bFlatJumpStarted=false,bFlatJumpAirborne=false,bFlatJumpFinished=false;
     bool bRouteJumpIssued=false;
+    bool bHeroViewTurned=false,bHeroViewCaptured=false;
     bool bEnabled=false,bFinished=false,bRecording=false;
 };

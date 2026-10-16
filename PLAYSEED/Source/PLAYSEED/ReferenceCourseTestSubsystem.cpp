@@ -118,7 +118,19 @@ void UReferenceCourseTestSubsystem::Tick(float DeltaSeconds)
         if(Movement->IsMovingOnGround() && JumpTime<=0 && Delta.Size2D()<450 && Target.Z>Feet+70){PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpTime=.14f;}
         return;
     }
-    if(Phase==3 && Elapsed>2){Tap(PC,EKeys::R);Phase=4;Elapsed=0;return;}
+    if(Phase==3)
+    {
+        if(Elapsed>.3f && !bHeroViewTurned)
+        {
+            PC->SetControlRotation(FRotator(-8,Player->GetActorRotation().Yaw+180,0));
+            PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::MouseWheelAxis,IE_Axis,4));
+            bHeroViewTurned=true;
+        }
+        if(Elapsed>1.5f && !bHeroViewCaptured)
+        {FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderReferenceHero.png"),false,false);bHeroViewCaptured=true;}
+        if(Elapsed>3.5f){Tap(PC,EKeys::R);Phase=4;Elapsed=0;}
+        return;
+    }
     if(Phase==4 && Elapsed>1)
     {
         if(!Player || Player->RecoveryCount!=RecoveryBaseline+1 || FVector::Dist2D(Player->GetActorLocation(),FVector(-6558,-6464,0))>40){Finish(false,TEXT("R did not reset through the normal stage spawn"));return;}
