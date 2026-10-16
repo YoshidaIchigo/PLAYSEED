@@ -84,7 +84,7 @@ void UReferencePaintingTestSubsystem::Tap(APlayerController* PC,FKey Key)
 {PC->InputKey(FInputKeyEventArgs::CreateSimulated(Key,IE_Pressed,1));PC->InputKey(FInputKeyEventArgs::CreateSimulated(Key,IE_Released,0));}
 void UReferencePaintingTestSubsystem::Finish(bool bPassed,const FString& Message)
 {
-    if(bRainTest&&bPassed&&(!bRainContactVerified||!bRainDodgeVerified||!bRainResetVerified))bPassed=false;
+    if(bRainTest&&bPassed&&(!bRainContactVerified||!bRainDodgeVerified||!bRainResetVerified||!bRainBounceShot))bPassed=false;
     if(bBoulderTest&&bPassed&&(!bBoulderPitVerified||!bBoulderRoadVerified||!bBoulderResetVerified))bPassed=false;
     if(bGroundCoinTest&&bPassed&&(!bGroundCoinsVerified||(!bHundredTest&&!bGroundResetVerified)))bPassed=false;
     if(bReferenceSkyTest&&bPassed&&(!bWingHubChecked||!bWingPowerObserved||!bWingFlightObserved||!bWingCameraHidden)){bPassed=false;UE_LOG(LogTemp,Error,TEXT("WING QA missing actual hub/cap/flight/camera proof"));}

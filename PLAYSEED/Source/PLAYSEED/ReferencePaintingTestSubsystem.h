@@ -34,7 +34,7 @@ private:
     void ObserveFade(APlayerController* PC);
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
-    bool bRainTest=false,bRainContactVerified=false,bRainDodgeVerified=false,bRainResetVerified=false;
+    bool bRainTest=false,bRainContactVerified=false,bRainDodgeVerified=false,bRainResetVerified=false,bRainBounceShot=false;
     int32 RainWaypoint=0,RainSpawnBaseline=0,RainBurstBaseline=0,RainChosenIndex=1;
     float RainLegElapsed=0;
     FVector RainDodgeTarget=FVector::ZeroVector;

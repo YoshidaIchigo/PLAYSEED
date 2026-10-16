@@ -111,8 +111,13 @@ void UReferencePaintingTestSubsystem::UpdateReferenceRain(float DeltaSeconds,AWi
         if(Hero->RecoveryCount!=1||Health->GetHealth()!=8||TotalHits!=1)
         {Finish(false,TEXT("Ordinary movement did not avoid the next real rain drop"));return;}
         Walk(RainDodgeTarget);
+        // 普通に離れながらカメラで振り返り、水玉の跳ね返りと影も映します。
+        PC->SetControlRotation(FRotator(-18,(Rain->GetRainPosition()-Hero->GetActorLocation()).Rotation().Yaw+20,0));
+        if(!bRainBounceShot&&Rain->IsFalling()&&Rain->GetBouncePeak()>120)
+        {bRainBounceShot=true;FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderRainBounce.png"),false,false);}
         if(Rain->GetBurstCount()>RainBurstBaseline&&FVector::Dist2D(Hero->GetActorLocation(),Rain->GetRainTarget())>250)
         {
+            if(Rain->GetBouncePeak()<120){Finish(false,TEXT("Actual water did not physically rise after its floor bounce"));return;}
             bRainDodgeVerified=true;FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderRainAvoided.png"),false,false);
             UE_LOG(LogTemp,Display,TEXT("RAIN QA: actual burst%d after ordinary dodge, hits unchanged%d health%d"),Rain->GetBurstCount(),Rain->GetConfirmedHits(),Health->GetHealth());Phase=145;Elapsed=0;return;
         }

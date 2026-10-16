@@ -21,6 +21,7 @@ public:
     int32 GetSpawnCount() const { return SpawnCount; }
     int32 GetBurstCount() const { return BurstCount; }
     int32 GetConfirmedHits() const { return ConfirmedHits; }
+    float GetBouncePeak() const { return BouncePeak; }
     bool IsActive() const { return Phase==EReferenceRainPhase::Falling||Phase==EReferenceRainPhase::Squash; }
     bool IsFalling() const { return Phase==EReferenceRainPhase::Falling; }
     bool IsIdle() const { return Phase==EReferenceRainPhase::Idle; }
@@ -37,6 +38,6 @@ private:
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Bubbles;
     EReferenceRainPhase Phase=EReferenceRainPhase::Idle;
     FVector Position=FVector::ZeroVector,Velocity=FVector::ZeroVector,Target=FVector::ZeroVector;
-    float Range=950,WaitRemaining=.7f,PhaseAge=0;
+    float Range=950,WaitRemaining=.7f,PhaseAge=0,BouncePeak=0;
     int32 SpawnCount=0,BurstCount=0,ConfirmedHits=0,Bounces=0,Revision=0;
 };

@@ -52,14 +52,21 @@ bool AReferenceRainSpawner::StartRain(AWindseedCharacter* Hero)
     FVector Ahead=HeroFeet+FVector(Hero->GetVelocity().X,Hero->GetVelocity().Y,0)*(.933333f)+Hero->GetActorForwardVector()*100;
     // 実際の速さから少し先を狙います。足場の外なら、今いる実床を使います。
     if(!Terrain->FindFloor(Ahead,Target)&&!Terrain->FindFloor(HeroFeet,Target))return false;
-    Position=FVector(Target.X,Target.Y,GetActorLocation().Z+2000);Velocity=FVector(0,0,-1200);Bounces=0;
+    Position=FVector(Target.X,Target.Y,GetActorLocation().Z+2000);Velocity=FVector(0,0,-1200);Bounces=0;BouncePeak=0;
     Phase=EReferenceRainPhase::Falling;PhaseAge=0;++SpawnCount;
     Drop->SetWorldLocation(Position);Drop->SetRelativeScale3D(FVector(1.6f));Drop->SetVisibility(true,true);
-    Shadow->SetWorldLocation(Target+FVector(0,0,2));Shadow->SetVisibility(true);
+    Shadow->SetWorldLocation(Target+FVector(0,0,2));Shadow->SetVisibility(true);RefreshShadow();
     UE_LOG(LogTemp,Display,TEXT("REFERENCE RAIN: source%s real spawn%d target%s"),*GetActorLocation().ToString(),SpawnCount,*Target.ToString());return true;
 }
 void AReferenceRainSpawner::RefreshShadow()
 {
+    // 跳ねて横へ動く間も、実際の水玉の下へ影を投影します。傾いた床にも合わせます。
+    FCollisionQueryParams Query(SCENE_QUERY_STAT(ReferenceRainShadow),false,this);
+    if(auto* Hero=UGameplayStatics::GetPlayerPawn(this,0))Query.AddIgnoredActor(Hero);
+    FHitResult Floor;
+    const bool bFloor=GetWorld()->LineTraceSingleByChannel(Floor,Position+FVector(0,0,80),Position-FVector(0,0,12000),ECC_Visibility,Query);
+    Shadow->SetVisibility(bFloor);
+    if(bFloor){Target=Floor.ImpactPoint;Shadow->SetWorldLocation(Target+FVector(0,0,2));Shadow->SetWorldRotation(FRotationMatrix::MakeFromZ(Floor.ImpactNormal).Rotator());}
     const float Height=FMath::Max(0.f,static_cast<float>(Position.Z-Target.Z));
     const float Size=FMath::Clamp(1.6f-Height/12000,.8f,1.6f);Shadow->SetWorldScale3D(FVector(Size,Size,.02f));
 }
@@ -114,14 +121,18 @@ void AReferenceRainSpawner::Tick(float DeltaSeconds)
     if(bHit)End=Hit.Location;
     if(CheckHeroContact(Start,End,Hero)||Revision!=TickRevision)return;
     Position=End;Drop->SetWorldLocation(Position);RefreshShadow();
+    if(Bounces>0)BouncePeak=FMath::Max(BouncePeak,static_cast<float>(Position.Z-Target.Z-80));
     if(bHit)
     {
         if(Hit.ImpactNormal.Z>.55f&&++Bounces<3)
         {
             Phase=EReferenceRainPhase::Squash;PhaseAge=0;Target=Hit.ImpactPoint;
+            // 球スイープが次の上向き移動でも同じ床を即座に拾わないよう、実接触面から3cm離します。
+            Position+=Hit.ImpactNormal*3;
             Drop->SetRelativeScale3D(FVector(1.92f,1.92f,.88f));Drop->SetWorldLocation(Position-FVector(0,0,36));
-            Velocity=(Hero->GetActorLocation()-Position).GetSafeNormal2D()*300;Velocity.Z=FMath::Max(120.f,480.f-120.f*Bounces);
+            Velocity=(Hero->GetActorLocation()-Position).GetSafeNormal2D()*300;Velocity.Z=Bounces==1?1200.f:900.f;
             Shadow->SetWorldLocation(Target+FVector(0,0,2));
+            UE_LOG(LogTemp,Display,TEXT("REFERENCE RAIN BOUNCE: actual%d center%s floor%s upward%.1f"),Bounces,*Position.ToString(),*Target.ToString(),Velocity.Z);
         }
         else Burst(Position);
     }
