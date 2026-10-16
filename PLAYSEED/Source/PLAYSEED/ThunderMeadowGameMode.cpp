@@ -60,7 +60,9 @@ void AThunderMeadowHUD::DrawHUD()
         auto* Race=Stage?Stage->GetCloudflagRace():nullptr;
         if(Race&&Race->GetRaceState()!=ECloudflagRaceState::Idle)
         {
-            const int32 Tenths=FMath::FloorToInt(Race->GetElapsed()*10);
+            // 自分が旗に着いた時刻で表示を止め、相手を待つ時間を記録に加えません。
+            const float ClockTime=Race->HasPlayerReachedFlag()?Race->GetPlayerTime():Race->GetElapsed();
+            const int32 Tenths=FMath::FloorToInt(ClockTime*10);
             UI.Text(TEXT("タイム"),212,183,8,FLinearColor::White,false,true,true);
             UI.Text(FString::Printf(TEXT("%d:%02d.%d"),Tenths/600,(Tenths/10)%60,Tenths%10),245,181,11,Number,false,true);
             if(Race->GetRaceState()!=ECloudflagRaceState::Running)

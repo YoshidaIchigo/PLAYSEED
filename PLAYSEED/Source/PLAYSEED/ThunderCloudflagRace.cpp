@@ -147,6 +147,15 @@ void AThunderCloudflagRace::Tick(float DeltaSeconds)
         bRivalFinished = true; RivalFinishTime = Elapsed;
         UE_LOG(LogTemp, Display, TEXT("RACE: Brisk reached flag in %.2f seconds."), Elapsed);
     }
+    if(bReferenceRace)
+        for(auto* Part:Parts)
+            if(Part->GetName().StartsWith(TEXT("OrangeBoot")))
+            {
+                FVector Position=Part->GetRelativeLocation();
+                const float PhaseOffset=Part->GetName().EndsWith(TEXT("-1"))?PI:0;
+                Position.Z=28+(bRivalFinished?0:FMath::Max(0.f,FMath::Sin(Elapsed*12+PhaseOffset))*14);
+                Part->SetRelativeLocation(Position);
+            }
     const float Feet = Player->GetActorLocation().Z - 82;
     if (PlayerFinishTime < 0 && Player->GetCharacterMovement()->IsMovingOnGround() && FVector::Dist2D(Player->GetActorLocation(), FlagFloor) < 100 && FMath::Abs(Feet - FlagFloor.Z) < 40)
     {
