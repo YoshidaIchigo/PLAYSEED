@@ -26,7 +26,8 @@ AReferenceBattlefieldTerrain::AReferenceBattlefieldTerrain()
 
 bool AReferenceBattlefieldTerrain::IsReferenceCourse()
 {
-    return FParse::Param(FCommandLine::Get(),TEXT("ReferenceCourse")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderDropTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderChainTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderFadeTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderSaveFailureTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderCameraTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderSelectionTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceBossTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceRaceTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceCannonTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceRedTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceSkyTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceSkyOwnedTest"));
+    // 現行のコースを通常プレイの既定にします。プレビュー用の起動フラグは不要です。
+    return true;
 }
 
 void AReferenceBattlefieldTerrain::BeginPlay()

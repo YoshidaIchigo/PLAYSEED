@@ -30,6 +30,7 @@ private:
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     bool bWingOwnedReplay=false;
+    bool bDefaultStartTest=false;
     bool bReferenceSkyTest=false,bWingHubInitiallyUnlocked=false,bWingHubChecked=false,bWingHubJumped=false,bWingPoundSent=false;
     bool bWingPowerObserved=false,bWingFlightObserved=false,bWingCameraHidden=false,bWingAimSent=false,bWingAimShot=false,bWingSlow=false,bWingFlightKeysSet=false;
     int32 WingWaypoint=0,WingCentre=0;

@@ -1,0 +1,14 @@
+LogInit: Command Line: -windowed -ResX=960 -ResY=540 -ThunderDefaultStartTest -ThunderValidation -PlayseedValidationSlot=Validation_DefaultEntry_A -unattended -nosound -NoSplash -abslog=C:\PLAYSEED\PLAYSEED\Saved\Validation\PR63-A.log -game
+[2026.10.16-14.28.43:049][  0]LogLoad: LoadMap: /Game/Battlefield/Entrance?Name=Player
+[2026.10.16-14.28.50:714][456]LogLoad: LoadMap: /Game/ThunderMeadow/MissionSelect
+[2026.10.16-14.28.53:721][291]LogLoad: LoadMap: /Game/ThunderMeadow/ThunderMeadow
+[2026.10.16-14.29.02:246][549]LogLoad: LoadMap: /Game/Battlefield/Entrance
+
+{
+  "no_map_argument": true,
+  "game_exit": 0,
+  "no_preview_flag": true,
+  "normal_after": "ABSENT",
+  "slot": "Validation_DefaultEntry_A",
+  "normal_before": "ABSENT"
+}
