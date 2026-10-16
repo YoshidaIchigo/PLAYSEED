@@ -1,0 +1,13 @@
+# 通常起動のセルフレビュー
+
+- GameDefaultMap/EditorStartupMapは実在するEntrance.umapへ、既定GameModeはReferenceEntranceGameModeへ変更する。選択とコースの各マップは既存のWorldSettingsの専用GameModeを使う。
+- ReferenceCourseの判定を通常製品の既定へ切り替える。通常起動で旧地形へ入らない。
+- C++から文字列で開く入口・選択・コースの3マップをMapsToCookへ明記。動的LoadObjectの素材はBattlefield/Windseed/ThunderMeadowのDirectoriesToAlwaysCookへ含める。EngineのBasicShapesとSlate Fontsは既存ターゲットの実行時依存も確認する。
+- 日本語DroidSansFallback.ttfと英字Roboto-BlackItalic.ttfはPLAYSEED.target RuntimeDependenciesに存在し、独自のOSフォントや外部配信へ依存しない。cook/package/UAT自体は今回実行しないため、配布パッケージの実動作完了とは記載しない。
+- Play.cmdは自身の場所からuprojectを解決し、インストール済みUE5.8で別プロセスを起動する。マップ名とReferenceCourseを渡さず、既定設定そのものを使う。存在しないパスなら説明して終了する。
+- Native検証はThunderDefaultStartTestと専用Validationスロットのみ。ヘルパーもマップ引数なしで起動し、入口と現行Hero/地形が出ること、実落下/操作説明/ジャンプ/M帰還、通常セーブ無変更を確認する。進行・座標・速度の注入をしない。
+- PLAYING.mdを入口からの遊び方と正確なWindowsパッケージ手順へ更新する。出力先はソースを上書きしないC:/PLAYSEED-Packagesを推奨し、生成exeだけでなくフォルダ一式が必要と説明する。
+
+Editor7433/Game Development両ビルド成功。新規Validation_DefaultEntry_Aで通常起動の実動作PASS276、UTC2026-10-16T14:29:05.359Z。ログのCommand Lineにマップ名とReferenceCourseがなく、最初のLoadMapはEntranceで、実際に現行Hero/地形への落下・H操作説明・ジャンプ・M帰還を確認。通常セーブは前後ABSENT、専用スロットも未保存で進行0のまま。
+
+- 全276フレーム/960×540/18.4秒の連続PTSと元AVIのhash不変を確認。MP4は2499156bytes、SHA-256 bd22e2682aa7fd05cacb0626c0ca530f36f0c15fb05d6042d1de1b3ab41ca9c2。最終MP4を直接18時点へ復号し、入口・落下・日本語操作説明・帰還を目視。Cook/package実行はせず、設定とビルド成果物からの確認範囲を明記した。
