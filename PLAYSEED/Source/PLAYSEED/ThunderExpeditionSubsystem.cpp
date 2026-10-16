@@ -119,7 +119,7 @@ bool UThunderExpeditionSubsystem::TryAwardReward(int32 RewardNumber)
     {
         // 保存が失敗したらメモリーの追加も戻し、次の取得で再試行できるようにします。
         Progress->EarnedRewardNumbers.Remove(RewardNumber);
-        ProgressProblem = TEXT("Progress could not be saved. Please try the reward again.");
+        ProgressProblem = TEXT("ほぞんにしっぱい。はなれて もういちど ふれてください。");
         return false;
     }
     ProgressProblem.Reset();

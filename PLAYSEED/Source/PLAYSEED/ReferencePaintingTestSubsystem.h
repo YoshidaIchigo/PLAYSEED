@@ -5,6 +5,7 @@
 #include "ReferencePaintingTestSubsystem.generated.h"
 class APlayerController;
 class AWindseedCharacter;
+class APlayseedLantern;
 UCLASS()
 class PLAYSEED_API UReferencePaintingTestSubsystem : public UGameInstanceSubsystem,public FTickableGameObject
 {
@@ -19,6 +20,7 @@ private:
     void Tap(APlayerController* PC,FKey Key);
     void Finish(bool bPassed,const FString& Message);
     void UpdateChain(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
+    void UpdateStarCapture(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     float Elapsed=0,JumpHold=0;
     int32 Phase=0;
     bool bEnabled=false,bFinished=false,bJumped=false,bCapturedDive=false;
@@ -26,4 +28,8 @@ private:
     bool bChainTest=false,bChainPoundCycle=false,bChainPoundTriggered=false,bChainGateVerified=false;
     int32 ChainWaypoint=0,ChainPounds=0;
     float ChainLegElapsed=0,ChainPoundElapsed=0;
+    bool bStarTest=false,bReadMode=false,bMReentryChecked=false,bPoseObserved=false,bPoseShot=false;
+    int32 VerifiedDropVisits=0,PoseHealth=0;
+    FVector PoseLocation=FVector::ZeroVector;
+    TWeakObjectPtr<APlayseedLantern> ObservedStar;
 };

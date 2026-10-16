@@ -8,6 +8,9 @@
 #include "ThunderBindingPost.h"
 #include "ThunderPrisonGate.h"
 #include "PlayseedActionComponent.h"
+#include "PlayseedLantern.h"
+#include "PlayseedVitalityComponent.h"
+#include "Camera/CameraActor.h"
 #include "PlayseedRecordingSubsystem.h"
 #include "ThunderExpeditionSubsystem.h"
 #include "Engine/GameInstance.h"
@@ -25,9 +28,11 @@ void UReferencePaintingTestSubsystem::Initialize(FSubsystemCollectionBase& Colle
 {
     Super::Initialize(Collection);
 #if !UE_BUILD_SHIPPING
-    bChainTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderChainTest"));
+    bStarTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest"));
+    bReadMode=FParse::Param(FCommandLine::Get(),TEXT("ThunderStarReadTest"));
+    bChainTest=bStarTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderChainTest"));
     bDropTest=bChainTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderDropTest"));
-    bEnabled=bDropTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderPaintingTest"));
+    bEnabled=bReadMode||bDropTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderPaintingTest"));
 #endif
 }
 void UReferencePaintingTestSubsystem::Tap(APlayerController* PC,FKey Key)
@@ -52,7 +57,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
     if(Phase==0)
     {
         if(Map!=TEXT("Entrance")||!Hero||!Mode||Elapsed<1)return;
-        if(!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_"))||Progress->GetEarnedRewardCount()!=0||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
+        if(!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_"))||Progress->GetEarnedRewardCount()!=(bReadMode?1:0)||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0)!=bReadMode||(bReadMode&&!Progress->HasEarnedReward(6)))
         {Finish(false,TEXT("Painting QA requires a fresh isolated save"));return;}
         if(!GetGameInstance()->GetSubsystem<UPlayseedRecordingSubsystem>()->StartRecording(TEXT("Validation/CoursePlaythrough.avi"))){Finish(false,TEXT("Painting recording failed"));return;}
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderPaintingRoom.png"),false,false);
@@ -87,6 +92,13 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
     }
     if(Phase==3)
     {
+        if(bReadMode)
+        {
+            if(Map!=TEXT("MissionSelect")||Progress->GetEarnedRewardCount()!=1||!Progress->HasEarnedReward(6)||!UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
+            {Finish(false,TEXT("Earned star6 did not persist through painting entry"));return;}
+            if(Elapsed>10){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderStarSelection.png"),false,false);Phase=4;Elapsed=0;}
+            return;
+        }
         if(Map!=TEXT("MissionSelect")||Progress->GetEarnedRewardCount()!=0||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
         {Finish(false,TEXT("Painting entry changed progress or travelled twice"));return;}
         if(bDropTest&&Elapsed>2)
@@ -102,7 +114,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
         return;
     }
     if(Phase==4&&Elapsed>1){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/CourseComplete.png"),false,false);Phase=5;Elapsed=0;return;}
-    if(Phase==5&&Elapsed>1)Finish(true,TEXT("Normal walking and Space jump into painting, ripple/dive/fade to star selection; R/M/Space/Ctrl/Enter spam blocked during transition; fresh progress remains zero and unsaved."));
+    if(Phase==5&&Elapsed>1)Finish(!bStarTest||(bMReentryChecked&&bPoseObserved&&bPoseShot),bReadMode?(bStarTest?TEXT("Actual M return and painting reentry, second physical drop, reference post3 and gate collision, actual star6 save, pose/camera/held star, transition input spam and duplicate guard, automatic painting return, earned6 menu display persisted."):TEXT("Separate process loaded the actual star6 save, walked and jumped into the painting, and displayed earned6/count1 in selection without awarding progress.")):TEXT("Normal walking and Space jump into painting, ripple/dive/fade to star selection; R/M/Space/Ctrl/Enter spam blocked during transition; fresh progress remains zero and unsaved."));
     if(Phase==6)
     {
         if(Map!=TEXT("ThunderMeadow")||!Hero)return;
@@ -123,7 +135,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
         }
         if(Flow->GetState()!=EReferenceTravelState::InCourse||!bSawDrop||!bCapturedLanding||!Movement->IsMovingOnGround()||FVector::Dist2D(Hero->GetActorLocation(),FVector(-6558,-6464,0))>40)
         {Finish(false,TEXT("Drop did not land at the reference entrance and release input once"));return;}
-        Phase=7;Elapsed=0;return;
+        ++VerifiedDropVisits;Phase=7;Elapsed=0;return;
     }
     if(Phase==7&&Elapsed>1)
     {
@@ -138,6 +150,8 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
         if(Elapsed>4)
         {
             if(!bSawJump||!Hero->GetCharacterMovement()->IsMovingOnGround()){Finish(false,TEXT("Ordinary jump was not available after drop landing"));return;}
+            if(bStarTest&&VerifiedDropVisits==1){Tap(PC,EKeys::M);Phase=13;Elapsed=0;return;}
+            if(bStarTest&&VerifiedDropVisits>=2)bMReentryChecked=true;
             if(bChainTest){Phase=20;Elapsed=0;ChainWaypoint=0;ChainLegElapsed=0;return;}
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/CourseComplete.png"),false,false);Phase=9;Elapsed=0;
         }
@@ -152,10 +166,18 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
     }
     if(Phase==11&&Elapsed>1){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/CourseComplete.png"),false,false);Phase=12;Elapsed=0;return;}
     if(Phase==12&&Elapsed>1)Finish(!bChainTest||bChainGateVerified,bChainTest?TEXT("Painting entry, physical drop, ordinary walking to reference post, three real ground pounds, released Chomp physical sweep breaks gate once, visible original-position star6, stop before collection and M returns to painting. No recovery, no injected state, zero progress unchanged."):TEXT("Painting dive -> actual star selection -> physical 1000cm drop -> ground contact and landing pose -> ordinary Space jump -> M returns to painting front. R/M/Space/Ctrl/Enter spam blocked during transition, no recovery and fresh zero progress unchanged."));
+    if(Phase==13&&Elapsed>1)
+    {
+        if(Map!=TEXT("Entrance")||!Hero||Flow->GetState()!=EReferenceTravelState::AtPainting||FVector::Dist2D(Hero->GetActorLocation(),FVector(-600,0,0))>40)
+        {Finish(false,TEXT("M return did not reach a usable painting entrance"));return;}
+        FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderPaintingReentry.png"),false,false);
+        bJumped=false;bCapturedDive=false;bSawDrop=false;bCapturedLanding=false;bSawJump=false;JumpHold=0;Phase=1;Elapsed=0;
+    }
 }
 
 void UReferencePaintingTestSubsystem::UpdateChain(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC)
 {
+    if(bStarTest&&Phase>=26){UpdateStarCapture(DeltaSeconds,Hero,PC);return;}
     auto* Stage=Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(GetWorld(),AThunderMeadowStage::StaticClass()));
     if(!Hero||!Stage||!Stage->GetBindingPost()||!Stage->GetPrisonGate()||!Stage->GetBoundSentinel()||Hero->RecoveryCount!=0)
     {Finish(false,TEXT("Reference challenge disappeared or the route died/recovered"));return;}
@@ -223,5 +245,55 @@ void UReferencePaintingTestSubsystem::UpdateChain(float DeltaSeconds,AWindseedCh
     if(Phase==22&&Gate->IsBroken()&&Chomp->IsDeparted())
     {Phase=23;Elapsed=0;ChainWaypoint=0;ChainLegElapsed=0;}
     if(Phase==24&&Elapsed>1.2f)
-    {FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderChainGate.png"),false,false);Phase=9;Elapsed=0;}
+    {FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderChainGate.png"),false,false);Phase=bStarTest?25:9;Elapsed=0;}
+    if(Phase==25)
+    {
+        auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
+        if(Flow->IsCelebrating())
+        {ObservedStar=Gate->GetReward();Phase=26;Elapsed=0;return;}
+        const FVector Delta=Gate->GetRewardLocation()-Hero->GetActorLocation();
+        if(Delta.Size2D()>15)Hero->AddMovementInput(Delta.GetSafeNormal2D(),FMath::Clamp(Delta.Size2D()/120,.2f,1.f));
+        else if(Movement->IsMovingOnGround())Movement->StopMovementImmediately();
+        if(Delta.Size2D()<220&&Movement->IsMovingOnGround()&&JumpHold<=0)
+        {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;}
+        if(Elapsed>12)Finish(false,TEXT("Ordinary walking and jump did not touch the real star6"));
+    }
+}
+
+void UReferencePaintingTestSubsystem::UpdateStarCapture(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC)
+{
+    auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
+    const FString Map=UGameplayStatics::GetCurrentLevelName(GetWorld(),true);
+    if(!Hero||Progress->GetEarnedRewardCount()!=1||!Progress->HasEarnedReward(6)||!UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
+    {Finish(false,TEXT("Real star6 was not saved before the capture animation"));return;}
+    if(Phase==26)
+    {
+        if(Flow->IsCelebrating())
+        {
+            if(!ObservedStar.IsValid()||ObservedStar->GetSuccessfulCollections()!=1||!ObservedStar->IsCollected())
+            {Finish(false,TEXT("Star collection duplicated or real actor was not collected"));return;}
+            for(FKey Key:{EKeys::R,EKeys::M,EKeys::SpaceBar,EKeys::LeftControl,EKeys::Enter,EKeys::LeftMouseButton})Tap(PC,Key);
+            if(Flow->HasStartedStarPose())
+            {
+                if(!bPoseObserved){bPoseObserved=true;PoseLocation=Hero->GetActorLocation();PoseHealth=Hero->GetVitality()->GetHealth();}
+                auto* Model=Cast<AReferenceHero>(Hero);
+                if(!Model||!Model->IsShowingStarPose()||FVector::Dist(Hero->GetActorLocation(),PoseLocation)>1||Hero->GetVitality()->GetHealth()!=PoseHealth)
+                {Finish(false,TEXT("Pose, position or vitality changed during locked capture"));return;}
+                if(Elapsed>1.6f&&!bPoseShot)
+                {
+                    if(!Cast<ACameraActor>(PC->GetViewTarget())){Finish(false,TEXT("Star camera did not become the actual view target"));return;}
+                    FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderStarPose.png"),false,false);bPoseShot=true;
+                }
+            }
+            return;
+        }
+        if(Map!=TEXT("Entrance")||Flow->GetState()!=EReferenceTravelState::AtPainting||!bPoseObserved||!bPoseShot||FVector::Dist2D(Hero->GetActorLocation(),FVector(-600,0,0))>40)
+        {Finish(false,TEXT("Star capture did not automatically return to the painting front"));return;}
+        Phase=27;Elapsed=0;return;
+    }
+    if(Phase==27&&Elapsed>1.2f)
+    {
+        FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderStarReturn.png"),false,false);
+        bReadMode=true;bJumped=false;bCapturedDive=false;JumpHold=0;Phase=1;Elapsed=0;
+    }
 }

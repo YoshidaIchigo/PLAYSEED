@@ -115,5 +115,8 @@ void AReferenceEntranceHUD::DrawHUD()
     auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
     UI.Star(FVector2D(265,20),10,FLinearColor(1,.78f,.02f));UI.Text(TEXT("×"),276,9,19,FLinearColor(.55f,.53f,.85f));UI.Text(FString::FromInt(Progress->GetEarnedRewardCount()),293,8,20,FLinearColor(1,.37f,.025f));
     UI.Text(TEXT("えに むかって ジャンプ！"),160,214,9,FLinearColor::White,true,false,true);
+    auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
+    if(Flow->GetLastRewardNumber()>0&&GetWorld()->GetTimeSeconds()<5)
+        UI.Text(FString::Printf(TEXT("スター %d を ゲット！"),Flow->GetLastRewardNumber()),160,46,12,FLinearColor(1,.8f,.05f),true,false,true);
     if(auto* Mode=Cast<AReferenceEntranceGameMode>(GetWorld()->GetAuthGameMode()))if(Mode->GetEntryFade()>0)UI.Rect(0,0,320,240,FLinearColor(1,1,1,Mode->GetEntryFade()));
 }

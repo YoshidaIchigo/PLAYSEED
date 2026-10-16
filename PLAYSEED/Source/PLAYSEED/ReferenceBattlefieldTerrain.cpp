@@ -25,7 +25,7 @@ AReferenceBattlefieldTerrain::AReferenceBattlefieldTerrain()
 
 bool AReferenceBattlefieldTerrain::IsReferenceCourse()
 {
-    return FParse::Param(FCommandLine::Get(),TEXT("ReferenceCourse")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderDropTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderChainTest"));
+    return FParse::Param(FCommandLine::Get(),TEXT("ReferenceCourse")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderDropTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderChainTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest"));
 }
 
 void AReferenceBattlefieldTerrain::BeginPlay()

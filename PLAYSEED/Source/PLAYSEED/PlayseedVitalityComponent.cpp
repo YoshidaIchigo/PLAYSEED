@@ -7,8 +7,10 @@
 #include "PlayseedRideComponent.h"
 #include "PlayseedLaunchComponent.h"
 #include "PlayseedFlightComponent.h"
+#include "ReferenceTravelSubsystem.h"
 #include "WindseedCharacter.h"
 #include "Engine/World.h"
+#include "Engine/GameInstance.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 UPlayseedVitalityComponent::UPlayseedVitalityComponent()
@@ -30,6 +32,8 @@ void UPlayseedVitalityComponent::TickComponent(float DeltaTime, ELevelTick TickT
 
 bool UPlayseedVitalityComponent::TryTakeImpact(int32 Points, FVector AwayDirection)
 {
+    if(auto* Instance=GetWorld()?GetWorld()->GetGameInstance():nullptr)
+        if(Instance->GetSubsystem<UReferenceTravelSubsystem>()->IsTransitionLocked()){++BlockedImpacts;return false;}
     if (Points <= 0 || bDefeating) return false;
     if (IsInvulnerable()) { ++BlockedImpacts; return false; }
     auto* Player = Cast<AWindseedCharacter>(GetOwner());
@@ -56,6 +60,9 @@ bool UPlayseedVitalityComponent::TryTakeImpact(int32 Points, FVector AwayDirecti
 
 void UPlayseedVitalityComponent::Defeat()
 {
+    // 入場・取得・帰還の演出中は死亡処理も始めません。通常プレイ中の体力と死亡は従来どおりです。
+    if(auto* Instance=GetWorld()?GetWorld()->GetGameInstance():nullptr)
+        if(Instance->GetSubsystem<UReferenceTravelSubsystem>()->IsTransitionLocked())return;
     if (bDefeating) return;
     auto* Player = Cast<AWindseedCharacter>(GetOwner());
     if (!Player) return;
