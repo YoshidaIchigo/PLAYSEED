@@ -19,6 +19,7 @@ public:
 private:
     void Tap(APlayerController* PC,FKey Key);
     void Finish(bool bPassed,const FString& Message);
+    void UpdateReferenceGround(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceSky(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceRed(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceCannon(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
@@ -30,6 +31,10 @@ private:
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     bool bWingOwnedReplay=false;
+    bool bGroundCoinTest=false,bGroundCoinsVerified=false,bGroundResetVerified=false;
+    int32 GroundWaypoint=0,GroundPost=-1,GroundDrop=0,GroundCircleAttempts=0;
+    float GroundLegElapsed=0;
+    FVector GroundRetryTarget=FVector::ZeroVector;
     bool bDefaultStartTest=false;
     bool bReferenceSkyTest=false,bWingHubInitiallyUnlocked=false,bWingHubChecked=false,bWingHubJumped=false,bWingPoundSent=false;
     bool bWingPowerObserved=false,bWingFlightObserved=false,bWingCameraHidden=false,bWingAimSent=false,bWingAimShot=false,bWingSlow=false,bWingFlightKeysSet=false;

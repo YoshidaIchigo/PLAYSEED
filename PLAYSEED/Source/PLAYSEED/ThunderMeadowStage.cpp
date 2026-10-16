@@ -20,6 +20,7 @@
 #include "ThunderLauncher.h"
 #include "ThunderFlightBloom.h"
 #include "ReferenceWingBox.h"
+#include "ReferenceCoinField.h"
 #include "ThunderFlightSwitch.h"
 #include "ThunderStormkeeper.h"
 #include "ThunderCloudflagRace.h"
@@ -262,6 +263,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (BindingPost) BindingPost->ResetPost();
     if (PrisonGate) PrisonGate->ResetGate();
     if (HundredLantern) HundredLantern->ResetBonus();
+    if (ReferenceCoinField) ReferenceCoinField->ResetCoins();
     if (MountainRest) MountainRest->ResetRest();
 }
 
@@ -526,6 +528,7 @@ void AThunderMeadowStage::BeginPlay()
         BuildScarletTrail();
         BuildReferenceFlight();
         BuildSkyChimes();
+        ReferenceCoinField=GetWorld()->SpawnActor<AReferenceCoinField>();
         BuildLighting();
         return;
     }
