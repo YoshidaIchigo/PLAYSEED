@@ -10,11 +10,22 @@ AReferenceCheckerPlatform::AReferenceCheckerPlatform()
     PrimaryActorTick.bCanEverTick=true;
     RootComponent=CreateDefaultSubobject<USceneComponent>(TEXT("CheckerRoot"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> Cylinder(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
     Surface=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CheckerCollision"));Surface->SetupAttachment(RootComponent);
     Surface->SetStaticMesh(Cube.Object);Surface->SetRelativeLocation(FVector(.35f,-.35f,.75f));
     Surface->SetRelativeScale3D(FVector(3.577f,2.149f,.765f));
     Surface->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);Surface->SetCollisionResponseToAllChannels(ECR_Block);
     Surface->CanCharacterStepUpOn=ECB_Yes;Surface->SetMobility(EComponentMobility::Movable);
+    // X方向の黒い軸と両端の円盤は表示だけです。足場の当たり判定はSurfaceだけが持ちます。
+    for(int32 Index=0;Index<3;++Index)
+    {
+        auto* Axle=CreateDefaultSubobject<UStaticMeshComponent>(*FString::Printf(TEXT("CheckerAxle%d"),Index));
+        Axle->SetupAttachment(RootComponent);Axle->SetStaticMesh(Cylinder.Object);
+        Axle->SetRelativeLocation(FVector(Index==0?0:Index==1?-190:190,0,.75f));
+        Axle->SetRelativeRotation(FRotator(90,0,0));
+        Axle->SetRelativeScale3D(Index==0?FVector(.36f,.36f,4.2f):FVector(.56f,.56f,.12f));
+        Axle->SetCollisionEnabled(ECollisionEnabled::NoCollision);Axles.Add(Axle);
+    }
     for(int32 X=0;X<4;++X)for(int32 Y=0;Y<4;++Y)for(int32 Side:{-1,1})
     {
         auto* Tile=CreateDefaultSubobject<UStaticMeshComponent>(*FString::Printf(TEXT("Checker%d_%d_%d"),X,Y,Side));
@@ -29,6 +40,8 @@ void AReferenceCheckerPlatform::BeginPlay()
     if(auto* Palette=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Battlefield/M_Actor.M_Actor")))
     {
         auto* Edge=UMaterialInstanceDynamic::Create(Palette,this);Edge->SetVectorParameterValue(TEXT("Tint"),FLinearColor(.18f,.24f,.25f));Surface->SetMaterial(0,Edge);
+        auto* Black=UMaterialInstanceDynamic::Create(Palette,this);Black->SetVectorParameterValue(TEXT("Tint"),FLinearColor(.004f,.005f,.007f));
+        for(UStaticMeshComponent* Axle:Axles)Axle->SetMaterial(0,Black);
         for(int32 I=0;I<Tiles.Num();++I)
         {
             auto* Material=UMaterialInstanceDynamic::Create(Palette,this);
