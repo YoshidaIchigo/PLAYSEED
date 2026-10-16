@@ -40,9 +40,16 @@ bool UThunderPostTestSubsystem::JumpToPost(AWindseedCharacter* Player, float Del
 {
     auto* Post = Stage->GetBindingPost(); auto* Move = Player->GetCharacterMovement(); auto* PC = Cast<APlayerController>(Player->GetController());
     const FVector Offset = Post->GetActorLocation() - Player->GetActorLocation(); const float Feet = Player->GetActorLocation().Z - 82;
-    if (Offset.Size2D() > 8) Player->AddMovementInput(Offset.GetSafeNormal2D(), FMath::Clamp(Offset.Size2D() / 100, .15f, 1.f));
+    // 空中の慣性は逆方向の通常入力で減速します。速度や位置を直接変更しません。
+    if (bJumpStarted && !Move->IsMovingOnGround())
+    {
+        const FVector Desired = (Offset.GetSafeNormal2D() * Offset.Size2D() * 4.5f).GetClampedToMaxSize2D(470);
+        const FVector Correction = Desired - FVector(Player->GetVelocity().X, Player->GetVelocity().Y, 0);
+        if (Correction.Size2D() > 2) Player->AddMovementInput(Correction.GetSafeNormal2D(), FMath::Clamp(Correction.Size2D() / 150, 0.f, 1.f));
+    }
+    else if (Offset.Size2D() > 8) Player->AddMovementInput(Offset.GetSafeNormal2D(), FMath::Clamp(Offset.Size2D() / 100, .15f, 1.f));
     PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(), FRotator(-28, 0, 0), DeltaSeconds, 4));
-    if (!bJumpStarted && Move->IsMovingOnGround() && Offset.Size2D() < 210) { Player->Jump(); bJumpStarted = true; JumpTime = 0; BeforePounds = Post->GetPoundCount(); UE_LOG(LogTemp, Display, TEXT("POST TEST: normal jump from %s toward actual top %.0f"), *Player->GetActorLocation().ToString(), Post->GetTopHeight()); }
+    if (!bJumpStarted && Move->IsMovingOnGround() && Offset.Size2D() < 330) { Player->Jump(); bJumpStarted = true; JumpTime = 0; BeforePounds = Post->GetPoundCount(); UE_LOG(LogTemp, Display, TEXT("POST TEST: normal jump from %s toward actual top %.0f"), *Player->GetActorLocation().ToString(), Post->GetTopHeight()); }
     if (!bJumpStarted) return false;
     JumpTime += DeltaSeconds; if (JumpTime > .18f) Player->StopJumping();
     if (bPound && !bPoundPressed && !Move->IsMovingOnGround() && Offset.Size2D() < 45 && Feet > Post->GetTopHeight() + 45 && JumpTime > .2f) { PostTap(PC, EKeys::LeftControl); bPoundPressed = true; }
