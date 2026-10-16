@@ -1,0 +1,12 @@
+{
+  "normal_before": "ABSENT",
+  "game_exit": 0,
+  "normal_after": "ABSENT",
+  "slot": "Validation_PR46_Presentation_C"
+}
+{
+  "slot": "Validation_PR46_Presentation_C",
+  "game_exit": 0,
+  "normal_after": "ABSENT",
+  "normal_before": "ABSENT"
+}

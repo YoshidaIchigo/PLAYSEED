@@ -1,61 +1,62 @@
 #include "ThunderMissionSelectionGameMode.h"
 #include "ThunderExpeditionSubsystem.h"
+#include "BattlefieldUI.h"
 #include "Components/InputComponent.h"
 #include "Engine/Canvas.h"
-#include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
+#include "Engine/World.h"
+#include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
-
 void AThunderMissionSelectionHUD::DrawHUD()
 {
-    Super::DrawHUD();
-    if (!Canvas) return;
-    const float S = FMath::Min(Canvas->SizeX / 1280.f, Canvas->SizeY / 720.f);
-    const float X = (Canvas->SizeX - 1020 * S) * .5f;
-    DrawRect(FLinearColor(.025f, .07f, .1f), 0, 0, Canvas->SizeX, Canvas->SizeY);
-    auto Text = [&](const FString& Message, float Y, float Scale, FLinearColor Color)
-    { DrawText(Message, Color, X, Y * S, GEngine->GetMediumFont(), Scale * S, false); };
-    Text(TEXT("THUNDER MEADOW"), 55, 2.7f, FLinearColor(.7f, .9f, 1));
-    Text(TEXT("Choose your expedition"), 125, 1.6f, FLinearColor::White);
-    auto* Expedition = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
-    Text(FString::Printf(TEXT("LANTERNS  %d / 7"), Expedition->GetEarnedRewardCount()), 165, 1.1f, FLinearColor(.7f, 1, .8f));
-    for (int32 Number = 1; Number <= UThunderExpeditionSubsystem::MainMissionCount; ++Number)
+    Super::DrawHUD();if(!Canvas)return;
+    DrawRect(FLinearColor::Black,0,0,Canvas->SizeX,Canvas->SizeY);
+    FBattlefieldUI UI(Canvas);UI.Rect(0,0,320,240,FLinearColor(.78f,.8f,.82f));
+    // 参照画面の明るい背景と横並びの6スターです。候補の表示だけでは獲得にしません。
+    for(int32 Y=0;Y<24;++Y)for(int32 X=0;X<32;++X)if((X+Y)%2==0)UI.Triangle(FVector2D(X*10,Y*10),FVector2D(X*10+10,Y*10),FVector2D(X*10,Y*10+10),FLinearColor(.82f,.84f,.86f));
+    auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
+    const auto* Mode=Cast<AThunderMissionSelectionGameMode>(GetWorld()->GetAuthGameMode());const int32 Selected=Mode?Mode->GetHighlightedMission():1;
+    UI.Text(TEXT("COURSE 1"),160,25,12,FLinearColor(.95f,.68f,.015f),true);
+    UI.Text(TEXT("ボムへいの せんじょう"),160,51,14,FLinearColor::Black,true,false,true);
+    for(int32 N=1;N<=6;++N)
     {
-        const float Y = 205 + (Number - 1) * 58;
-        const bool bEarned = Expedition->HasEarnedReward(Number);
-        Text(FString::Printf(TEXT("%d   %s%s"), Number, UThunderExpeditionSubsystem::GetMissionTitle(Number), bEarned ? TEXT("  [earned]") : TEXT("")), Y, 1.5f,
-            bEarned ? FLinearColor(.7f, 1, .8f) : FLinearColor(1, .86f, .52f));
-        Text(UThunderExpeditionSubsystem::GetMissionGoal(Number), Y + 29, .95f, FLinearColor::White);
+        const float X=35+(N-1)*50;const bool bSelected=N==Selected,bEarned=Progress->HasEarnedReward(N);
+        UI.Text(FString::FromInt(N),X,87,10,FLinearColor::White,true);
+        UI.Star(FVector2D(X,119),bSelected?22:14,bEarned?FLinearColor(1,.78f,.02f):FLinearColor(.15f,.25f,.8f));
+        if(bSelected)UI.Triangle(FVector2D(X,148),FVector2D(X-5,155),FVector2D(X+5,155),FLinearColor(.85f,.05f,.025f));
     }
-    Text(Expedition->HasEarnedReward(7) ? TEXT("Bonus lantern: 100 lightcoins  [earned]") : TEXT("Bonus lantern: gather 100 lightcoins during one visit."), 590, 1.2f, FLinearColor(.7f, 1, .8f));
-    Text(TEXT("Press 1-6 to enter. M: stage selection. Seven lanterns to discover."), 645, 1.15f, FLinearColor::White);
-    if (!Expedition->GetProgressProblem().IsEmpty()) Text(Expedition->GetProgressProblem(), 683, .9f, FLinearColor(1, .5f, .4f));
+    UI.Text(UThunderExpeditionSubsystem::GetMissionTitle(Selected),160,169,10,FLinearColor::Black,true,false,true);
+    UI.Text(TEXT("← →  スターをえらぶ   Enter / A  けってい"),160,205,6.5f,FLinearColor(.18f,.18f,.2f),true,false,true);
+    if(Progress->HasEarnedReward(7))UI.Star(FVector2D(300,217),7,FLinearColor(1,.78f,.02f));
+    if(!Progress->GetProgressProblem().IsEmpty())UI.Text(Progress->GetProgressProblem(),160,226,6,FLinearColor(.8f,.05f,.025f),true);
 }
-
-AThunderMissionSelectionGameMode::AThunderMissionSelectionGameMode()
-{
-    DefaultPawnClass = nullptr;
-    HUDClass = AThunderMissionSelectionHUD::StaticClass();
-}
-
+AThunderMissionSelectionGameMode::AThunderMissionSelectionGameMode(){DefaultPawnClass=nullptr;HUDClass=AThunderMissionSelectionHUD::StaticClass();}
 void AThunderMissionSelectionGameMode::StartPlay()
 {
-    Super::StartPlay();
-    if (!InputComponent) return;
-    InputComponent->BindKey(EKeys::One, IE_Pressed, this, &AThunderMissionSelectionGameMode::ChooseOne);
-    InputComponent->BindKey(EKeys::Two, IE_Pressed, this, &AThunderMissionSelectionGameMode::ChooseTwo);
-    InputComponent->BindKey(EKeys::Three, IE_Pressed, this, &AThunderMissionSelectionGameMode::ChooseThree);
-    InputComponent->BindKey(EKeys::Four, IE_Pressed, this, &AThunderMissionSelectionGameMode::ChooseFour);
-    InputComponent->BindKey(EKeys::Five, IE_Pressed, this, &AThunderMissionSelectionGameMode::ChooseFive);
-    InputComponent->BindKey(EKeys::Six, IE_Pressed, this, &AThunderMissionSelectionGameMode::ChooseSix);
+    Super::StartPlay();auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
+    HighlightedMission=1;while(HighlightedMission<6 && Progress->HasEarnedReward(HighlightedMission))++HighlightedMission;
+    if(!InputComponent)return;
+    InputComponent->BindKey(EKeys::One,IE_Pressed,this,&AThunderMissionSelectionGameMode::ChooseOne);
+    InputComponent->BindKey(EKeys::Two,IE_Pressed,this,&AThunderMissionSelectionGameMode::ChooseTwo);
+    InputComponent->BindKey(EKeys::Three,IE_Pressed,this,&AThunderMissionSelectionGameMode::ChooseThree);
+    InputComponent->BindKey(EKeys::Four,IE_Pressed,this,&AThunderMissionSelectionGameMode::ChooseFour);
+    InputComponent->BindKey(EKeys::Five,IE_Pressed,this,&AThunderMissionSelectionGameMode::ChooseFive);
+    InputComponent->BindKey(EKeys::Six,IE_Pressed,this,&AThunderMissionSelectionGameMode::ChooseSix);
+    for(FKey Key:{EKeys::Left,EKeys::A,EKeys::Gamepad_DPad_Left})InputComponent->BindKey(Key,IE_Pressed,this,&AThunderMissionSelectionGameMode::Left);
+    for(FKey Key:{EKeys::Right,EKeys::D,EKeys::Gamepad_DPad_Right})InputComponent->BindKey(Key,IE_Pressed,this,&AThunderMissionSelectionGameMode::Right);
+    for(FKey Key:{EKeys::Enter,EKeys::SpaceBar,EKeys::Gamepad_FaceButton_Bottom})InputComponent->BindKey(Key,IE_Pressed,this,&AThunderMissionSelectionGameMode::Confirm);
+    InputComponent->BindAxisKey(EKeys::Gamepad_LeftX,this,&AThunderMissionSelectionGameMode::Stick);
+    if(auto* PC=UGameplayStatics::GetPlayerController(this,0)){PC->SetInputMode(FInputModeGameOnly());PC->bShowMouseCursor=false;}
 }
-
+void AThunderMissionSelectionGameMode::Navigate(int32 Direction){if(!bTravelRequested)HighlightedMission=(HighlightedMission-1+Direction+6)%6+1;}
+void AThunderMissionSelectionGameMode::Stick(float Value)
+{
+    if(FMath::Abs(Value)<.2f){NextStickTime=0;return;}
+    if(FMath::Abs(Value)>.6f && GetWorld()->GetTimeSeconds()>=NextStickTime){Navigate(Value>0?1:-1);NextStickTime=GetWorld()->GetTimeSeconds()+.3f;}
+}
 void AThunderMissionSelectionGameMode::EnterMission(int32 Number)
 {
-    if (bTravelRequested) return;
-    // GameInstance が所有する Subsystem は、OpenLevel 後も同じ選択番号を保持します。
-    auto* Expedition = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
-    if (!Expedition->SelectMission(Number)) return;
-    bTravelRequested = true;
-    UGameplayStatics::OpenLevel(this, FName(TEXT("/Game/ThunderMeadow/ThunderMeadow")));
+    if(bTravelRequested)return;
+    if(!GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->SelectMission(Number))return;
+    bTravelRequested=true;UGameplayStatics::OpenLevel(this,FName(TEXT("/Game/ThunderMeadow/ThunderMeadow")));
 }

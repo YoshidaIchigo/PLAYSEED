@@ -22,9 +22,15 @@ APlayseedLantern::APlayseedLantern()
         Shape->SetRelativeLocation(Position); Shape->SetRelativeScale3D(Scale); Shape->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         Parts.Add(Shape); Colors.Add(Color);
     };
-    Part(TEXT("GoldenSeedLight"), Sphere.Object, FVector::ZeroVector, FVector(.7f, .7f, 1), FLinearColor(1, .75f, .12f));
-    Part(TEXT("LanternCap"), Cone.Object, FVector(0, 0, 55), FVector(.9f, .9f, .35f), FLinearColor(.05f, .58f, .5f));
-    Part(TEXT("LanternFoot"), Sphere.Object, FVector(0, 0, -48), FVector(.8f, .8f, .2f), FLinearColor(.08f, .28f, .35f));
+    // 5本の先端を持つ金色のスター。素材は同梱基本形状から組み、保存IDは以前と同じです。
+    Part(TEXT("StarCore"),Sphere.Object,FVector::ZeroVector,FVector(.3f,.58f,.58f),FLinearColor(1,.7f,.015f));
+    for(int32 I=0;I<5;++I)
+    {
+        const float A=I*2*PI/5;const FVector Direction(0,FMath::Sin(A),FMath::Cos(A));
+        Part(*FString::Printf(TEXT("StarPoint%d"),I),Cone.Object,Direction*38,FVector(.36f,.36f,.8f),FLinearColor(1,.7f,.015f));
+        Parts.Last()->SetRelativeRotation(FQuat::FindBetweenNormals(FVector::UpVector,Direction).Rotator());
+    }
+    for(float Side:{-1.f,1.f})Part(Side<0?TEXT("StarEyeLeft"):TEXT("StarEyeRight"),Sphere.Object,FVector(19,Side*11,4),FVector(.055f,.065f,.18f),FLinearColor(.015f,.015f,.02f));
 }
 void APlayseedLantern::BeginPlay()
 {
@@ -32,7 +38,7 @@ void APlayseedLantern::BeginPlay()
     if (auto* Palette = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Windseed/M_Palette.M_Palette")))
         for (int32 Index = 0; Index < Parts.Num(); ++Index)
         {
-            auto* Tint = UMaterialInstanceDynamic::Create(Palette, this); Tint->SetVectorParameterValue(TEXT("Tint"), Colors[Index]); Parts[Index]->SetMaterial(0, Tint);
+            auto* Tint = UMaterialInstanceDynamic::Create(Palette, this); Tint->SetVectorParameterValue(TEXT("Tint"), Colors[Index]); for(int32 Slot=0;Slot<Parts[Index]->GetNumMaterials();++Slot)Parts[Index]->SetMaterial(Slot,Tint);
         }
 }
 void APlayseedLantern::ConfigureReward(int32 Number)
@@ -59,7 +65,7 @@ void APlayseedLantern::Tick(float DeltaSeconds)
     if (bNewReward || Progress->HasEarnedReward(RewardNumber))
     {
         SetActorHiddenInGame(true);
-        if (bNewReward) { ++SuccessfulCollections; UE_LOG(LogTemp, Display, TEXT("LANTERN COLLECTED: actual reward %d, saved total %d."), RewardNumber, Progress->GetEarnedRewardCount()); }
+        if (bNewReward) { ++SuccessfulCollections; UE_LOG(LogTemp, Display, TEXT("STAR COLLECTED: actual reward %d, saved total %d."), RewardNumber, Progress->GetEarnedRewardCount()); }
     }
     else { bCollected = false; RetryRemaining = 1; } // 保存失敗なら消さずに再試行できます。
 }

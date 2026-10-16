@@ -1,103 +1,62 @@
 #include "ThunderMeadowGameMode.h"
+#include "BattlefieldUI.h"
 #include "ThunderCoinLedger.h"
 #include "ThunderLivesComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
-#include "GameFramework/PlayerController.h"
+#include "ThunderMeadowStage.h"
+#include "ThunderCloudflagRace.h"
+#include "ThunderExpeditionSubsystem.h"
 #include "WindseedCharacter.h"
 #include "PlayseedVitalityComponent.h"
 #include "PlayseedInteractionComponent.h"
 #include "PlayseedLaunchComponent.h"
-#include "PlayseedFlightComponent.h"
-#include "ThunderMeadowStage.h"
-#include "ThunderStormkeeper.h"
-#include "ThunderCloudflagRace.h"
-#include "ThunderScarletTrail.h"
-#include "ThunderSkyChimes.h"
-#include "ThunderBindingPost.h"
-#include "ThunderPrisonGate.h"
-#include "ThunderHundredLantern.h"
-#include "PlayseedLantern.h"
-#include "Engine/World.h"
-#include "ThunderExpeditionSubsystem.h"
-#include "Engine/GameInstance.h"
+#include "Components/InputComponent.h"
 #include "Engine/Canvas.h"
-#include "Engine/Engine.h"
+#include "Engine/World.h"
+#include "Engine/GameInstance.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 
 void AThunderMeadowHUD::DrawHUD()
 {
-    Super::DrawHUD();
-    if (!Canvas) return;
-    DrawRect(FLinearColor(.02f, .06f, .1f, .94f), 20, 20, FMath::Min(920.f, Canvas->SizeX - 40.f), 130);
-    DrawText(TEXT("THUNDER MEADOW"), FLinearColor(.8f, .9f, 1), 38, 32, GEngine->GetMediumFont(), 1.7f);
-    // HUD は現在選択された目的だけを表示します。選択しただけでは達成扱いにしません。
-    auto* Expedition = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
-    const int32 Mission = Expedition->GetSelectedMissionNumber();
-    DrawText(FString::Printf(TEXT("LANTERNS %d / 7"), Expedition->GetEarnedRewardCount()), FLinearColor(.7f, 1, .8f), Canvas->SizeX - 235, 34, GEngine->GetMediumFont(), 1.1f);
-    DrawText(FString::Printf(TEXT("%d: %s"), Mission, UThunderExpeditionSubsystem::GetMissionTitle(Mission)), FLinearColor(1, .86f, .52f), 38, 78, GEngine->GetMediumFont(), 1.1f);
-    DrawText(UThunderExpeditionSubsystem::GetMissionGoal(Mission), FLinearColor::White, 38, 115, GEngine->GetMediumFont(), .85f);
-    if (auto* Player = Cast<AWindseedCharacter>(UGameplayStatics::GetPlayerPawn(this, 0)))
+    Super::DrawHUD();if(!Canvas)return;
+    FBattlefieldUI UI(Canvas);
+    auto* Mode=Cast<AThunderMeadowGameMode>(GetWorld()->GetAuthGameMode());
+    auto* Player=Cast<AWindseedCharacter>(UGameplayStatics::GetPlayerPawn(this,0));
+    if(!Mode || !Player)return;
+    auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
+    const FLinearColor Number(1,.37f,.025f),Multiply(.55f,.53f,.85f);
+    UI.Face(FVector2D(29,20));UI.Text(TEXT("×"),42,9,19,Multiply);UI.Text(FString::FromInt(Mode->GetLives()->GetRemaining()),59,8,20,Number);
+    UI.Coin(FVector2D(181,20));UI.Text(TEXT("×"),191,9,19,Multiply);UI.Text(FString::FromInt(Mode->GetCoinLedger()->GetTotal()),208,8,20,Number);
+    UI.Star(FVector2D(265,20),10,FLinearColor(1,.78f,.025f));UI.Text(TEXT("×"),276,9,19,Multiply);UI.Text(FString::FromInt(Progress->GetEarnedRewardCount()),293,8,20,Number);
+    const int32 Health=Player->GetVitality()->GetHealth();
+    if(Health!=LastHealth){LastHealth=Health;PowerUntil=GetWorld()->GetTimeSeconds()+2;}
+    if(Health<8 || GetWorld()->GetTimeSeconds()<PowerUntil)UI.Power(FVector2D(160,61),Health);
+    UI.Camera();
+    if(Player->GetLaunch()->IsAiming())
     {
-        const auto* Vitality = Player->GetVitality();
-        const auto* Launch = Player->GetLaunch();
-        if (Player->GetFlight()->HasPower())
-        {
-            DrawRect(FLinearColor(.02f, .06f, .1f, .9f), 570, 158, 260, 35);
-            DrawText(FString::Printf(TEXT("LEAFWINGS %.1fs%s"), Player->GetFlight()->GetRemaining(), Player->GetFlight()->IsFlying() ? TEXT("  GLIDE") : TEXT("")), FLinearColor(.6f, 1, .75f), 580, 165, GEngine->GetMediumFont(), 1.1f);
-            if (Expedition->GetProgressProblem().IsEmpty()) DrawText(TEXT("LEAFWINGS: air SPACE glide/fall | Mouse/stick: steer | W/S: speed"), FLinearColor(.6f, 1, .75f), 30, Canvas->SizeY - 84, GEngine->GetMediumFont(), .9f);
-        }
-        if (Launch->IsAiming())
-        {
-            DrawRect(FLinearColor(.02f, .06f, .1f, .94f), 20, 205, FMath::Min(920.f, Canvas->SizeX - 40.f), 38);
-            DrawText(FString::Printf(TEXT("SKYBLOOM  %.0f deg   Mouse / right stick: aim   LMB / RT: launch   G / DOWN: leave"), Launch->GetAimPitch()), FLinearColor(1, .88f, .55f), 32, 214, GEngine->GetMediumFont(), .85f);
-            const float X = Canvas->SizeX * .5f, Y = Canvas->SizeY * .5f;
-            DrawLine(X - 12, Y, X + 12, Y, FLinearColor(1, .85f, .25f), 2);
-            DrawLine(X, Y - 12, X, Y + 12, FLinearColor(1, .85f, .25f), 2);
-        }
-        const FLinearColor Color = Vitality->IsInvulnerable() ? FLinearColor(1, .4f, .35f) : FLinearColor(.85f, 1, .9f);
-        DrawRect(FLinearColor(.02f, .06f, .1f, .9f), 20, 158, 215, 35);
-        DrawText(FString::Printf(TEXT("VITALITY %d / %d%s"), Vitality->GetHealth(), Vitality->GetMaximumHealth(), Vitality->IsInvulnerable() ? TEXT("  !") : TEXT("")), Color, 30, 165, GEngine->GetMediumFont(), 1.1f);
-        if (!Player->GetInteraction()->GetMessage().IsEmpty())
-        {
-            DrawRect(FLinearColor(.02f, .06f, .1f, .94f), 20, Canvas->SizeY - 145, FMath::Min(920.f, Canvas->SizeX - 40.f), 48);
-            DrawText(Player->GetInteraction()->GetMessage(), FLinearColor(1, .88f, .55f), 34, Canvas->SizeY - 132, GEngine->GetMediumFont(), 1.05f);
-        }
+        UI.Rect(153,119,14,1,FLinearColor::Black);UI.Rect(159,113,1,14,FLinearColor::Black);
+        UI.Rect(155,120,10,1,FLinearColor::White);UI.Rect(160,115,1,10,FLinearColor::White);
     }
-    DrawText(TEXT("WASD: move  SPACE: jump  CTRL/RB: dive  LMB/RT: strike"), FLinearColor::White, 30, Canvas->SizeY - 62, GEngine->GetMediumFont(), 1.05f);
-    DrawText(TEXT("E/X: lift  F/Y: climb  Q/UP: ride  G/DOWN: talk  R: restart  M: menu"), FLinearColor::White, 30, Canvas->SizeY - 38, GEngine->GetMediumFont(), 1.05f);
-    if (auto* Mode = Cast<AThunderMeadowGameMode>(GetWorld()->GetAuthGameMode()))
+    if(!Player->GetInteraction()->GetMessage().IsEmpty())
     {
-        DrawRect(FLinearColor(.02f,.06f,.1f,.9f),Canvas->SizeX-165,205,145,35);
-        DrawText(FString::Printf(TEXT("LIVES %d"),Mode->GetLives()->GetRemaining()),FLinearColor(1,.8f,.45f),Canvas->SizeX-150,212,GEngine->GetMediumFont(),1.1f);
-        const auto* Coins = Mode->GetCoinLedger();
-        DrawRect(FLinearColor(.02f, .06f, .1f, .9f), 245, 158, 310, 35);
-        DrawText(FString::Printf(TEXT("LIGHTCOINS %d   SCARLET %d"), Coins->GetTotal(), Coins->GetRedCount()), FLinearColor(1, .9f, .4f), 255, 165, GEngine->GetMediumFont(), 1.1f);
+        UI.Rect(44,77,232,64,FLinearColor(0,0,0,.75f));
+        TArray<FString> Words;Player->GetInteraction()->GetMessage().ParseIntoArray(Words,TEXT(" "),true);
+        FString Line;float Y=84;
+        for(const FString& Word:Words){if(Line.Len()+Word.Len()>38){UI.Text(Line,52,Y,8,FLinearColor::White,false,false);Line.Reset();Y+=12;}Line+=Word+TEXT(" ");}
+        UI.Text(Line,52,Y,8,FLinearColor::White,false,false);
     }
-    if (!Expedition->GetProgressProblem().IsEmpty())
-        DrawText(Expedition->GetProgressProblem(), FLinearColor(1, .5f, .4f), 30, Canvas->SizeY - 80, GEngine->GetMediumFont(), 1);
-    if (Mission == 1)
-        if (const auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(this, AThunderMeadowStage::StaticClass())); Meadow && Meadow->GetStormkeeper())
-            DrawText(FString::Printf(TEXT("STORMKEEPER  THROWS %d / 3"), Meadow->GetStormkeeper()->GetValidThrows()), FLinearColor(1, .85f, .6f), 30, 211, GEngine->GetMediumFont(), 1.1f);
-    if (Mission == 2)
-        if (const auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(this, AThunderMeadowStage::StaticClass())); Meadow && Meadow->GetCloudflagRace())
-            DrawText(FString::Printf(TEXT("%.1fs  %s"), Meadow->GetCloudflagRace()->GetElapsed(), Meadow->GetCloudflagRace()->GetStateLabel()), FLinearColor(1, .85f, .6f), 30, 252, GEngine->GetMediumFont(), .9f);
-    if (Mission == 4)
-        if (const auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(this, AThunderMeadowStage::StaticClass())); Meadow && Meadow->GetScarletTrail())
-            DrawText(FString::Printf(TEXT("SCARLET TRAIL  %d / 8"), Meadow->GetScarletTrail()->GetCollectedCount()), FLinearColor(1, .5f, .6f), 30, 211, GEngine->GetMediumFont(), 1.1f);
-    if (Mission == 6)
-        if (const auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(this, AThunderMeadowStage::StaticClass())); Meadow && Meadow->GetBindingPost())
-            DrawText(FString::Printf(TEXT("BINDING POST %d / 3%s"), Meadow->GetBindingPost()->GetPoundCount(), Meadow->GetPrisonGate() && Meadow->GetPrisonGate()->IsBroken() ? TEXT("  GATE OPEN") : TEXT("")), FLinearColor(1, .85f, .5f), 30, 252, GEngine->GetMediumFont(), 1.1f);
-    if (const auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(this, AThunderMeadowStage::StaticClass())); Meadow && Meadow->GetHundredLantern() && Meadow->GetHundredLantern()->GetReward() && !Meadow->GetHundredLantern()->GetReward()->IsCollected())
-        DrawText(TEXT("HUNDRED LANTERN READY - claim its light"), FLinearColor(1, .9f, .4f), 30, 290, GEngine->GetMediumFont(), 1.f);
-    if (Mission == 5)
-        if (const auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(this, AThunderMeadowStage::StaticClass())); Meadow && Meadow->GetSkyChimes())
-            DrawText(FString::Printf(TEXT("CENTRE CHIMES  %d / 5"), Meadow->GetSkyChimes()->GetCollectedCount()), FLinearColor(1, .85f, .5f), 30, 252, GEngine->GetMediumFont(), 1.1f);
-    if (const auto* Mode=Cast<AThunderMeadowGameMode>(GetWorld()->GetAuthGameMode()); Mode && Mode->GetLives()->IsGameOver())
+    if(Mode->ShouldShowControls())
     {
-        DrawRect(FLinearColor(.01f,.03f,.05f,.9f),0,0,Canvas->SizeX,Canvas->SizeY);
-        DrawText(TEXT("THE TRAIL RESTS"),FLinearColor(1,.8f,.45f),Canvas->SizeX*.5f-155,Canvas->SizeY*.5f-55,GEngine->GetMediumFont(),2);
-        DrawText(TEXT("No lives left - returning to trail selection"),FLinearColor::White,Canvas->SizeX*.5f-220,Canvas->SizeY*.5f+5,GEngine->GetMediumFont(),1.1f);
-        DrawText(TEXT("Your earned lanterns are safe. Enter again to retry with 3 lives."),FLinearColor(.65f,1,.8f),Canvas->SizeX*.5f-300,Canvas->SizeY*.5f+40,GEngine->GetMediumFont(),.9f);
+        UI.Rect(30,82,260,114,FLinearColor(0,0,0,.85f));
+        const TCHAR* Lines[]={TEXT("そうさ"),TEXT("WASD / 左スティック: いどう"),TEXT("Space / A: ジャンプ   Shift / LB: はしる"),TEXT("マウス / 右スティック: カメラ"),TEXT("E/X: もつ   F/Y: のぼる   G/下: はなす"),TEXT("Ctrl/RB: ヒップドロップ  LMB/RT: こうげき"),TEXT("R/B: やりなおし   M: スターえらび"),TEXT("H: このひょうじを とじる")};
+        for(int32 I=0;I<8;++I)UI.Text(Lines[I],42,89+I*12,7.5f,FLinearColor::White,false,false,true);
+    }
+    if(!Progress->GetProgressProblem().IsEmpty()){UI.Rect(20,180,280,28,FLinearColor(0,0,0,.8f));UI.Text(Progress->GetProgressProblem(),25,187,7,FLinearColor(1,.35f,.25f));}
+    if(Mode->GetLives()->IsGameOver())
+    {
+        UI.Rect(0,0,320,240,FLinearColor(0,0,0,.85f));UI.Text(TEXT("GAME OVER"),160,91,29,FLinearColor(1,.12f,.025f),true);
+        UI.Text(TEXT("スターは そのまま。もういちど ちょうせん！"),160,145,8,FLinearColor::White,true,false,true);
     }
 }
 
@@ -115,6 +74,7 @@ void AThunderMeadowGameMode::StartPlay()
     // 各 Actor の準備が終わってから最初の Tick が進みます。
     Stage = GetWorld()->SpawnActor<AThunderMeadowStage>();
     Super::StartPlay();
+    if(InputComponent)InputComponent->BindKey(EKeys::H,IE_Pressed,this,&AThunderMeadowGameMode::ToggleControls);
     if (auto* Player = Cast<AWindseedCharacter>(UGameplayStatics::GetPlayerPawn(this, 0)))
     {
         Player->SetTrailStartLocation(FVector(-600, -600, 100));

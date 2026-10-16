@@ -15,6 +15,9 @@ class PLAYSEED_API AThunderMeadowHUD : public AHUD
     GENERATED_BODY()
 public:
     virtual void DrawHUD() override;
+private:
+    int32 LastHealth=8;
+    float PowerUntil=0;
 };
 
 // 雷鳴の丘のルールを担当します。地形の形状は専用 Actor へ分けます。
@@ -30,7 +33,10 @@ public:
     UThunderLivesComponent* GetLives() const { return Lives; }
     virtual void HandlePlayerFall(AWindseedCharacter* Player) override;
     UThunderCoinLedger* GetCoinLedger() const { return CoinLedger; }
+    bool ShouldShowControls() const { return bShowControls; }
 private:
+    void ToggleControls() { bShowControls=!bShowControls; }
+    bool bShowControls=false;
     UPROPERTY() TObjectPtr<UThunderCoinLedger> CoinLedger;
     UPROPERTY() TObjectPtr<UThunderLivesComponent> Lives;
     // World が Stage を所有します。UPROPERTY は参照を UE に伝えます。

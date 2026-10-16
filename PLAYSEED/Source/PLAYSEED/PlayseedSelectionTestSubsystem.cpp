@@ -47,6 +47,7 @@
 #include "ThunderDamageThistle.h"
 #include "ThunderCoinLedger.h"
 #include "ThunderMeadowGameMode.h"
+#include "ThunderMissionSelectionGameMode.h"
 #include "PlayseedCoin.h"
 #include "Engine/GameInstance.h"
 #include "GameFramework/PlayerController.h"
@@ -126,13 +127,18 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     const bool bRaceTest = (bCampaignRun && CampaignTarget == 2) || (!bCampaignRun && (FParse::Param(FCommandLine::Get(), TEXT("ThunderRaceTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderRaceReadTest"))));
     const bool bSkyCacheTest = (bCampaignRun && CampaignTarget == 3) || (!bCampaignRun && (FParse::Param(FCommandLine::Get(), TEXT("ThunderSkyCacheTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderSkyCacheReadTest"))));
     const bool bScarletTest = (bCampaignRun && CampaignTarget == 4) || bCampaignRead || (!bCampaignRun && (FParse::Param(FCommandLine::Get(), TEXT("ThunderScarletTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderScarletReadTest"))));
-    const bool bPostTest = (bCampaignRun && CampaignTarget == 6) || (!bCampaignRun && (FParse::Param(FCommandLine::Get(), TEXT("ThunderPostTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderPostReadTest"))));
+    const bool bPresentationTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderPresentationTest"));
+    const bool bPostTest = bPresentationTest || (bCampaignRun && CampaignTarget == 6) || (!bCampaignRun && (FParse::Param(FCommandLine::Get(), TEXT("ThunderPostTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderPostReadTest"))));
     const bool bChimeTest = (bCampaignRun && CampaignTarget == 5) || (!bCampaignRun && (FParse::Param(FCommandLine::Get(), TEXT("ThunderChimeTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderChimeReadTest"))));
     if (bProgressTest && (Expedition->GetEarnedRewardCount() != 2 || !Expedition->HasEarnedReward(1) || !Expedition->HasEarnedReward(7)))
     { Fail(TEXT("Saved rewards changed during restart or re-entry")); return; }
     if (Step == 0 && Map == TEXT("MissionSelect") && Elapsed > 3 && Recording->GetCapturedFrameCount() > 15)
     {
         if (bCampaignRun && (Expedition->GetEarnedRewardCount() != 0 || Expedition->IsLauncherUnlocked() || Expedition->IsFlightUnlocked() || UGameplayStatics::DoesSaveGameExist(Expedition->GetSaveSlotName(), 0))) { Fail(TEXT("All7 campaign must start with a genuinely fresh isolated save")); return; }
+        if(bPresentationTest && !bPresentationMenuChecked)
+        {
+            PresentationNavigationStep=0;Step=46;Elapsed=0;return;
+        }
         Tap(PC, bRaceTest ? EKeys::Two : bBossTest ? EKeys::One : bSkyCacheTest ? EKeys::Three : bScarletTest ? EKeys::Four : bChimeTest ? EKeys::Five : EKeys::Six);
         Step = 7; Elapsed = 0;
         UE_LOG(LogTemp, Display, TEXT("COURSE ENTRY TEST: entered the only course from mission selection; no Garden menu."));
@@ -260,6 +266,12 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         if (FVector::Dist2D(Player->GetActorLocation(), FVector(-600, -600, 100)) > 5 || Player->RecoveryCount != 1 || FMath::Abs(PC->GetControlRotation().Yaw)<1
             || Expedition->GetSelectedMissionNumber() != (bBossTest ? 1 : bRaceTest ? 2 : bSkyCacheTest ? 3 : bScarletTest ? 4 : bChimeTest ? 5 : 6))
         { Fail(TEXT("Restart in the new stage failed")); return; }
+        if(bPresentationTest && !bPresentationControlsChecked)
+        {
+            auto* Mode=Cast<AThunderMeadowGameMode>(CurrentMode);Tap(PC,EKeys::H);
+            if(!Mode){Fail(TEXT("Presentation game mode missing"));return;}
+            Step=47;Elapsed=0;return;
+        }
         const bool bIslandTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderIslandTest"));
         if (bLivesTest)
         {
@@ -635,6 +647,32 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         const bool bComplete = BoxTest->UpdateTest(Player, DeltaSeconds);
         if (!BoxTest->GetError().IsEmpty()) { Fail(BoxTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
+    else if(Step==46 && Map==TEXT("MissionSelect") && Elapsed>.2f)
+    {
+        auto* Menu=Cast<AThunderMissionSelectionGameMode>(CurrentMode);
+        const int32 Expected[]={1,2,3,2,3,4,5,6,6};
+        if(!Menu || Menu->GetHighlightedMission()!=Expected[PresentationNavigationStep] || Expedition->GetSelectedMissionNumber()!=1 || Expedition->GetEarnedRewardCount()!=0)
+        {Fail(FString::Printf(TEXT("Real menu input step%d did not retain expected highlight%d and unchanged progress"),PresentationNavigationStep,Expected[PresentationNavigationStep]));return;}
+        // InputKeyは次のPlayerInput処理で実行されるため、次のフレームで結果を確かめます。
+        if(PresentationNavigationStep==8){bPresentationMenuChecked=true;Tap(PC,EKeys::Enter);Step=7;Elapsed=0;}
+        else
+        {
+            if(PresentationNavigationStep==7)FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderStarMenu.png"),false,false);
+            else Tap(PC,PresentationNavigationStep==2?EKeys::Left:EKeys::Right);
+            ++PresentationNavigationStep;Elapsed=0;
+        }
+    }
+    else if(Step==47 && Player && Elapsed>.6f)
+    {
+        if(!Cast<AThunderMeadowGameMode>(CurrentMode)->ShouldShowControls()){Fail(TEXT("H controls did not open"));return;}
+        FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderControls.png"),false,false);Step=48;Elapsed=0;
+    }
+    else if(Step==48 && Player && Elapsed>.2f){Tap(PC,EKeys::H);Step=49;Elapsed=0;}
+    else if(Step==49 && Player && Elapsed>.2f)
+    {
+        if(Cast<AThunderMeadowGameMode>(CurrentMode)->ShouldShowControls()){Fail(TEXT("H controls did not close"));return;}
+        bPresentationControlsChecked=true;Step=3;Elapsed=1.1f;
     }
     else if (Step == 45)
     {
