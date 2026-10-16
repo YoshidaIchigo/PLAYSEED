@@ -3,6 +3,7 @@
 #include "ReferenceTravelSubsystem.h"
 #include "ThunderMissionSelectionGameMode.h"
 #include "ReferenceHero.h"
+#include "ReferenceWalker.h"
 #include "ReferenceChainWalk.h"
 #include "ReferenceSummitWalk.h"
 #include "ReferenceRaceRoute.h"
@@ -474,6 +475,9 @@ void UReferencePaintingTestSubsystem::UpdateStarCapture(float DeltaSeconds,AWind
                 {Finish(false,TEXT("Pose, position or vitality changed during locked capture"));return;}
                 if(Elapsed>1.6f&&!bPoseShot)
                 {
+                    for(TActorIterator<AReferenceWalker> It(GetWorld());It;++It)
+                        if(FVector::Dist(It->GetActorLocation(),Hero->GetActorLocation())<700&&!It->IsHidden())
+                        {Finish(false,TEXT("Nearby walker overlapped the star-pose presentation"));return;}
                     if(bCameraTest&&Model->IsBodyHiddenForCamera()){Finish(false,TEXT("Star pose stayed hidden after the camera moved out"));return;}
                     if(!Cast<ACameraActor>(PC->GetViewTarget())){Finish(false,TEXT("Star camera did not become the actual view target"));return;}
                     if(bReferenceRaceTest||bReferenceCannonTest||bReferenceRedTest||bReferenceSkyTest)

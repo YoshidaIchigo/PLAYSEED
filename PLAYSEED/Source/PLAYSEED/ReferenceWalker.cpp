@@ -1,4 +1,6 @@
 #include "ReferenceWalker.h"
+#include "ReferenceTravelSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -47,6 +49,13 @@ void AReferenceWalker::ResetEnemy()
 }
 void AReferenceWalker::Tick(float DeltaSeconds)
 {
+    if(auto* Flow=GetGameInstance()?GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>():nullptr)
+        if(Flow->IsCelebrating())
+        {
+            // スター取得中は追跡と接触を止め、近い敵が主人公のポーズへ重ならないようにします。
+            auto* Hero=UGameplayStatics::GetPlayerPawn(this,0);
+            SetActorHiddenInGame(Hero&&FVector::Dist(Hero->GetActorLocation(),GetActorLocation())<700);return;
+        }
     Super::Tick(DeltaSeconds);
     if(IsDefeated()){WalkerVisual->SetRelativeScale3D(FVector(1.2f,1.2f,.22f));return;}
     if(auto* Hero=UGameplayStatics::GetPlayerPawn(this,0))SetActorHiddenInGame(FVector::Dist(Hero->GetActorLocation(),GetActorLocation())>4000);
