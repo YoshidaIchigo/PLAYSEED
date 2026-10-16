@@ -1,4 +1,5 @@
 #include "ThunderStormkeeper.h"
+#include "ProceduralMeshComponent.h"
 #include "PlayseedLantern.h"
 #include "ReferenceBattlefieldTerrain.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -27,10 +28,23 @@ AThunderStormkeeper::AThunderStormkeeper()
         {
             AddPart(Sphere.Object,FVector(46,Side*16,15),FVector(.1f,.1f,.16f),White);
             AddPart(Sphere.Object,FVector(50,Side*16,15),FVector(.035f,.045f,.1f),Black);
-            AddPart(Sphere.Object,FVector(48,Side*9,-1),FVector(.11f,.2f,.06f),White);
-            AddPart(Sphere.Object,FVector(0,Side*47,-8),FVector(.23f),White);
+            AddPart(Sphere.Object,FVector(0,Side*43,-8),FVector(.18f),FLinearColor(.02f,.1f,.8f));
+            AddPart(Sphere.Object,FVector(0,Side*57,-8),FVector(.23f),Gold);
             AddPart(Sphere.Object,FVector(8,Side*22,-41),FVector(.35f,.27f,.16f),Gold);
         }
+        AddPart(Sphere.Object,FVector(38,-25,28),FVector(.025f,.2f,.11f),FLinearColor(.16f,.19f,.24f));
+        Moustache=CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("ReferenceMoustache"));Moustache->SetupAttachment(GetBody());Moustache->SetCollisionEnabled(ECollisionEnabled::NoCollision);Moustache->SetCastShadow(false);
+        TArray<FVector> Vertices;TArray<int32> Indices;
+        for(float Side:{-1.f,1.f})
+        {
+            const int32 Base=Vertices.Num();Vertices.Append({FVector(49,0,4),FVector(49,Side*44,-1),FVector(49,Side*20,-15)});
+            // 表と裏の三角形を持つ自作の白いひげです。
+            Indices.Append({Base,Base+1,Base+2,Base+2,Base+1,Base});
+        }
+        TArray<FVector> Normals;Normals.Init(FVector(1,0,0),Vertices.Num());TArray<FVector2D> UV;UV.Init(FVector2D::ZeroVector,Vertices.Num());TArray<FColor> WhiteColors;WhiteColors.Init(FColor::White,Vertices.Num());TArray<FProcMeshTangent> Tangents;
+        Moustache->CreateMeshSection(0,Vertices,Indices,Normals,UV,WhiteColors,Tangents,false);
+        static ConstructorHelpers::FObjectFinder<UStaticMesh> Plane(TEXT("/Engine/BasicShapes/Plane.Plane"));
+        ReferenceShadow=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ReferenceBossShadow"));ReferenceShadow->SetupAttachment(GetBody());ReferenceShadow->SetStaticMesh(Plane.Object);ReferenceShadow->SetAbsolute(true,true,true);ReferenceShadow->SetCollisionEnabled(ECollisionEnabled::NoCollision);ReferenceShadow->SetCastShadow(false);
         AddPart(Cylinder.Object,FVector(0,0,50),FVector(.65f,.65f,.13f),Gold);
         for (int32 Index=0; Index<5; ++Index)
         {
@@ -56,7 +70,8 @@ void AThunderStormkeeper::PaintBody()
     auto* Palette = LoadObject<UMaterialInterface>(nullptr, bReferenceBoss?TEXT("/Game/Battlefield/M_Actor.M_Actor"):TEXT("/Game/Windseed/M_Palette.M_Palette"));
     if (!Palette) return;
     auto* BodyMaterial = UMaterialInstanceDynamic::Create(Palette, this);
-    BodyMaterial->SetVectorParameterValue(TEXT("Tint"), (bReferenceBoss?FLinearColor(.035f,.04f,.055f):FLinearColor(.42f, .25f, .65f))); GetBody()->SetMaterial(0, BodyMaterial);
+    BodyMaterial->SetVectorParameterValue(TEXT("Tint"), (bReferenceBoss?FLinearColor(.003f,.004f,.007f):FLinearColor(.42f, .25f, .65f))); GetBody()->SetMaterial(0, BodyMaterial);
+    if(Moustache){auto* White=UMaterialInstanceDynamic::Create(Palette,this);White->SetVectorParameterValue(TEXT("Tint"),FLinearColor(.95f,.94f,.85f));Moustache->SetMaterial(0,White);}
     for (int32 Index = 0; Index < Parts.Num(); ++Index)
     {
         auto* Material = UMaterialInstanceDynamic::Create(Palette, this);
@@ -67,7 +82,11 @@ void AThunderStormkeeper::BeginPlay()
 {
     Super::BeginPlay(); ArenaFloor = GetActorLocation() - FVector(0, 0, bReferenceBoss?200:100);
     GetBody()->SetSimulatePhysics(false); GetBody()->SetMassOverrideInKg(NAME_None, 80, true); PaintBody();
-    if(bReferenceBoss)AlignWithFloor();
+    if(bReferenceBoss)
+    {
+        AlignWithFloor();if(auto* Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Battlefield/M_Shadow.M_Shadow")))ReferenceShadow->SetMaterial(0,Material);
+        UpdateReferenceShadow();
+    }
 }
 bool AThunderStormkeeper::CanBePickedUp(AWindseedCharacter* Player) const
 {
@@ -169,9 +188,22 @@ void AThunderStormkeeper::OnThrownLanding(const FHitResult& Hit)
     Reward = GetWorld()->SpawnActor<APlayseedLantern>(bReferenceBoss?FVector(2000,4500,4500):ArenaFloor + FVector(0, 0, 100), FRotator::ZeroRotator);
     if (Reward.IsValid()) Reward->ConfigureReward(1);
 }
+void AThunderStormkeeper::UpdateReferenceShadow()
+{
+    if(!ReferenceShadow)return;
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(ReferenceBossShadow),true,this);Params.AddIgnoredActor(UGameplayStatics::GetPlayerPawn(this,0));FHitResult Floor;
+    const bool bFloor=GetWorld()->LineTraceSingleByChannel(Floor,GetActorLocation()+FVector(0,0,40),GetActorLocation()-FVector(0,0,5000),ECC_Visibility,Params)&&Floor.ImpactNormal.Z>.5f;
+    ReferenceShadow->SetVisibility(bFloor&&!bDefeated);
+    if(bFloor)
+    {
+        ReferenceShadow->SetWorldLocation(Floor.ImpactPoint+Floor.ImpactNormal*2);ReferenceShadow->SetWorldRotation(FRotationMatrix::MakeFromZ(Floor.ImpactNormal).Rotator());
+        const float Size=FMath::Clamp(4.6f-(GetActorLocation().Z-200-Floor.ImpactPoint.Z)*.002f,2.f,4.6f);ReferenceShadow->SetWorldScale3D(FVector(Size,Size,1));
+    }
+}
 void AThunderStormkeeper::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+    UpdateReferenceShadow();
     if (bDefeated || IsHeld()) return;
     if (bRecovering) { RecoveryTime -= DeltaSeconds; if (RecoveryTime <= 0) ReturnToArena(); return; }
     if (IsInThrownFlight()) { if (GetActorLocation().Z < ArenaFloor.Z - 500) BeginRecovery(true); return; }

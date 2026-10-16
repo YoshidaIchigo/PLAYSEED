@@ -29,6 +29,7 @@ public:
 private:
     UStaticMeshComponent* Part(USceneComponent* Parent,UStaticMesh* ShapeAsset,FVector Position,FVector Dimensions,FLinearColor Color);
     UPROPERTY() TObjectPtr<USceneComponent> Visual;
+    UPROPERTY() TObjectPtr<USceneComponent> Head;
     UPROPERTY() TObjectPtr<USceneComponent> LeftArm;
     UPROPERTY() TObjectPtr<USceneComponent> RightArm;
     UPROPERTY() TObjectPtr<USceneComponent> LeftLeg;
