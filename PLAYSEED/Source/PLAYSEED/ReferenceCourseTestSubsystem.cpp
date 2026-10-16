@@ -74,11 +74,17 @@ void UReferenceCourseTestSubsystem::Tick(float DeltaSeconds)
         if(!Player || !Terrain){Finish(false,TEXT("Reference terrain or player disappeared"));return;}
         if(Player->RecoveryCount!=RecoveryBaseline){Finish(false,TEXT("Reference route fell or died; no teleport recovery is accepted"));return;}
         auto* Movement=Player->GetCharacterMovement();
-        if(bFlatJumpStarted)JumpPeak=FMath::Max(JumpPeak,static_cast<float>(Player->GetActorLocation().Z)-JumpStartZ);
+        if(bFlatJumpStarted && !bFlatJumpFinished)
+        {
+            JumpObservationTime+=DeltaSeconds;
+            if(Movement->IsFalling()){bFlatJumpAirborne=true;JumpPeak=FMath::Max(JumpPeak,static_cast<float>(Player->GetActorLocation().Z)-JumpStartZ);}
+            else if(bFlatJumpAirborne && Movement->IsMovingOnGround())bFlatJumpFinished=true;
+            if(JumpObservationTime>3 && !bFlatJumpFinished){Finish(false,TEXT("Flat jump did not take off and land within three seconds"));return;}
+        }
         if(JumpTime>0){JumpTime-=DeltaSeconds;if(JumpTime<=0)Player->StopJumping();}
         if(Waypoint>=Route.Num())
         {
-            if(Player->GetActorLocation().Z<4200 || JumpPeak<100){Finish(false,TEXT("Walking route did not reach the real summit or ordinary jump did not rise 100cm"));return;}
+            if(Player->GetActorLocation().Z<4200 || !bFlatJumpFinished || JumpPeak<100){Finish(false,TEXT("Walking route did not reach the real summit or ordinary jump did not rise 100cm"));return;}
             if(Movement->IsMovingOnGround())Movement->StopMovementImmediately();
             PC->SetControlRotation(FRotator(-20,210,0));
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderReferenceSummit.png"),false,false);
