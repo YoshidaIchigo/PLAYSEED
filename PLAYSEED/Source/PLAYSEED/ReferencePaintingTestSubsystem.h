@@ -28,7 +28,7 @@ private:
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     bool bReferenceBossTest=false,bBossRouteJump=false,bBossCoaxed=false,bBossThrowObserved=false;
-    bool bReferenceCannonTest=false,bGuideSent=false,bGuideConfirmed=false,bAimSent=false,bCannonAimShot=false,bCannonSawFlight=false,bCannonAimHidden=false;
+    bool bReferenceCannonTest=false,bGuideSent=false,bGuideConfirmed=false,bAimSent=false,bCannonAimShot=false,bCannonSawFlight=false,bCannonAimHidden=false,bCannonRouteJump=false;
     int32 CannonWaypoint=0;
     float CannonLegElapsed=0,CannonAimStable=0,CannonGoalYaw=0,CannonGoalPitch=0;
     bool bReferenceRaceTest=false,bRaceStartSent=false,bRaceClaimSent=false,bRaceRouteJump=false,bRaceSprintSeen=false;

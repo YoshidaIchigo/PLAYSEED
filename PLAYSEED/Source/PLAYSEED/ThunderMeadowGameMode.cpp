@@ -102,11 +102,11 @@ void AThunderMeadowHUD::DrawHUD()
         UI.Rect(44,77,232,64,FLinearColor(0,0,0,.75f));
         if(AReferenceBattlefieldTerrain::IsReferenceCourse())
         {
-            // 日本語は空白で単語を分けないため、改行と26文字幅で読みやすく折り返します。
+            // 日本語は空白で単語を分けないため、改行と23文字幅で読みやすく折り返します。
             FString Line;float Y=84;
             for(TCHAR Character:Player->GetInteraction()->GetMessage())
             {
-                if(Character==TEXT('\n')||Line.Len()>=26)
+                if(Character==TEXT('\n')||Line.Len()>=23)
                 {UI.Text(Line,52,Y,8,FLinearColor::White,false,false,true);Line.Reset();Y+=12;}
                 if(Character!=TEXT('\n'))Line.AppendChar(Character);
             }

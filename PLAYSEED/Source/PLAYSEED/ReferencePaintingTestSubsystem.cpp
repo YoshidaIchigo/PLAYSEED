@@ -711,7 +711,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceCannon(float DeltaSeconds,A
         const auto& Point=Points[CannonWaypoint];const FVector Target(Point.X,Point.Y,Point.Z),Delta=Target-Hero->GetActorLocation();CannonLegElapsed+=DeltaSeconds;
         if(CannonLegElapsed>18){Finish(false,FString::Printf(TEXT("Cannon ordinary walk blocked phase%d point%d hero%s target%s"),Phase,CannonWaypoint,*Hero->GetActorLocation().ToString(),*Target.ToString()));return;}
         if(Delta.Size2D()<25&&FMath::Abs(Hero->GetActorLocation().Z-82-Target.Z)<80)
-        {UE_LOG(LogTemp,Display,TEXT("CANNON WALK phase%d point%d"),Phase,CannonWaypoint);++CannonWaypoint;CannonLegElapsed=0;return;}
+        {UE_LOG(LogTemp,Display,TEXT("CANNON WALK phase%d point%d"),Phase,CannonWaypoint);++CannonWaypoint;CannonLegElapsed=0;bCannonRouteJump=false;return;}
         PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(),FRotator(-18,Delta.Rotation().Yaw,0),DeltaSeconds,4));
         if(Movement->IsFalling())
         {
@@ -719,6 +719,8 @@ void UReferencePaintingTestSubsystem::UpdateReferenceCannon(float DeltaSeconds,A
             Hero->AddMovementInput(Correction.GetSafeNormal2D(),FMath::Clamp(Correction.Size2D()/150,0.f,1.f));
         }
         else Hero->AddMovementInput(Delta.GetSafeNormal2D(),FMath::Clamp(Delta.Size2D()/140,.25f,1.f));
+        if(Point.bJump&&!bCannonRouteJump&&Movement->IsMovingOnGround())
+        {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;bCannonRouteJump=true;}
         if(Movement->IsMovingOnGround()&&JumpHold<=0&&Delta.Size2D()<450&&Target.Z>Hero->GetActorLocation().Z-12)
         {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;}
         return;

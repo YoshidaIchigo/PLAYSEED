@@ -82,7 +82,7 @@ void AThunderGuide::Interact(AWindseedCharacter* Player)
     if (Progress->TryUnlockLauncher())
     {
         bAwaitingConfirmation = false;
-        Dialogue->ShowMessage(bReferenceGuide?TEXT("大砲が使えるようになったよ！\nGで入って、マウスでねらい、左クリックで発射。"):TEXT("AERI: Skybloom unlocked. Your trail journal remembers."));
+        Dialogue->ShowMessage(bReferenceGuide?TEXT("大砲が使えるようになったよ！\nGで入って、マウスでねらう。\n左クリックで発射できるよ。"):TEXT("AERI: Skybloom unlocked. Your trail journal remembers."));
         UE_LOG(LogTemp, Display, TEXT("THUNDER GUIDE: Skybloom unlocked through actual dialogue."));
     }
     else Dialogue->ShowMessage(bReferenceGuide?TEXT("保存できなかったよ。\nもういちどGで試してね。"):TEXT("AERI: The trail journal could not be saved. Please try again."));
