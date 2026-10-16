@@ -46,7 +46,7 @@ AWindseedCharacter::AWindseedCharacter()
 
     CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
     CameraBoom->SetupAttachment(RootComponent);
-    CameraBoom->TargetArmLength = 560;
+    CameraBoom->TargetArmLength = 900;
     CameraBoom->SocketOffset = FVector(0, 0, 75);
     CameraBoom->bUsePawnControlRotation = true;
     CameraBoom->bEnableCameraLag = true;
@@ -54,7 +54,9 @@ AWindseedCharacter::AWindseedCharacter()
     CameraBoom->ProbeSize = 14;
     FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
     FollowCamera->SetupAttachment(CameraBoom);
-    FollowCamera->FieldOfView = 78;
+    FollowCamera->FieldOfView = 60;
+    FollowCamera->SetAspectRatio(4.f/3.f);
+    FollowCamera->bConstrainAspectRatio=true;
 
     SeedBody = CreateDefaultSubobject<USceneComponent>(TEXT("SeedBody"));
     SeedBody->SetupAttachment(RootComponent);
@@ -161,7 +163,7 @@ void AWindseedCharacter::LookYaw(float Value) { if (Launch->IsAiming()) Launch->
 void AWindseedCharacter::LookPitch(float Value) { if (Launch->IsAiming()) Launch->AdjustAim(0, Value * 1.2f); else if (Flight->IsFlying()) Flight->AdjustDirection(0, Value * 1.2f); else AddControllerPitchInput(Value); }
 void AWindseedCharacter::LookYawRate(float Value) { if (Launch->IsAiming()) Launch->AdjustAim(Value * 100 * GetWorld()->GetDeltaSeconds(), 0); else if (Flight->IsFlying()) Flight->AdjustDirection(Value * 100 * GetWorld()->GetDeltaSeconds(), 0); else AddControllerYawInput(Value*120.f*GetWorld()->GetDeltaSeconds()); }
 void AWindseedCharacter::LookPitchRate(float Value) { if (Launch->IsAiming()) Launch->AdjustAim(0, Value * 80 * GetWorld()->GetDeltaSeconds()); else if (Flight->IsFlying()) Flight->AdjustDirection(0, Value * 80 * GetWorld()->GetDeltaSeconds()); else AddControllerPitchInput(Value*90.f*GetWorld()->GetDeltaSeconds()); }
-void AWindseedCharacter::Zoom(float Value) { if (!Launch->IsAiming()) CameraBoom->TargetArmLength = FMath::Clamp(CameraBoom->TargetArmLength-Value*40, 300.f, 800.f); }
+void AWindseedCharacter::Zoom(float Value) { if (!Launch->IsAiming()) CameraBoom->TargetArmLength = FMath::Clamp(CameraBoom->TargetArmLength-Value*40, 450.f, 1400.f); }
 void AWindseedCharacter::SetSprinting(bool bEnabled)
 {
     // 乗っている間のShiftも記憶し、降りたときに現在の入力へ戻します。

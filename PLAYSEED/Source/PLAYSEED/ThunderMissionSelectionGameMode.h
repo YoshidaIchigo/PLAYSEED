@@ -1,10 +1,8 @@
 #pragma once
-
 #include "CoreMinimal.h"
 #include "PlayseedGameModeBase.h"
 #include "GameFramework/HUD.h"
 #include "ThunderMissionSelectionGameMode.generated.h"
-
 UCLASS()
 class PLAYSEED_API AThunderMissionSelectionHUD : public AHUD
 {
@@ -12,8 +10,7 @@ class PLAYSEED_API AThunderMissionSelectionHUD : public AHUD
 public:
     virtual void DrawHUD() override;
 };
-
-// 画面の入力を受け取り、Subsystem に選択番号を渡してからプレイ用マップを開きます。
+// 左右で候補を変え、決定した時だけSubsystemへ番号を渡します。保存のIDとは分離します。
 UCLASS()
 class PLAYSEED_API AThunderMissionSelectionGameMode : public APlayseedGameModeBase
 {
@@ -21,13 +18,21 @@ class PLAYSEED_API AThunderMissionSelectionGameMode : public APlayseedGameModeBa
 public:
     AThunderMissionSelectionGameMode();
     virtual void StartPlay() override;
+    int32 GetHighlightedMission() const { return HighlightedMission; }
 private:
     void EnterMission(int32 Number);
+    void Confirm() { EnterMission(HighlightedMission); }
+    void Left() { Navigate(-1); }
+    void Right() { Navigate(1); }
+    void Navigate(int32 Direction);
+    void Stick(float Value);
     void ChooseOne() { EnterMission(1); }
     void ChooseTwo() { EnterMission(2); }
     void ChooseThree() { EnterMission(3); }
     void ChooseFour() { EnterMission(4); }
     void ChooseFive() { EnterMission(5); }
     void ChooseSix() { EnterMission(6); }
-    bool bTravelRequested = false;
+    int32 HighlightedMission=1;
+    float NextStickTime=0;
+    bool bTravelRequested=false;
 };

@@ -6,11 +6,11 @@
 
 namespace
 {
-    // オリジナルの名称と目的文です。番号は選択画面、入場後HUD、後続の達成判定で共通にします。
+    // 参照コースの6つの目的です。保存の番号は変更せず、日本語の表示名だけを置き換えます。
     const TCHAR* Titles[] = {
-        TEXT("The Summit Stormkeeper"), TEXT("Race to the Cloudflag"),
-        TEXT("The Lantern Above"), TEXT("Eight Scarlet Chimes"),
-        TEXT("Five Sky Sparks"), TEXT("Break the Watcher's Bond")
+        TEXT("やまのうえの ボムキング"), TEXT("はくねつ ノコノコレース"),
+        TEXT("そらのしままで ぶっとべ"), TEXT("8まいの あかコイン"),
+        TEXT("そらにはばたけ はねマリオ"), TEXT("ワンワンの いぬごやで")
     };
     const TCHAR* Goals[] = {
         TEXT("Reach the summit and throw the stormkeeper three times."),
