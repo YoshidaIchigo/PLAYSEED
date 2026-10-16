@@ -45,10 +45,10 @@ void UReferencePaintingTestSubsystem::UpdateReferenceDeath(float DeltaSeconds,AW
             if(!Move->IsMovingOnGround())return;
             DeathHealthBaseline=Health->GetHealth();
             if(DeathHealthBaseline<1||DeathHealthBaseline>8){Finish(false,TEXT("Ordinary death approach had no living actual health"));return;}
-            // 前段の実被弾を消さず、実際の残り体力から2ダメージの接触回数を求めます。
-            DeathNeededHits=(DeathHealthBaseline+1)/2;
+            // 前段の実被弾を消さず、実際の残り体力から実3ダメージの接触回数を求めます。
+            DeathNeededHits=(DeathHealthBaseline+2)/3;
             DeathImpactBaseline=Health->GetSuccessfulImpacts();DeathDefeatBaseline=Health->GetDefeatCount();bDeathStarted=true;Phase=201;Elapsed=0;
-            UE_LOG(LogTemp,Display,TEXT("DEATH QA: observed real health%d, expected ordinary2damage contacts%d"),DeathHealthBaseline,DeathNeededHits);return;
+            UE_LOG(LogTemp,Display,TEXT("DEATH QA: observed real health%d, expected ordinary3damage contacts%d"),DeathHealthBaseline,DeathNeededHits);return;
         }
         const auto& P=ReferenceChainApproach[DeathWaypoint];const FVector Target(P.X,P.Y,P.Z);DeathLegElapsed+=DeltaSeconds;
         if(FVector::Dist2D(Target,Hero->GetActorLocation())<25&&FMath::Abs(Hero->GetActorLocation().Z-82-Target.Z)<80){++DeathWaypoint;DeathLegElapsed=0;return;}
@@ -59,9 +59,9 @@ void UReferencePaintingTestSubsystem::UpdateReferenceDeath(float DeltaSeconds,AW
         if(Hero->RecoveryCount==1)
         {
             if(!bDeathStarted||DeathNeededHits<1||Health->GetSuccessfulImpacts()!=DeathImpactBaseline+DeathNeededHits||Health->GetDefeatCount()!=DeathDefeatBaseline+1||Lives->GetRemaining()!=2||Lives->GetConsumedLives()!=1||Health->GetHealth()!=8||FVector::Dist2D(Hero->GetActorLocation(),FVector(-6558,-6464,0))>40)
-            {Finish(false,TEXT("Actual contacts did not consume exactly one life and restore the normal entrance"));return;}
+            {Finish(false,FString::Printf(TEXT("Actual death mismatch impacts%d expected%d defeats%d expected%d lives%d consumed%d health%d recovery%d hero%s"),Health->GetSuccessfulImpacts(),DeathImpactBaseline+DeathNeededHits,Health->GetDefeatCount(),DeathDefeatBaseline+1,Lives->GetRemaining(),Lives->GetConsumedLives(),Health->GetHealth(),Hero->RecoveryCount,*Hero->GetActorLocation().ToString()));return;}
             for(int32 Number=1;Number<=7;++Number)if(!Progress->HasEarnedReward(Number)){Finish(false,TEXT("A real death lost a saved star ID"));return;}
-            bDeathVerified=true;Phase=202;Elapsed=0;UE_LOG(LogTemp,Display,TEXT("DEATH QA: actual%d two-damage contacts from observed health%d, defeat1/recovery1/lives2/health8/earned7 retained"),DeathNeededHits,DeathHealthBaseline);return;
+            bDeathVerified=true;Phase=202;Elapsed=0;UE_LOG(LogTemp,Display,TEXT("DEATH QA: actual%d three-damage contacts from observed health%d, defeat1/recovery1/lives2/health8/earned7 retained"),DeathNeededHits,DeathHealthBaseline);return;
         }
         if(Hero->RecoveryCount!=0||Lives->GetRemaining()!=3){Finish(false,TEXT("Actual death contact consumed unexpected lives"));return;}
         const FVector Center=Chomp->GetActorLocation();Walk(FVector(Center.X,Center.Y,Chomp->GetAnchor().Z),false);
