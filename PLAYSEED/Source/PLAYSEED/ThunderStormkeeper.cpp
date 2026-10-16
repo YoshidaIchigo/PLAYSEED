@@ -97,7 +97,7 @@ FVector AThunderStormkeeper::GetCarryOffset() const
 void AThunderStormkeeper::AlignWithFloor()
 {
     auto* Terrain=Cast<AReferenceBattlefieldTerrain>(UGameplayStatics::GetActorOfClass(this,AReferenceBattlefieldTerrain::StaticClass()));
-    FVector Floor;
+    FVector Floor=FVector::ZeroVector;
     if(!Terrain||!Terrain->FindFloor(GetActorLocation()-FVector(0,0,200),Floor))return;
     // 見た目の半径ではなく実Boundsで底を合わせ、床との微小な重なりでSweepが止まるのを避けます。
     const float Radius=GetBody()->Bounds.BoxExtent.Z;
@@ -113,7 +113,7 @@ bool AThunderStormkeeper::CanStandAt(FVector Position)
     const FVector Samples[]={FVector::ZeroVector,FVector(210,0,0),FVector(-210,0,0),FVector(0,210,0),FVector(0,-210,0)};
     for(const auto& Offset:Samples)
     {
-        FVector Floor;
+        FVector Floor=FVector::ZeroVector;
         // 地形自身の歩行面を使い、相手や持ち物を床として拾わないようにします。
         const bool bFloorFound=Terrain->FindFloor(Position+Offset-FVector(0,0,200),Floor);
         if(!bFloorFound||FMath::Abs(Floor.Z-ArenaFloor.Z)>25)
