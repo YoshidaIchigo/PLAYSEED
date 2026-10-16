@@ -51,14 +51,14 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBombs(float DeltaSeconds,AW
         if(Health->GetHealth()!=8||Bomb->HasExploded()){Finish(false,TEXT("Ordinary bomb body contact must not damage or explode before pickup"));return;}
         if(Bomb->IsHeldBy(Hero))
         {
-            if(Hero->GetCarry()->GetHeldObject()!=Bomb||!Bomb->IsFuseLit()||Bomb->GetChaseStarts()<1||FVector::Dist2D(Bomb->GetHomeLocation(),Hero->GetActorLocation())<40)
+            if(Hero->GetCarry()->GetHeldObject()!=Bomb||!Bomb->IsFuseLit()||Bomb->GetChaseStarts()<1||Bomb->GetChaseTravel()<40)
             {Finish(false,TEXT("Normal E did not hold a real lit chasing bomb"));return;}
             bBombChaseChecked=true;Photo(Phase==191?TEXT("ThunderBombHeld.png"):TEXT("ThunderBombHeldFuse.png"));Begin(Phase==191?192:197);return;
         }
         const float D=FVector::Dist2D(Bomb->GetActorLocation(),Hero->GetActorLocation());
         if(D>(Bomb->IsFuseLit()?142:200))Walk(Bomb->GetActorLocation());else if(Move->IsMovingOnGround())Move->StopMovementImmediately();
         BombInputClock+=DeltaSeconds;
-        if(Bomb->IsFuseLit()&&D<155&&Move->IsMovingOnGround()&&BombInputClock>.4f){Tap(PC,EKeys::E);BombInputClock=0;}
+        if(Bomb->IsFuseLit()&&Bomb->GetChaseTravel()>40&&D<155&&Move->IsMovingOnGround()&&BombInputClock>.4f){Tap(PC,EKeys::E);BombInputClock=0;}
         if(Elapsed>18)Finish(false,FString::Printf(TEXT("Ordinary approach/E did not pick up bomb hero%s bomb%s home%s lit%d fuse%.2f chase%d"),*Hero->GetActorLocation().ToString(),*Bomb->GetActorLocation().ToString(),*Bomb->GetHomeLocation().ToString(),Bomb->IsFuseLit(),Bomb->GetFuseAge(),Bomb->GetChaseStarts()));return;
     }
     if(Phase==192)

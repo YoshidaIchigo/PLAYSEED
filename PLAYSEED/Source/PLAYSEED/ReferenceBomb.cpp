@@ -69,7 +69,7 @@ void AReferenceBomb::MoveGround(FVector Target,float Speed,float DeltaSeconds)
     FCollisionQueryParams Q;Q.AddIgnoredActor(this);Q.AddIgnoredActor(UGameplayStatics::GetPlayerPawn(this,0));FHitResult Wall,Floor;
     if(GetWorld()->SweepSingleByChannel(Wall,Start+FVector(0,0,55),Candidate+FVector(0,0,55),FQuat::Identity,ECC_Visibility,FCollisionShape::MakeSphere(58),Q))return;
     if(!GetWorld()->LineTraceSingleByChannel(Floor,Candidate+FVector(0,0,115),Candidate-FVector(0,0,230),ECC_Visibility,Q)||Floor.ImpactNormal.Z<.65f||FMath::Abs(Floor.ImpactPoint.Z+65-Start.Z)>35)return;
-    Candidate.Z=Floor.ImpactPoint.Z+65;SetActorLocation(Candidate);if(!D.IsNearlyZero())SetActorRotation(FRotator(0,D.Rotation().Yaw,0));
+    Candidate.Z=Floor.ImpactPoint.Z+65;SetActorLocation(Candidate);if(State==1)ChaseTravel+=FVector::Dist2D(Start,Candidate);if(!D.IsNearlyZero())SetActorRotation(FRotator(0,D.Rotation().Yaw,0));
 }
 void AReferenceBomb::BeginGrow()
 {

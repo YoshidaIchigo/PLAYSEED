@@ -27,6 +27,7 @@ public:
     float GetFuseAge() const { return FuseAge; }
     FVector GetHomeLocation() const { return Home; }
     int32 GetChaseStarts() const { return ChaseStarts; }
+    float GetChaseTravel() const { return ChaseTravel; }
     int32 GetExplosionCount() const { return ExplosionCount; }
     int32 GetExplosionDamageCount() const { return ExplosionDamageCount; }
     int32 GetDropGenerationCount() const { return DropGenerationCount; }
@@ -39,7 +40,7 @@ private:
     void BeginGrow();
     void Burst();
     void Restore(bool bNewAttempt);
-    UFUNCTION() void HandleKickedHit(UPrimitiveComponent*,AActor*,UPrimitiveComponent*,FVector,const FHitResult& Hit);
+    UFUNCTION() void HandleKickedHit(UPrimitiveComponent* HitComponent,AActor* OtherActor,UPrimitiveComponent* OtherComponent,FVector NormalImpulse,const FHitResult& Hit);
     UPROPERTY() TObjectPtr<USceneComponent> Visual;
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Parts;
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Feet;
@@ -51,6 +52,6 @@ private:
     FRotator HomeRotation=FRotator::ZeroRotator;
     // State: 0巡回、1追跡、2膨張、3爆発、4遠方での再出現待ち。
     int32 State=0,Revision=0,ChaseStarts=0,ExplosionCount=0,ExplosionDamageCount=0,DropGenerationCount=0;
-    float FuseAge=0,StateAge=0,WalkAge=0,PatrolAge=0;
+    float FuseAge=0,StateAge=0,WalkAge=0,PatrolAge=0,ChaseTravel=0;
     bool bStationary=false,bFuseLit=false,bCoinIssued=false,bExplosionHit=false,bKicked=false;
 };
