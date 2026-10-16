@@ -41,4 +41,5 @@ private:
     bool bSaveFailureTest=false,bSaveObstacleCreated=false,bSaveFailureObserved=false,bSaveObstacleRemoved=false;
     FString SaveObstaclePath;
     float RetryOutsideElapsed=0;
+    bool bCameraTest=false,bSawCameraHidden=false,bSawCameraRestored=false;
 };

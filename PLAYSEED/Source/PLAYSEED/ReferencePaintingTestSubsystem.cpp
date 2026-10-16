@@ -31,7 +31,8 @@ void UReferencePaintingTestSubsystem::Initialize(FSubsystemCollectionBase& Colle
     Super::Initialize(Collection);
 #if !UE_BUILD_SHIPPING
     bFadeTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderFadeTest"));
-    bSaveFailureTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderSaveFailureTest"));
+    bCameraTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderCameraTest"));
+    bSaveFailureTest=bCameraTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderSaveFailureTest"));
     bStarTest=bSaveFailureTest||bFadeTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest"));
     bReadMode=FParse::Param(FCommandLine::Get(),TEXT("ThunderStarReadTest"));
     bChainTest=bStarTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderChainTest"));
@@ -43,6 +44,7 @@ void UReferencePaintingTestSubsystem::Tap(APlayerController* PC,FKey Key)
 {PC->InputKey(FInputKeyEventArgs::CreateSimulated(Key,IE_Pressed,1));PC->InputKey(FInputKeyEventArgs::CreateSimulated(Key,IE_Released,0));}
 void UReferencePaintingTestSubsystem::Finish(bool bPassed,const FString& Message)
 {
+    if(bCameraTest&&bPassed&&(!bSawCameraHidden||!bSawCameraRestored))bPassed=false;
     if(bSaveFailureTest&&bPassed&&(!bSaveObstacleCreated||!bSaveFailureObserved||!bSaveObstacleRemoved))bPassed=false;
     if(bFadeTest&&bPassed&&(ObservedFadeOut.Num()!=7||ObservedFadeCovered.Num()!=7||ObservedFadeIn.Num()!=7||GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>()->GetCompletedFades()!=7)){bPassed=false;UE_LOG(LogTemp,Error,TEXT("FADE QA incomplete sequences: out%d covered%d in%d"),ObservedFadeOut.Num(),ObservedFadeCovered.Num(),ObservedFadeIn.Num());}
     bFinished=true;auto* Recording=GetGameInstance()->GetSubsystem<UPlayseedRecordingSubsystem>();const int32 Frames=Recording->FinishRecording();
@@ -60,6 +62,13 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
     auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
     const FString Map=UGameplayStatics::GetCurrentLevelName(GetWorld(),true);
     auto* Hero=Cast<AReferenceHero>(PC->GetPawn());auto* Mode=Cast<AReferenceEntranceGameMode>(GetWorld()->GetAuthGameMode());
+    if(bCameraTest&&Hero&&bSaveFailureObserved&&Flow->GetState()==EReferenceTravelState::InCourse)
+    {
+        if(Hero->IsBodyHiddenForCamera()&&!bSawCameraHidden)
+        {bSawCameraHidden=true;FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderCameraClose.png"),false,false);}
+        if(bSawCameraHidden&&!Hero->IsBodyHiddenForCamera()&&!bSawCameraRestored)
+        {bSawCameraRestored=true;FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderCameraRestored.png"),false,false);}
+    }
     if(bFadeTest&&Phase>0)ObserveFade(PC);
     if(bFinished)return;
     if(bChainTest&&Phase>=20){UpdateChain(DeltaSeconds,Hero,PC);return;}
@@ -310,6 +319,7 @@ void UReferencePaintingTestSubsystem::UpdateStarCapture(float DeltaSeconds,AWind
                 {Finish(false,TEXT("Pose, position or vitality changed during locked capture"));return;}
                 if(Elapsed>1.6f&&!bPoseShot)
                 {
+                    if(bCameraTest&&Model->IsBodyHiddenForCamera()){Finish(false,TEXT("Star pose stayed hidden after the camera moved out"));return;}
                     if(!Cast<ACameraActor>(PC->GetViewTarget())){Finish(false,TEXT("Star camera did not become the actual view target"));return;}
                     FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderStarPose.png"),false,false);bPoseShot=true;
                 }
