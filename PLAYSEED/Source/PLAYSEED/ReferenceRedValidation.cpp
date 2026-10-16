@@ -112,7 +112,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceRed(float DeltaSeconds,AWin
     if(Phase==77)
     {
         // 幹の手前から反対側へ直進するとぶつかるため、東側の実上面を経由します。
-        const FVector Target=RedDescentPoint==0?FVector(4300,-1750,3072):FVector(3800,-2000,756.272);Walk(Target);
+        const FVector Target=RedDescentPoint==0?FVector(4300,-1750,3072):FVector(3200,-2500,746.425);Walk(Target);
         if(RedDescentPoint==0&&Move->IsMovingOnGround()&&FVector::Dist2D(Hero->GetActorLocation(),Target)<35&&FMath::Abs(Hero->GetActorLocation().Z-82-Target.Z)<80)
         {++RedDescentPoint;Elapsed=0;return;}
         if(Move->IsMovingOnGround()&&FVector::Dist2D(Hero->GetActorLocation(),Target)<35&&FMath::Abs(Hero->GetActorLocation().Z-82-Target.Z)<80)

@@ -447,9 +447,8 @@ static constexpr FReferenceRedPoint ReferenceRedSecond[] = {
 {-6550.000,-6450.000,0.000,false,0},
 };
 static constexpr FReferenceRedPoint ReferenceRedReturn[] = {
-{3800.000,-2000.000,756.272,false,0},
-{3700.000,-2100.000,755.177,false,0},
-{3500.000,-2100.000,746.425,false,0},
+{3200.000,-2500.000,746.425,false,0},
+{3100.000,-2500.000,742.049,false,0},
 {2700.000,-2900.000,737.672,false,0},
 {1850.000,-2900.000,759.220,false,0},
 {1750.000,-3000.000,791.274,false,0},
