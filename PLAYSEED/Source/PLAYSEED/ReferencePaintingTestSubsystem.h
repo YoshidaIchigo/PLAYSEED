@@ -19,6 +19,7 @@ public:
 private:
     void Tap(APlayerController* PC,FKey Key);
     void Finish(bool bPassed,const FString& Message);
+    void UpdateReferenceBombs(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceWalkers(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceWorld(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceWaterCannons(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
@@ -37,6 +38,9 @@ private:
     void ObserveFade(APlayerController* PC);
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
+    bool bBombTest=false,bBombChaseChecked=false,bBombThrowChecked=false,bBombFuseChecked=false,bBombResetChecked=false,bBombHeldPhoto=false;
+    int32 BombWaypoint=0;
+    float BombLegElapsed=0,BombInputClock=0;
     bool bWalkerTest=false,bWalkerContactChecked=false,bWalkerMeleeChecked=false,bWalkerStompChecked=false,bWalkerResetChecked=false,bWalkerStompJump=false;
     int32 WalkerWaypoint=0,WalkerScoreBaseline=0;
     float WalkerLegElapsed=0,WalkerAttackClock=0;

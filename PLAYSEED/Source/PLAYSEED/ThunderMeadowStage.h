@@ -34,6 +34,7 @@ class AReferenceRainSpawner;
 class AReferenceWaterCannon;
 class AReferenceWorldMechanisms;
 class AReferenceWalkerField;
+class AReferenceBombField;
 class AThunderFlightSwitch;
 class AThunderStormkeeper;
 class AThunderCloudflagRace;
@@ -94,6 +95,7 @@ public:
     AThunderBoundSentinel* GetBoundSentinel() const { return BoundSentinel; }
     AThunderBindingPost* GetBindingPost() const { return BindingPost; }
     AThunderPrisonGate* GetPrisonGate() const { return PrisonGate; }
+    AReferenceBombField* GetReferenceBombField() const { return ReferenceBombField; }
     AReferenceWalkerField* GetReferenceWalkerField() const { return ReferenceWalkerField; }
     AReferenceWorldMechanisms* GetReferenceWorldMechanisms() const { return ReferenceWorldMechanisms; }
     const TArray<TObjectPtr<AReferenceWaterCannon>>& GetReferenceWaterCannons() const { return ReferenceWaterCannons; }
@@ -189,6 +191,7 @@ private:
     UPROPERTY() TArray<TObjectPtr<AReferenceWaterCannon>> ReferenceWaterCannons;
     UPROPERTY() TObjectPtr<AReferenceWorldMechanisms> ReferenceWorldMechanisms;
     UPROPERTY() TObjectPtr<AReferenceWalkerField> ReferenceWalkerField;
+    UPROPERTY() TObjectPtr<AReferenceBombField> ReferenceBombField;
     UPROPERTY() TObjectPtr<AThunderMountainRest> MountainRest;
     UPROPERTY() TObjectPtr<AThunderLifeseed> Lifeseed;
     TArray<FVector> WingTowerFootPath;
