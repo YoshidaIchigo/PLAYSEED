@@ -164,7 +164,7 @@ static constexpr FReferenceWalkPoint ReferenceCannonApproach[] = {
 {4050.000,2450.000,3060.540,false,0},
 };
 static constexpr FReferenceWalkPoint ReferenceIslandWalk[] = {
-{4500.000,-1250.000,3072.000,false,0},
+{5000.000,-1250.000,3072.000,false,0},
 {5500.000,-1250.000,3072.000,false,0},
 {5550.000,-1200.000,3072.000,false,0},
 };

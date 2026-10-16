@@ -740,7 +740,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceCannon(float DeltaSeconds,A
         if(!bAimSent&&Elapsed>.4f){Tap(PC,EKeys::G);bAimSent=true;}
         if(Launch->IsAiming())
         {
-            const FVector Origin=Cannon->GetSeatLocation(),Target(4352,-1229,3072+82),Delta=Target-Origin;
+            const FVector Origin=Cannon->GetSeatLocation(),Target(5000,-1250,3072+82),Delta=Target-Origin;
             const double D=Delta.Size2D(),A=FMath::Abs(Movement->GetGravityZ())*D*D/(2*2600.*2600.);
             const double Discriminant=D*D-4*A*(A+Delta.Z);
             if(Discriminant<=0){Finish(false,TEXT("Reference high cannon cannot physically reach the island"));return;}
@@ -773,7 +773,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceCannon(float DeltaSeconds,A
         if(Launch->GetLaunchCount()==1&&!Launch->IsAiming()&&Movement->IsFalling())bCannonSawFlight=true;
         if(Elapsed>.4f&&Movement->IsMovingOnGround())
         {
-            if(!bCannonSawFlight||Launch->GetLaunchCount()!=1||FMath::Abs(Hero->GetActorLocation().Z-82-3072)>40||FVector::Dist2D(Hero->GetActorLocation(),FVector(4352,-1229,3072))>450
+            if(!bCannonSawFlight||Launch->GetLaunchCount()!=1||FMath::Abs(Hero->GetActorLocation().Z-82-3072)>40||FVector::Dist2D(Hero->GetActorLocation(),FVector(5000,-1250,3072))>450
                 ||FVector::Dist(Launch->GetLastLaunchOrigin(),Cannon->GetSeatLocation())>2||FMath::Abs(Launch->GetLastLaunchVelocity().Size()-2600)>1)
             {Finish(false,FString::Printf(TEXT("Actual ballistic shot did not land on island: hero%s origin%s"),*Hero->GetActorLocation().ToString(),*Launch->GetLastLaunchOrigin().ToString()));return;}
             Movement->StopMovementImmediately();FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderCannonLanding.png"),false,false);
