@@ -1,0 +1,4 @@
+[2026.10.16-08.46.32:869][189]LogTemp: Display: SAVE RETRY QA: created own fresh empty Validation_ .sav directory; no save data injected.
+[2026.10.16-08.46.34:007][388]LogTemp: Display: SAVE RETRY QA: real star contact failed SaveGameToSlot; rollback0, visible star, no celebration.
+[2026.10.16-08.46.36:594][861]LogTemp: Display: SAVE RETRY QA: actual physical exit and cooldown; removed only own empty directory, now walking/jumping to real star again.
+[2026.10.16-08.46.37:235][965]LogTemp: Display: STAR COLLECTED: actual reward 6, saved total 1.
