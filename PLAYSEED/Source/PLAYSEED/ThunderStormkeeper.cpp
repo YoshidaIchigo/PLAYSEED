@@ -67,6 +67,7 @@ void AThunderStormkeeper::BeginPlay()
 {
     Super::BeginPlay(); ArenaFloor = GetActorLocation() - FVector(0, 0, bReferenceBoss?200:100);
     GetBody()->SetSimulatePhysics(false); GetBody()->SetMassOverrideInKg(NAME_None, 80, true); PaintBody();
+    if(bReferenceBoss)AlignWithFloor();
 }
 bool AThunderStormkeeper::CanBePickedUp(AWindseedCharacter* Player) const
 {
@@ -93,7 +94,18 @@ FVector AThunderStormkeeper::GetCarryOffset() const
     // 大きい相手だけ頭上に持ち上げ、通常の箱を持つ位置は保ちます。
     return bReferenceBoss?FVector(0,0,300):FVector(150,0,90);
 }
-bool AThunderStormkeeper::CanStandAt(FVector Position) const
+void AThunderStormkeeper::AlignWithFloor()
+{
+    auto* Terrain=Cast<AReferenceBattlefieldTerrain>(UGameplayStatics::GetActorOfClass(this,AReferenceBattlefieldTerrain::StaticClass()));
+    FVector Floor;
+    if(!Terrain||!Terrain->FindFloor(GetActorLocation()-FVector(0,0,200),Floor))return;
+    // 見た目の半径ではなく実Boundsで底を合わせ、床との微小な重なりでSweepが止まるのを避けます。
+    const float Radius=GetBody()->Bounds.BoxExtent.Z;
+    FVector Location=GetActorLocation();Location.Z=Floor.Z+Radius+3;
+    UE_LOG(LogTemp,Display,TEXT("REFERENCE BOSS: floor alignment rootZ %.2f -> %.2f, radius %.2f, floor %.2f"),GetActorLocation().Z,Location.Z,Radius,Floor.Z);
+    SetActorLocation(Location);ArenaFloor.Z=Floor.Z;
+}
+bool AThunderStormkeeper::CanStandAt(FVector Position)
 {
     auto* Terrain=Cast<AReferenceBattlefieldTerrain>(UGameplayStatics::GetActorOfClass(this,AReferenceBattlefieldTerrain::StaticClass()));
     if(!Terrain)return false;
@@ -103,7 +115,16 @@ bool AThunderStormkeeper::CanStandAt(FVector Position) const
     {
         FVector Floor;
         // 地形自身の歩行面を使い、相手や持ち物を床として拾わないようにします。
-        if(!Terrain->FindFloor(Position+Offset-FVector(0,0,200),Floor)||FMath::Abs(Floor.Z-ArenaFloor.Z)>25)return false;
+        const bool bFloorFound=Terrain->FindFloor(Position+Offset-FVector(0,0,200),Floor);
+        if(!bFloorFound||FMath::Abs(Floor.Z-ArenaFloor.Z)>25)
+        {
+            if(!bFloorBlockReported)
+            {
+                UE_LOG(LogTemp,Display,TEXT("REFERENCE BOSS: chase floor rejected at %s offset%s found%d floor%s homeZ%.2f"),*Position.ToString(),*Offset.ToString(),bFloorFound,*Floor.ToString(),ArenaFloor.Z);
+                bFloorBlockReported=true;
+            }
+            return false;
+        }
     }
     return true;
 }
@@ -121,7 +142,7 @@ void AThunderStormkeeper::BeginRecovery(bool bOffArena)
     {
         // 有効な投げは実際に着地した場所で起き上がります。元の位置へ瞬間移動させません。
         GetBody()->SetSimulatePhysics(false);GetBody()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-        SetActorRotation(FRotator(0,GetActorRotation().Yaw,0));return;
+        SetActorRotation(FRotator(0,GetActorRotation().Yaw,0));AlignWithFloor();return;
     }
     // 敵だけを戻す前に Carryable の保持・投擲状態を解除します。プレイヤーは移動しません。
     APlayseedCarryable::ResetToSpawn(); GetBody()->SetSimulatePhysics(false); GetBody()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -130,6 +151,7 @@ void AThunderStormkeeper::ReturnToArena()
 {
     if(!bRecoverInPlace) APlayseedCarryable::ResetToSpawn();
     GetBody()->SetSimulatePhysics(false);GetBody()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    if(bReferenceBoss)AlignWithFloor();
     bRecovering=false;bRecoverInPlace=false;RecoveryTime=0;
 }
 void AThunderStormkeeper::OnThrownLanding(const FHitResult& Hit)
@@ -165,7 +187,16 @@ void AThunderStormkeeper::Tick(float DeltaSeconds)
         FVector Destination = GetActorLocation() + Offset.GetSafeNormal2D() * 90 * DeltaSeconds;
         if(bReferenceBoss)
         {
-            if(CanStandAt(Destination))SetActorLocation(Destination,true);
+            if(CanStandAt(Destination))
+            {
+                const FVector Before=GetActorLocation();FHitResult Sweep;
+                SetActorLocation(Destination,true,&Sweep);
+                if(!bSweepBlockReported&&FVector::DistSquared(Before,GetActorLocation())<.01&&Sweep.bBlockingHit)
+                {
+                    UE_LOG(LogTemp,Display,TEXT("REFERENCE BOSS: chase sweep blocked at %s by%s, penetrating%d normal%s"),*Before.ToString(),*GetNameSafe(Sweep.GetActor()),Sweep.bStartPenetrating,*Sweep.ImpactNormal.ToString());
+                    bSweepBlockReported=true;
+                }
+            }
         }
         else
         {

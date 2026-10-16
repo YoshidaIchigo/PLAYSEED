@@ -31,7 +31,8 @@ protected:
     virtual FVector GetCarryOffset() const override;
     virtual FVector GetThrowVelocity(const AWindseedCharacter* Player) const override;
 private:
-    bool CanStandAt(FVector Position) const;
+    void AlignWithFloor();
+    bool CanStandAt(FVector Position);
     void ReturnToArena();
     void PaintBody();
     void BeginRecovery(bool bOffArena);
@@ -45,6 +46,8 @@ private:
     int32 OffArenaReturns = 0;
     float RecoveryTime = 0;
     bool bReferenceBoss = false;
+    bool bFloorBlockReported = false;
+    bool bSweepBlockReported = false;
     bool bRecoverInPlace = false;
     bool bRecovering = false;
     bool bDefeated = false;
