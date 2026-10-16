@@ -15,12 +15,12 @@ AReferenceCheckerPlatform::AReferenceCheckerPlatform()
     Surface->SetRelativeScale3D(FVector(3.577f,2.149f,.765f));
     Surface->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);Surface->SetCollisionResponseToAllChannels(ECR_Block);
     Surface->CanCharacterStepUpOn=ECB_Yes;Surface->SetMobility(EComponentMobility::Movable);
-    for(int32 X=0;X<8;++X)for(int32 Y=0;Y<4;++Y)for(int32 Side:{-1,1})
+    for(int32 X=0;X<4;++X)for(int32 Y=0;Y<4;++Y)for(int32 Side:{-1,1})
     {
         auto* Tile=CreateDefaultSubobject<UStaticMeshComponent>(*FString::Printf(TEXT("Checker%d_%d_%d"),X,Y,Side));
         Tile->SetupAttachment(RootComponent);Tile->SetStaticMesh(Cube.Object);
-        Tile->SetRelativeLocation(FVector(-178.5f+(X+.5f)*44.7125f,-107.8f+(Y+.5f)*53.725f,Side>0?39.6f:-38.1f));
-        Tile->SetRelativeScale3D(FVector(.447125f,.53725f,.012f));Tile->SetCollisionEnabled(ECollisionEnabled::NoCollision);Tiles.Add(Tile);
+        Tile->SetRelativeLocation(FVector(-178.5f+(X+.5f)*89.425f,-107.8f+(Y+.5f)*53.725f,Side>0?39.6f:-38.1f));
+        Tile->SetRelativeScale3D(FVector(.89425f,.53725f,.012f));Tile->SetCollisionEnabled(ECollisionEnabled::NoCollision);Tiles.Add(Tile);
     }
 }
 void AReferenceCheckerPlatform::BeginPlay()
@@ -28,12 +28,12 @@ void AReferenceCheckerPlatform::BeginPlay()
     Super::BeginPlay();
     if(auto* Palette=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Battlefield/M_Actor.M_Actor")))
     {
-        auto* Edge=UMaterialInstanceDynamic::Create(Palette,this);Edge->SetVectorParameterValue(TEXT("Tint"),FLinearColor(.65f,.65f,.66f));Surface->SetMaterial(0,Edge);
+        auto* Edge=UMaterialInstanceDynamic::Create(Palette,this);Edge->SetVectorParameterValue(TEXT("Tint"),FLinearColor(.18f,.24f,.25f));Surface->SetMaterial(0,Edge);
         for(int32 I=0;I<Tiles.Num();++I)
         {
             auto* Material=UMaterialInstanceDynamic::Create(Palette,this);
             const bool bDark=((I/8)+(I/2)%4)%2!=0;
-            Material->SetVectorParameterValue(TEXT("Tint"),bDark?FLinearColor(.12f,.12f,.15f):FLinearColor(.85f,.86f,.86f));Tiles[I]->SetMaterial(0,Material);
+            Material->SetVectorParameterValue(TEXT("Tint"),bDark?FLinearColor(.18f,.24f,.25f):FLinearColor(.85f,.6f,.12f));Tiles[I]->SetMaterial(0,Material);
         }
     }
 }

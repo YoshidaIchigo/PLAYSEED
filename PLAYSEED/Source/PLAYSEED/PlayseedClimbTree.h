@@ -15,6 +15,7 @@ class PLAYSEED_API APlayseedClimbTree : public AActor
 public:
     APlayseedClimbTree();
     virtual void BeginPlay() override;
+    virtual void Tick(float DeltaSeconds) override;
     float GetTrunkRadius() const { return bReferenceTree?30:55; }
     float GetTopZ() const { return GetActorLocation().Z + 650; }
 private:

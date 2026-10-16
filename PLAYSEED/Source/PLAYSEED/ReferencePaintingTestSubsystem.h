@@ -29,7 +29,7 @@ private:
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     bool bReferenceRedTest=false,bRedRouteJump=false,bRedPlatformRidden=false,bRedTreeClimbed=false,bRedBridgeRidden=false,bRedBoardAttempt=false,bRedPlatformJump=false,bRedClimbSent=false;
-    int32 RedWaypoint=0;
+    int32 RedWaypoint=0,RedDescentPoint=0;
     float RedLegElapsed=0;
     bool bReferenceBossTest=false,bBossRouteJump=false,bBossCoaxed=false,bBossThrowObserved=false;
     bool bReferenceCannonTest=false,bGuideSent=false,bGuideConfirmed=false,bAimSent=false,bCannonAimShot=false,bCannonSawFlight=false,bCannonAimHidden=false,bCannonRouteJump=false;

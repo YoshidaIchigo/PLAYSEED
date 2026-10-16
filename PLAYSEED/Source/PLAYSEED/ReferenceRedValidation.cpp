@@ -111,7 +111,10 @@ void UReferencePaintingTestSubsystem::UpdateReferenceRed(float DeltaSeconds,AWin
     }
     if(Phase==77)
     {
-        const FVector Target(3800,-2000,756.272);Walk(Target);
+        // 幹の手前から反対側へ直進するとぶつかるため、東側の実上面を経由します。
+        const FVector Target=RedDescentPoint==0?FVector(4300,-1750,3072):FVector(3800,-2000,756.272);Walk(Target);
+        if(RedDescentPoint==0&&Move->IsMovingOnGround()&&FVector::Dist2D(Hero->GetActorLocation(),Target)<35&&FMath::Abs(Hero->GetActorLocation().Z-82-Target.Z)<80)
+        {++RedDescentPoint;Elapsed=0;return;}
         if(Move->IsMovingOnGround()&&FVector::Dist2D(Hero->GetActorLocation(),Target)<35&&FMath::Abs(Hero->GetActorLocation().Z-82-Target.Z)<80)
         {Move->StopMovementImmediately();Phase=78;Elapsed=0;RedWaypoint=0;RedLegElapsed=0;return;}
         if(Elapsed>25)Finish(false,FString::Printf(TEXT("Normal movement did not descend from island to the lower terrain: hero%s"),*Hero->GetActorLocation().ToString()));return;
