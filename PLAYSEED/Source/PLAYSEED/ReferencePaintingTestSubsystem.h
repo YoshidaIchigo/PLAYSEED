@@ -74,6 +74,7 @@ private:
     float WaterCannonLegElapsed=0;
     bool bRainTest=false,bRainContactVerified=false,bRainDodgeVerified=false,bRainResetVerified=false,bRainBounceShot=false;
     int32 RainWaypoint=0,RainSpawnBaseline=0,RainBurstBaseline=0,RainChosenIndex=1;
+    int32 RainApproachHealth=0,RainContactHealth=0,RainAvoidHealth=0;
     float RainLegElapsed=0;
     FVector RainDodgeTarget=FVector::ZeroVector;
     bool bBoulderTest=false,bBoulderPitVerified=false,bBoulderRoadVerified=false,bBoulderResetVerified=false;
