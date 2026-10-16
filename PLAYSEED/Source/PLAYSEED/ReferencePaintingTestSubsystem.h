@@ -19,6 +19,7 @@ public:
 private:
     void Tap(APlayerController* PC,FKey Key);
     void Finish(bool bPassed,const FString& Message);
+    void UpdateReferenceWaterCannons(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceRain(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceBoulders(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceHundred(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
@@ -34,6 +35,9 @@ private:
     void ObserveFade(APlayerController* PC);
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
+    bool bWaterCannonTest=false,bFieldWaterCannonChecked=false,bWaterCannonShotsChecked=false,bWaterCannonResetChecked=false,bWaterCannonRouteJump=false,bWaterCannonShotPhoto=false;
+    int32 WaterCannonWaypoint=0,WaterCannonShotBaseline=0,WaterCannonHealthBaseline=0;
+    float WaterCannonLegElapsed=0;
     bool bRainTest=false,bRainContactVerified=false,bRainDodgeVerified=false,bRainResetVerified=false,bRainBounceShot=false;
     int32 RainWaypoint=0,RainSpawnBaseline=0,RainBurstBaseline=0,RainChosenIndex=1;
     float RainLegElapsed=0;

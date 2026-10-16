@@ -23,6 +23,7 @@
 #include "ReferenceCoinField.h"
 #include "ReferenceBoulderField.h"
 #include "ReferenceRainSpawner.h"
+#include "ReferenceWaterCannon.h"
 #include "ThunderFlightSwitch.h"
 #include "ThunderStormkeeper.h"
 #include "ThunderCloudflagRace.h"
@@ -268,6 +269,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (ReferenceCoinField) ReferenceCoinField->ResetCoins();
     if (ReferenceBoulderField) ReferenceBoulderField->ResetBoulders();
     for(AReferenceRainSpawner* Rain:ReferenceRainSpawners)if(Rain)Rain->ResetRain();
+    for(AReferenceWaterCannon* Cannon:ReferenceWaterCannons)if(Cannon)Cannon->ResetCannon();
     if (MountainRest) MountainRest->ResetRest();
 }
 
@@ -529,6 +531,11 @@ void AThunderMeadowStage::BeginPlay()
         const float RainRanges[]={950,1450,700};
         for(int32 I=0;I<3;++I)
         {auto* Rain=GetWorld()->SpawnActor<AReferenceRainSpawner>(RainSources[I],FRotator::ZeroRotator);Rain->ConfigureRange(RainRanges[I]);ReferenceRainSpawners.Add(Rain);}
+        // 山側は自動発射、最初の目的だけに置く野原側は外観のみです。
+        auto* WaterCannon=GetWorld()->SpawnActor<AReferenceWaterCannon>(FVector(1388,2383,2918),FRotator(0,-135,0));
+        WaterCannon->ConfigureCanFire(true);ReferenceWaterCannons.Add(WaterCannon);
+        if(GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->GetSelectedMissionNumber()==1)
+        {auto* Field=GetWorld()->SpawnActor<AReferenceWaterCannon>(FVector(-5694,-5600,128),FRotator(0,45,0));Field->ConfigureCanFire(false);ReferenceWaterCannons.Add(Field);}
         BuildReferenceChain();
         BuildStormkeeper();
         BuildCloudflagRace();
