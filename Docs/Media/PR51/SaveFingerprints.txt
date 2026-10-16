@@ -1,0 +1,6 @@
+{
+  "slot": "Validation_PR51_Drop_C",
+  "game_exit": 0,
+  "normal_after": "ABSENT",
+  "normal_before": "ABSENT"
+}
