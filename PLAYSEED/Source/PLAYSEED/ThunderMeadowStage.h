@@ -36,6 +36,7 @@ class AThunderBoundSentinel;
 class AThunderBindingPost;
 class AThunderPrisonGate;
 class AThunderHundredLantern;
+class AThunderMountainRest;
 
 // Actor は World 内の一つの存在です。この Actor が地形・装飾の Component を所有します。
 // ミッションのルールやセーブは GameMode / Subsystem に任せ、形状の生成だけを担当します。
@@ -82,6 +83,7 @@ public:
     AThunderBindingPost* GetBindingPost() const { return BindingPost; }
     AThunderPrisonGate* GetPrisonGate() const { return PrisonGate; }
     AThunderHundredLantern* GetHundredLantern() const { return HundredLantern; }
+    AThunderMountainRest* GetMountainRest() const { return MountainRest; }
     void ResetMechanisms();
 private:
     UStaticMeshComponent* AddShape(UStaticMesh* Mesh, FVector Position, FVector Dimensions, FLinearColor Color, bool bSolid = false, FRotator Rotation = FRotator::ZeroRotator);
@@ -157,6 +159,7 @@ private:
     UPROPERTY() TObjectPtr<AThunderBindingPost> BindingPost;
     UPROPERTY() TObjectPtr<AThunderPrisonGate> PrisonGate;
     UPROPERTY() TObjectPtr<AThunderHundredLantern> HundredLantern;
+    UPROPERTY() TObjectPtr<AThunderMountainRest> MountainRest;
     TArray<FVector> WingTowerFootPath;
     TArray<FVector> MeadowCoinFootPath;
     TArray<FVector> MountainFootPath;

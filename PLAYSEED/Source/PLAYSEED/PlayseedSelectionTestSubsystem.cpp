@@ -36,6 +36,8 @@
 #include "ThunderSentinelTestSubsystem.h"
 #include "ThunderPostTestSubsystem.h"
 #include "ThunderHundredTestSubsystem.h"
+#include "ThunderRestTestSubsystem.h"
+#include "ThunderMountainRest.h"
 #include "ThunderCampaignValidation.h"
 #include "ThunderFlightSwitch.h"
 #include "ThunderFlightBloom.h"
@@ -102,7 +104,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 43 ? 300 : Step == 42 ? 300 : Step == 41 ? 180 : Step == 40 ? 420 : Step == 37 || Step == 39 ? 360 : Step == 31 || Step == 33 || Step == 34 || Step == 35 || Step == 36 || Step == 38 ? 300 : Step == 10 || (Step >= 12 && Step <= 32) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 44 ? 300 : Step == 43 ? 300 : Step == 42 ? 300 : Step == 41 ? 180 : Step == 40 ? 420 : Step == 37 || Step == 39 ? 360 : Step == 31 || Step == 33 || Step == 34 || Step == 35 || Step == 36 || Step == 38 ? 300 : Step == 10 || (Step >= 12 && Step <= 32) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -112,6 +114,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     auto* Expedition = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
     const bool bCampaignRun = FParse::Param(FCommandLine::Get(), TEXT("ThunderCampaignTest"));
     const bool bCampaignRead = FParse::Param(FCommandLine::Get(), TEXT("ThunderCampaignReadTest"));
+    const bool bRestTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderRestTest"));
     const bool bHundredTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderHundredTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderHundredReadTest"));
     const int32 CampaignTargets[] = {1, 2, 3, 5, 6, 4};
     const int32 CampaignTarget = CampaignTargets[FMath::Clamp(CampaignIndex, 0, 5)];
@@ -143,6 +146,12 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         { Fail(TEXT("Mission selection did not survive travel or accepted an invalid number")); return; }
         if (bSecondMissionEntry)
         {
+            if (bRestTest)
+            {
+                auto* RestStage = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+                if (!ThunderHasExactRewards(Expedition,{1,2,3,4,5,6,7}) || !RestStage || !RestStage->GetMountainRest() || !RestStage->GetMountainRest()->IsReady() || RestStage->GetMountainRest()->GetSuccessfulHeals()!=0) { Fail(TEXT("Rest reentry lost actual all7 or fresh ready flower")); return; }
+                UE_LOG(LogTemp,Display,TEXT("REST REENTRY TEST PASS: actual all7 and fresh ready flower retained in new World."));
+            }
             if (bCampaignRun || bCampaignRead)
             {
                 if (!ThunderHasExactRewards(Expedition, {1, 2, 3, 4, 5, 6, 7}) || !Expedition->IsLauncherUnlocked() || !Expedition->IsFlightUnlocked()) { Fail(TEXT("Actual all7 campaign rewards or real unlocks lost on fresh World entry")); return; }
@@ -240,7 +249,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             || Expedition->GetSelectedMissionNumber() != (bBossTest ? 1 : bRaceTest ? 2 : bSkyCacheTest ? 3 : bScarletTest ? 4 : bChimeTest ? 5 : 6))
         { Fail(TEXT("Restart in the new stage failed")); return; }
         const bool bIslandTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderIslandTest"));
-        if (bHundredTest)
+        if (bRestTest)
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode,AThunderMeadowStage::StaticClass()));
+            if (!Meadow || !Meadow->GetMountainRest()) { Fail(TEXT("Mountain rest missing")); return; }
+            GetGameInstance()->GetSubsystem<UThunderRestTestSubsystem>()->BeginTest(Player,Meadow); Step=44; Elapsed=0;
+        }
+        else if (bHundredTest)
         {
             auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
             if (!Meadow || !Meadow->GetHundredLantern()) { Fail(TEXT("Hundred lantern manager missing")); return; }
@@ -602,6 +617,12 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         const bool bComplete = BoxTest->UpdateTest(Player, DeltaSeconds);
         if (!BoxTest->GetError().IsEmpty()) { Fail(BoxTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
+    else if (Step == 44 && Player)
+    {
+        auto* Test=GetGameInstance()->GetSubsystem<UThunderRestTestSubsystem>(); const bool bDone=Test->UpdateTest(Player,DeltaSeconds);
+        if (!Test->GetError().IsEmpty()) { Fail(Test->GetError()); return; }
+        if (bDone) { Tap(PC,EKeys::M); Step=4; Elapsed=0; }
     }
     else if (Step == 43 && Player)
     {
