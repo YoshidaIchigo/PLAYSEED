@@ -23,6 +23,7 @@
 #include "ThunderSkyCache.h"
 #include "ThunderScarletTrail.h"
 #include "ThunderSkyChimes.h"
+#include "ThunderBoundSentinel.h"
 #include "ThunderExpeditionSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Camera/PlayerCameraManager.h"
@@ -246,6 +247,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (SkyCache) SkyCache->ResetBox();
     if (ScarletTrail) ScarletTrail->ResetTrail();
     if (SkyChimes) SkyChimes->ResetChimes();
+    if (BoundSentinel) BoundSentinel->ResetSentinel();
 }
 
 void AThunderMeadowStage::BuildWarpCaves()
@@ -488,6 +490,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildSkyCache();
     BuildScarletTrail();
     BuildSkyChimes();
+    BuildBoundSentinel();
     BuildLighting();
 }
 
@@ -545,4 +548,12 @@ void AThunderMeadowStage::BuildSkyChimes()
     SkyChimes = GetWorld()->SpawnActor<AThunderSkyChimes>();
     SkyChimes->Configure({FVector(-1200, 2000, 2400), FVector(-400, 2000, 2400), FVector(400, 2000, 2400), FVector(1200, 2000, 2400), FVector(2000, 2000, 2400)}, SkyIslandTop + FVector(-250, 250, 100));
     AddSign(FVector(-2500, 1550, 0), TEXT("THE FIVE SKY CHIMES\nAwaken leafwings and launch above the crown\nCollect the five CENTRE coins - edges do not count"));
+}
+
+void AThunderMeadowStage::BuildBoundSentinel()
+{
+    if (GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->GetSelectedMissionNumber() != 6) return;
+    BoundSentinel = GetWorld()->SpawnActor<AThunderBoundSentinel>();
+    if (BoundSentinel) BoundSentinel->Configure(FVector(2700, -2800, 0));
+    AddSign(FVector(3150, -2450, 0), TEXT("MOSSBOUND SENTINEL\nThe copper tether limits its reach\nLeave the GOLD target before it lunges"));
 }
