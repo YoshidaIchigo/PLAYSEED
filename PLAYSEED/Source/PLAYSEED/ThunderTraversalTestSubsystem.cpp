@@ -95,7 +95,7 @@ void UThunderTraversalTestSubsystem::ResetProgress(AWindseedCharacter* Player, b
     FinishTime = 0;
     Error.Reset();
     bScreenshotRequested = false;
-    bYieldingToBoulder = false;
+    bYieldingToBoulder = bWaitedAtLowerBoulderEnd = false;
     bIslandCollisionVerified = false;
     RecoveryBaseline = Player->RecoveryCount;
     if (auto* PC = Cast<APlayerController>(Player->GetController()); PC && bZoomOut)
@@ -116,6 +116,14 @@ bool UThunderTraversalTestSubsystem::UpdateRoute(AWindseedCharacter* Player, flo
         const float CoinFeet = Player->GetActorLocation().Z - Player->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
         const float RockFeet = CoinBoulder ? CoinBoulder->GetActorLocation().Z - 70 : 0;
         const float RockDistance = CoinBoulder ? FVector::Dist2D(Player->GetActorLocation(), CoinBoulder->GetActorLocation()) : BIG_NUMBER;
+        // 最初の2点と草原80点の次、山道2番で実際の岩の通過を待ちます。
+        // これにより山道3番の赤コインへ退避で触れず、金100枚という検証条件を保ちます。
+        if (Waypoint == 85 && !bWaitedAtLowerBoulderEnd && CoinBoulder)
+        {
+            if (!CoinBoulder->IsWaiting()) { if (CoinMovement->IsMovingOnGround()) CoinMovement->StopMovementImmediately(); return false; }
+            bWaitedAtLowerBoulderEnd = true;
+            UE_LOG(LogTemp, Display, TEXT("COIN TRAIL: real lower boulder cycle finished; passing the scarlet edge on the centre path."));
+        }
         if (!bYieldingToBoulder && CoinBoulder && !CoinBoulder->IsWaiting() && RockDistance < 600 && FMath::Abs(CoinFeet - RockFeet) < 220)
         {
             const FVector Outward = (Player->GetActorLocation() - FVector(2200, 2100, 0)).GetSafeNormal2D();
