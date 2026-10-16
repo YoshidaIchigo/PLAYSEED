@@ -19,6 +19,7 @@ public:
 private:
     void Tap(APlayerController* PC,FKey Key);
     void Finish(bool bPassed,const FString& Message);
+    void UpdateReferenceBoulders(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceHundred(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateHundredFlight(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceGround(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
@@ -32,6 +33,9 @@ private:
     void ObserveFade(APlayerController* PC);
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
+    bool bBoulderTest=false,bBoulderPitVerified=false,bBoulderRoadVerified=false,bBoulderResetVerified=false;
+    int32 BoulderWaypoint=0,BoulderRecoveryBaseline=0;
+    float BoulderLegElapsed=0;
     bool bWingOwnedReplay=false;
     bool bHundredTest=false,bSequentialChainTest=false,bAllStarReadTest=false;
     bool bHundredMountainGold=false,bHundredHighGold=false,bHundredSkyComplete=false;

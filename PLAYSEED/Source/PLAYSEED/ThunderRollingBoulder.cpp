@@ -43,6 +43,20 @@ void AThunderRollingBoulder::BeginPlay()
     }
 }
 
+void AThunderRollingBoulder::ConfigureReferencePath(const TArray<FVector>& FootPath,bool bContinuousLoop)
+{
+    Radius=100;Speed=600;bLoop=bContinuousLoop;bReference=true;
+    Stone->SetRelativeScale3D(FVector(2));
+    // 金の帯を外し、自作の黒い鉄球と小さい反射の形にします。
+    Vein->SetRelativeScale3D(FVector(.18f,.22f,.1f));Vein->SetRelativeLocation(FVector(-15,-30,34));
+    if(auto* Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Battlefield/M_Actor.M_Actor")))
+    {
+        auto Paint=[&](UStaticMeshComponent* Part,FLinearColor Color){auto* Tint=UMaterialInstanceDynamic::Create(Material,this);Tint->SetVectorParameterValue(TEXT("Tint"),Color);Part->SetMaterial(0,Tint);};
+        Paint(Stone,FLinearColor(.075f,.085f,.1f));Paint(Vein,FLinearColor(.65f,.7f,.8f));
+    }
+    ConfigurePath(FootPath);
+}
+
 void AThunderRollingBoulder::ConfigurePath(const TArray<FVector>& FootPath)
 {
     Path.Reset();
@@ -53,6 +67,7 @@ void AThunderRollingBoulder::ConfigurePath(const TArray<FVector>& FootPath)
 void AThunderRollingBoulder::ResetMotion()
 {
     ++MotionRevision;
+    Speed=bReference?600:450;
     NextPoint = 1;
     TravelledDistance = 0;
     WaitRemaining = 0;
@@ -98,6 +113,12 @@ void AThunderRollingBoulder::Tick(float DeltaSeconds)
         if (WaitRemaining == 0 && IsSpawnClear(Player)) { ResetMotion(); ++RespawnCount; }
         return;
     }
+    if(bReference&&!bLoop)
+    {
+        // 下りの傾きで加速し、山道の平らな区間で突然速さを戻さないようにします。
+        const FVector Down=Path[NextPoint]-GetActorLocation();
+        Speed=FMath::Clamp(Speed+980*FMath::Max(0.f,-Down.GetSafeNormal().Z)*DeltaSeconds,600.f,2100.f);
+    }
     float Remaining = Speed * DeltaSeconds;
     const int32 TickRevision = MotionRevision;
     while (Remaining > 0 && !bWaiting)
@@ -120,6 +141,7 @@ void AThunderRollingBoulder::Tick(float DeltaSeconds)
             if (++NextPoint == Path.Num())
             {
                 ++CompletedCycles;
+                if(bLoop){NextPoint=1;continue;}
                 bWaiting = true;
                 WaitRemaining = 1.5f;
                 SetActorHiddenInGame(true);
