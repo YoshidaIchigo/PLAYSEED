@@ -20,4 +20,5 @@ private:
     float Elapsed=0,JumpHold=0;
     int32 Phase=0;
     bool bEnabled=false,bFinished=false,bJumped=false,bCapturedDive=false;
+    bool bDropTest=false,bSawDrop=false,bCapturedLanding=false,bSawJump=false;
 };

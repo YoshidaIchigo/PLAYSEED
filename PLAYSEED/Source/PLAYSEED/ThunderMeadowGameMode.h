@@ -28,6 +28,9 @@ class PLAYSEED_API AThunderMeadowGameMode : public APlayseedGameModeBase
 public:
     AThunderMeadowGameMode();
     virtual void StartPlay() override;
+    virtual void Tick(float DeltaSeconds) override;
+    virtual bool CanLeaveStage() const override;
+    float GetDropFade() const;
     virtual void RestartStage(AWindseedCharacter* Player) override;
     virtual void HandlePlayerDefeat(AWindseedCharacter* Player) override;
     UThunderLivesComponent* GetLives() const { return Lives; }
@@ -35,8 +38,10 @@ public:
     UThunderCoinLedger* GetCoinLedger() const { return CoinLedger; }
     bool ShouldShowControls() const { return bShowControls; }
 private:
-    void ToggleControls() { bShowControls=!bShowControls; }
+    void ToggleControls();
     bool bShowControls=false;
+    bool bDropActive=false;
+    float DropTime=0,DropLandedTime=-1;
     UPROPERTY() TObjectPtr<UThunderCoinLedger> CoinLedger;
     UPROPERTY() TObjectPtr<UThunderLivesComponent> Lives;
     // World が Stage を所有します。UPROPERTY は参照を UE に伝えます。

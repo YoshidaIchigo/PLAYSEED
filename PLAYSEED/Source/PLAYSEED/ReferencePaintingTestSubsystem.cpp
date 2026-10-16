@@ -19,7 +19,8 @@ void UReferencePaintingTestSubsystem::Initialize(FSubsystemCollectionBase& Colle
 {
     Super::Initialize(Collection);
 #if !UE_BUILD_SHIPPING
-    bEnabled=FParse::Param(FCommandLine::Get(),TEXT("ThunderPaintingTest"));
+    bDropTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderDropTest"));
+    bEnabled=bDropTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderPaintingTest"));
 #endif
 }
 void UReferencePaintingTestSubsystem::Tap(APlayerController* PC,FKey Key)
@@ -80,6 +81,11 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
     {
         if(Map!=TEXT("MissionSelect")||Progress->GetEarnedRewardCount()!=0||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
         {Finish(false,TEXT("Painting entry changed progress or travelled twice"));return;}
+        if(bDropTest&&Elapsed>2)
+        {
+            FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderPaintingSelection.png"),false,false);
+            Tap(PC,EKeys::One);Phase=6;Elapsed=0;return;
+        }
         if(Elapsed>10)
         {
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderPaintingSelection.png"),false,false);
@@ -89,4 +95,52 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
     }
     if(Phase==4&&Elapsed>1){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/CourseComplete.png"),false,false);Phase=5;Elapsed=0;return;}
     if(Phase==5&&Elapsed>1)Finish(true,TEXT("Normal walking and Space jump into painting, ripple/dive/fade to star selection; R/M/Space/Ctrl/Enter spam blocked during transition; fresh progress remains zero and unsaved."));
+    if(Phase==6)
+    {
+        if(Map!=TEXT("ThunderMeadow")||!Hero)return;
+        if(Hero->RecoveryCount!=0){Finish(false,TEXT("R interrupted the physical entry drop"));return;}
+        auto* Movement=Hero->GetCharacterMovement();
+        if(Flow->GetState()==EReferenceTravelState::Dropping)
+        {
+            if(!bSawDrop)
+            {
+                if(!Movement->IsFalling()||Hero->GetActorLocation().Z<900){Finish(false,TEXT("Course entry did not start physically falling from above"));return;}
+                bSawDrop=true;UE_LOG(LogTemp,Display,TEXT("DROP QA physical falling begins Z %.1f"),Hero->GetActorLocation().Z);
+            }
+            for(FKey Key:{EKeys::R,EKeys::M,EKeys::SpaceBar,EKeys::LeftControl,EKeys::Enter})Tap(PC,Key);
+            if(!Movement->IsMovingOnGround()&&Elapsed>.5f)FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderCourseDrop.png"),false,false);
+            if(Movement->IsMovingOnGround()&&!bCapturedLanding)
+            {FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderCourseLanding.png"),false,false);bCapturedLanding=true;}
+            return;
+        }
+        if(Flow->GetState()!=EReferenceTravelState::InCourse||!bSawDrop||!bCapturedLanding||!Movement->IsMovingOnGround()||FVector::Dist2D(Hero->GetActorLocation(),FVector(-6558,-6464,0))>40)
+        {Finish(false,TEXT("Drop did not land at the reference entrance and release input once"));return;}
+        Phase=7;Elapsed=0;return;
+    }
+    if(Phase==7&&Elapsed>1)
+    {
+        PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;Phase=8;Elapsed=0;return;
+    }
+    if(Phase==8)
+    {
+        if(!Hero||Map!=TEXT("ThunderMeadow")||Progress->GetEarnedRewardCount()!=0||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
+        {Finish(false,TEXT("Drop sequence changed map or progress unexpectedly"));return;}
+        if(JumpHold>0){JumpHold-=DeltaSeconds;if(JumpHold<=0)PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Released,0));}
+        if(Hero->GetCharacterMovement()->IsFalling()&&Hero->GetActorLocation().Z>210)bSawJump=true;
+        if(Elapsed>4)
+        {
+            if(!bSawJump||!Hero->GetCharacterMovement()->IsMovingOnGround()){Finish(false,TEXT("Ordinary jump was not available after drop landing"));return;}
+            FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/CourseComplete.png"),false,false);Phase=9;Elapsed=0;
+        }
+        return;
+    }
+    if(Phase==9&&Elapsed>1){Tap(PC,EKeys::M);Phase=10;Elapsed=0;return;}
+    if(Phase==10&&Elapsed>1)
+    {
+        if(Map!=TEXT("Entrance")||!Hero||Flow->GetState()!=EReferenceTravelState::AtPainting||FVector::Dist2D(Hero->GetActorLocation(),FVector(-600,0,0))>40||Progress->GetEarnedRewardCount()!=0||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
+        {Finish(false,TEXT("M did not return to the painting front with unchanged progress"));return;}
+        FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderPaintingReturn.png"),false,false);Phase=11;Elapsed=0;return;
+    }
+    if(Phase==11&&Elapsed>1){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/CourseComplete.png"),false,false);Phase=12;Elapsed=0;return;}
+    if(Phase==12&&Elapsed>1)Finish(true,TEXT("Painting dive -> actual star selection -> physical 1000cm drop -> ground contact and landing pose -> ordinary Space jump -> M returns to painting front. R/M/Space/Ctrl/Enter spam blocked during transition, no recovery and fresh zero progress unchanged."));
 }

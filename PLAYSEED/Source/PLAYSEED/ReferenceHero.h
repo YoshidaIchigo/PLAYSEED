@@ -19,6 +19,7 @@ public:
     virtual void Tick(float DeltaSeconds) override;
     // 通常のスター取得フローから使う見た目のポーズです。進行値は変更しません。
     void SetStarPose(bool bEnabled) { bStarPose=bEnabled; }
+    void SetLandingPose(bool bEnabled) { bLandingPose=bEnabled; }
 private:
     UStaticMeshComponent* Part(USceneComponent* Parent,UStaticMesh* ShapeAsset,FVector Position,FVector Dimensions,FLinearColor Color);
     UPROPERTY() TObjectPtr<USceneComponent> Visual;
@@ -32,4 +33,5 @@ private:
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> VictoryFingers;
     TArray<FLinearColor> Colors;
     bool bStarPose=false;
+    bool bLandingPose=false;
 };

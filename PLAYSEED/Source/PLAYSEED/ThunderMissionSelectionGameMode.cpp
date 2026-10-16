@@ -1,5 +1,6 @@
 #include "ThunderMissionSelectionGameMode.h"
 #include "ThunderExpeditionSubsystem.h"
+#include "ReferenceTravelSubsystem.h"
 #include "BattlefieldUI.h"
 #include "Components/InputComponent.h"
 #include "Engine/Canvas.h"
@@ -58,5 +59,6 @@ void AThunderMissionSelectionGameMode::EnterMission(int32 Number)
 {
     if(bTravelRequested)return;
     if(!GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->SelectMission(Number))return;
+    if(!GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>()->BeginCourse())return;
     bTravelRequested=true;UGameplayStatics::OpenLevel(this,FName(TEXT("/Game/ThunderMeadow/ThunderMeadow")));
 }
