@@ -32,9 +32,9 @@ bool UThunderPostTestSubsystem::Walk(AWindseedCharacter* Player, FVector Goal, f
 }
 bool UThunderPostTestSubsystem::Approach(AWindseedCharacter* Player, float DeltaSeconds)
 {
-    const FVector Points[] = {FVector(-600, -900, 82), FVector(1700, -1700, 82), FVector(1700, -2900, 82), FVector(1700, -3100, 82), FVector(2250, -3100, 82), FVector(2250, -2800, 82)};
-    if (Waypoint < 6 && Walk(Player, Points[Waypoint], DeltaSeconds)) ++Waypoint;
-    return Waypoint == 6;
+    const FVector Points[] = {FVector(-600, -900, 82), FVector(-600, -1700, 82), FVector(1700, -1700, 82), FVector(1700, -2900, 82), FVector(1700, -3100, 82), FVector(2250, -3100, 82), FVector(2250, -2800, 82)};
+    if (Waypoint < UE_ARRAY_COUNT(Points) && Walk(Player, Points[Waypoint], DeltaSeconds)) ++Waypoint;
+    return Waypoint == UE_ARRAY_COUNT(Points);
 }
 bool UThunderPostTestSubsystem::JumpToPost(AWindseedCharacter* Player, float DeltaSeconds, bool bPound)
 {
@@ -56,7 +56,7 @@ bool UThunderPostTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
     if (!Post || !Gate || !Enemy || !PC) { Error = TEXT("Post/gate/sentinel/controller missing"); return false; }
     PhaseTime += DeltaSeconds;
     if (PhaseTime > 45) { Error = FString::Printf(TEXT("Post phase %d round %d timed out hero %s enemy %s pounds%d"), Phase, Round, *Player->GetActorLocation().ToString(), *Enemy->GetActorLocation().ToString(), Post->GetPoundCount()); return false; }
-    if (Player->GetVitality()->GetHealth() != 8 || !Progress->GetProgressProblem().IsEmpty()) { Error = FString::Printf(TEXT("Post route phase %d unexpectedly took damage or save failed"), Phase); return false; }
+    if (Player->GetVitality()->GetHealth() != 8 || !Progress->GetProgressProblem().IsEmpty()) { Error = FString::Printf(TEXT("Post route phase %d waypoint %d at %s unexpectedly took damage or save failed"), Phase, Waypoint, *Player->GetActorLocation().ToString()); return false; }
     if (Phase < 9 && Progress->GetEarnedRewardCount() != 0) { Error = TEXT("Reward6 was saved before walking to actual lantern"); return false; }
     if (Phase == 0) { if (Approach(Player, DeltaSeconds)) Next(1); }
     else if (Phase == 1) { if (Enemy->IsRecovering()) Next(2); }
