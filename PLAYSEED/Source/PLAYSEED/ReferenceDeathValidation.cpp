@@ -38,7 +38,9 @@ void UReferencePaintingTestSubsystem::UpdateReferenceDeath(float DeltaSeconds,AW
     {
         if(Hero->RecoveryCount!=0||Lives->GetRemaining()!=3||Health->GetDefeatCount()!=0){Finish(false,TEXT("Ordinary death approach recovered unexpectedly"));return;}
         if(UpdateReferenceRouteBombs(DeltaSeconds,Hero,PC)||UpdateReferenceRouteCombat(DeltaSeconds,Hero,PC)){Elapsed-=DeltaSeconds;return;}
-        if(DeathWaypoint>=UE_ARRAY_COUNT(ReferenceChainApproach))
+        // 接触が始まる前の同じ上段で計測へ移り、最初の実被弾も数えます。
+        const bool bNearChomp=Move->IsMovingOnGround()&&FVector::Dist2D(Hero->GetActorLocation(),Chomp->GetAnchor())<1500&&FMath::Abs(Hero->GetActorLocation().Z-82-Chomp->GetAnchor().Z)<80;
+        if(bNearChomp||DeathWaypoint>=UE_ARRAY_COUNT(ReferenceChainApproach))
         {
             if(!Move->IsMovingOnGround())return;
             if(Health->GetHealth()!=8){Finish(false,TEXT("Ordinary death approach must reach Chomp with real health8"));return;}
