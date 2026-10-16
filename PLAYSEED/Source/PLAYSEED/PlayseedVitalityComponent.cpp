@@ -68,6 +68,14 @@ void UPlayseedVitalityComponent::Defeat()
     bDefeating = false;
 }
 
+// 回復も体力Componentに集約し、上限・死亡中のガードを一か所で守ります。
+bool UPlayseedVitalityComponent::TryHeal(int32 Points)
+{
+    if (Points <= 0 || bDefeating || Health <= 0 || Health >= GetMaximumHealth()) return false;
+    Health = FMath::Min(GetMaximumHealth(), Health + FMath::Min(Points, GetMaximumHealth()));
+    return true;
+}
+
 void UPlayseedVitalityComponent::Restore()
 {
     Health = GetMaximumHealth();

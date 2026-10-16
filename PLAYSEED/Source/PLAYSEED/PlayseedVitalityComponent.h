@@ -17,6 +17,7 @@ public:
     bool TryTakeImpact(int32 Points, FVector AwayDirection);
     void Defeat();
     void Restore();
+    bool TryHeal(int32 Points);
     int32 GetHealth() const { return Health; }
     int32 GetMaximumHealth() const { return 8; }
     bool IsInvulnerable() const { return InvulnerabilityRemaining > 0; }

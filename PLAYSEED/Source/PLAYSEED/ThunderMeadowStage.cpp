@@ -27,6 +27,7 @@
 #include "ThunderBindingPost.h"
 #include "ThunderPrisonGate.h"
 #include "ThunderHundredLantern.h"
+#include "ThunderMountainRest.h"
 #include "ThunderExpeditionSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Camera/PlayerCameraManager.h"
@@ -254,6 +255,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (BindingPost) BindingPost->ResetPost();
     if (PrisonGate) PrisonGate->ResetGate();
     if (HundredLantern) HundredLantern->ResetBonus();
+    if (MountainRest) MountainRest->ResetRest();
 }
 
 void AThunderMeadowStage::BuildWarpCaves()
@@ -498,6 +500,11 @@ void AThunderMeadowStage::BeginPlay()
     BuildSkyChimes();
     BuildBoundSentinel();
     HundredLantern = GetWorld()->SpawnActor<AThunderHundredLantern>();
+    // 山道の外側140cmは歩ける幅の内側で、岩球の中央線から離れます。
+    const FVector RestFoot = MountainFootPath[11];
+    const FVector RestSpot = RestFoot + (RestFoot - FVector(2200,2100,0)).GetSafeNormal2D() * 140;
+    MountainRest = GetWorld()->SpawnActor<AThunderMountainRest>(RestSpot, FRotator::ZeroRotator);
+    AddSign(RestSpot + FVector(0,0,30), TEXT("DEWREST BLOOM\nGround contact restores 2 vitality\nWait 5 seconds, leave and return"));
     BuildLighting();
 }
 
