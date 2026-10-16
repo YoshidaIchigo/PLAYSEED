@@ -1,5 +1,8 @@
 #include "ThunderMeadowGameMode.h"
 #include "ThunderCoinLedger.h"
+#include "ThunderLivesComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/PlayerController.h"
 #include "WindseedCharacter.h"
 #include "PlayseedVitalityComponent.h"
 #include "PlayseedInteractionComponent.h"
@@ -64,6 +67,8 @@ void AThunderMeadowHUD::DrawHUD()
     DrawText(TEXT("E/X: lift  F/Y: climb  Q/UP: ride  G/DOWN: talk  R: restart  M: menu"), FLinearColor::White, 30, Canvas->SizeY - 38, GEngine->GetMediumFont(), 1.05f);
     if (auto* Mode = Cast<AThunderMeadowGameMode>(GetWorld()->GetAuthGameMode()))
     {
+        DrawRect(FLinearColor(.02f,.06f,.1f,.9f),Canvas->SizeX-165,205,145,35);
+        DrawText(FString::Printf(TEXT("LIVES %d"),Mode->GetLives()->GetRemaining()),FLinearColor(1,.8f,.45f),Canvas->SizeX-150,212,GEngine->GetMediumFont(),1.1f);
         const auto* Coins = Mode->GetCoinLedger();
         DrawRect(FLinearColor(.02f, .06f, .1f, .9f), 245, 158, 310, 35);
         DrawText(FString::Printf(TEXT("LIGHTCOINS %d   SCARLET %d"), Coins->GetTotal(), Coins->GetRedCount()), FLinearColor(1, .9f, .4f), 255, 165, GEngine->GetMediumFont(), 1.1f);
@@ -87,10 +92,18 @@ void AThunderMeadowHUD::DrawHUD()
     if (Mission == 5)
         if (const auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(this, AThunderMeadowStage::StaticClass())); Meadow && Meadow->GetSkyChimes())
             DrawText(FString::Printf(TEXT("CENTRE CHIMES  %d / 5"), Meadow->GetSkyChimes()->GetCollectedCount()), FLinearColor(1, .85f, .5f), 30, 252, GEngine->GetMediumFont(), 1.1f);
+    if (const auto* Mode=Cast<AThunderMeadowGameMode>(GetWorld()->GetAuthGameMode()); Mode && Mode->GetLives()->IsGameOver())
+    {
+        DrawRect(FLinearColor(.01f,.03f,.05f,.9f),0,0,Canvas->SizeX,Canvas->SizeY);
+        DrawText(TEXT("THE TRAIL RESTS"),FLinearColor(1,.8f,.45f),Canvas->SizeX*.5f-155,Canvas->SizeY*.5f-55,GEngine->GetMediumFont(),2);
+        DrawText(TEXT("No lives left - returning to trail selection"),FLinearColor::White,Canvas->SizeX*.5f-220,Canvas->SizeY*.5f+5,GEngine->GetMediumFont(),1.1f);
+        DrawText(TEXT("Your earned lanterns are safe. Enter again to retry with 3 lives."),FLinearColor(.65f,1,.8f),Canvas->SizeX*.5f-300,Canvas->SizeY*.5f+40,GEngine->GetMediumFont(),.9f);
+    }
 }
 
 AThunderMeadowGameMode::AThunderMeadowGameMode()
 {
+    Lives = CreateDefaultSubobject<UThunderLivesComponent>(TEXT("VisitLives"));
     CoinLedger = CreateDefaultSubobject<UThunderCoinLedger>(TEXT("VisitCoinLedger"));
     DefaultPawnClass = AWindseedCharacter::StaticClass();
     HUDClass = AThunderMeadowHUD::StaticClass();
@@ -112,14 +125,28 @@ void AThunderMeadowGameMode::StartPlay()
 
 void AThunderMeadowGameMode::RestartStage(AWindseedCharacter* Player)
 {
+    if (Lives->IsGameOver()) return; // 最後の残機を失った後のRでは再開しません。
     // このステージが生成した仕掛けだけを初期化し、永続の獲得済み報酬には触れません。
     CoinLedger->ResetVisit();
     if (Stage) Stage->ResetMechanisms();
     Super::RestartStage(Player);
 }
 
+void AThunderMeadowGameMode::HandlePlayerDefeat(AWindseedCharacter* Player)
+{
+    if (!Player || Lives->IsGameOver()) return;
+    if (Lives->ConsumeLife()) RestartStage(Player);
+    else
+    {
+        // 0の間は入力と物理移動を止め、残機Componentの3秒後の遷移を待ちます。
+        Player->StopJumping(); Player->GetCharacterMovement()->StopMovementImmediately();
+        Player->GetCharacterMovement()->ClearAccumulatedForces(); Player->GetCharacterMovement()->DisableMovement();
+        if(auto* PC=Cast<APlayerController>(Player->GetController())) Player->DisableInput(PC);
+    }
+}
+
 void AThunderMeadowGameMode::HandlePlayerFall(AWindseedCharacter* Player)
 {
     // 雷鳴の丘では場外落下も死亡として扱います。保存済み報酬は再開で消しません。
-    if (Player) Player->GetVitality()->Defeat();
+    if (Player && !Lives->IsGameOver()) Player->GetVitality()->Defeat();
 }
