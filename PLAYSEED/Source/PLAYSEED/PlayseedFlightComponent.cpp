@@ -1,4 +1,5 @@
 #include "PlayseedFlightComponent.h"
+#include "ReferenceBattlefieldTerrain.h"
 #include "PlayseedLaunchComponent.h"
 #include "PlayseedRideComponent.h"
 #include "PlayseedClimbComponent.h"
@@ -53,7 +54,8 @@ void UPlayseedFlightComponent::RefreshWings()
 }
 void UPlayseedFlightComponent::GrantPower()
 {
-    Remaining = 45; ++PowerGrants; RefreshWings();
+    // 元の1800フレームを60秒に換算し、フレームレートに依存しない時間にします。
+    Remaining = AReferenceBattlefieldTerrain::IsReferenceCourse()?60:45; ++PowerGrants; RefreshWings();
 }
 void UPlayseedFlightComponent::RequestFlightAfterLaunch() { bAwaitingLaunch = HasPower(); }
 bool UPlayseedFlightComponent::TryBeginFlight()

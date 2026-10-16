@@ -4,6 +4,7 @@
 #include "GameFramework/HUD.h"
 #include "ReferenceEntranceGameMode.generated.h"
 class AReferenceEntranceRoom;
+class AThunderFlightSwitch;
 class UStaticMesh;
 class USceneComponent;
 
@@ -44,7 +45,9 @@ public:
     AReferenceEntranceRoom();
     virtual void BeginPlay() override;
     void SetRipple(float Time);
+    AThunderFlightSwitch* GetWingSwitch() const { return WingSwitch; }
 private:
     void Shape(UStaticMesh* Asset,FVector Position,FVector Size,FLinearColor Color,bool bSolid=false,USceneComponent* Parent=nullptr);
     UPROPERTY() TObjectPtr<USceneComponent> Painting;
+    UPROPERTY() TObjectPtr<AThunderFlightSwitch> WingSwitch;
 };

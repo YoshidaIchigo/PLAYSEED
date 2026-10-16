@@ -1,5 +1,6 @@
 #include "ReferenceEntranceGameMode.h"
 #include "ReferenceHero.h"
+#include "ThunderFlightSwitch.h"
 #include "ReferenceTravelSubsystem.h"
 #include "ThunderExpeditionSubsystem.h"
 #include "BattlefieldUI.h"
@@ -63,6 +64,8 @@ void AReferenceEntranceRoom::BeginPlay()
         Shape(Cube,FVector(385,Side*226,300),FVector(35,32,484),Gold);
         Shape(Cube,FVector(385,0,300+Side*226),FVector(35,484,32),Gold);
     }
+    // 一コースだけで遊べる版なので、大きな城の代わりに入口の横へ解放スイッチを置きます。
+    WingSwitch=GetWorld()->SpawnActor<AThunderFlightSwitch>(FVector(-600,-550,0),FRotator::ZeroRotator);
     auto* Post=GetWorld()->SpawnActor<APostProcessVolume>();Post->bUnbound=true;
     Post->Settings.bOverride_AutoExposureMethod=true;Post->Settings.AutoExposureMethod=AEM_Manual;
     Post->Settings.bOverride_AutoExposureApplyPhysicalCameraExposure=true;Post->Settings.AutoExposureApplyPhysicalCameraExposure=false;
@@ -116,6 +119,7 @@ void AReferenceEntranceHUD::DrawHUD()
     auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
     UI.Star(FVector2D(265,20),10,FLinearColor(1,.78f,.02f));UI.Text(TEXT("×"),276,9,19,FLinearColor(.55f,.53f,.85f));UI.Text(FString::FromInt(Progress->GetEarnedRewardCount()),293,8,20,FLinearColor(1,.37f,.025f));
     UI.Text(TEXT("えに むかって ジャンプ！"),160,214,9,FLinearColor::White,true,false,true);
+    UI.Text(Progress->IsFlightUnlocked()?TEXT("はねのはこが つかえる！"):TEXT("はね: ひだりの あかスイッチを ヒップドロップ"),160,230,7.5f,FLinearColor::White,true,false,true);
     auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
     if(Flow->GetLastRewardNumber()>0&&GetWorld()->GetTimeSeconds()<5)
         UI.Text(FString::Printf(TEXT("スター %d を ゲット！"),Flow->GetLastRewardNumber()),160,46,12,FLinearColor(1,.8f,.05f),true,false,true);

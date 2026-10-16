@@ -19,6 +19,7 @@
 #include "ThunderGuide.h"
 #include "ThunderLauncher.h"
 #include "ThunderFlightBloom.h"
+#include "ReferenceWingBox.h"
 #include "ThunderFlightSwitch.h"
 #include "ThunderStormkeeper.h"
 #include "ThunderCloudflagRace.h"
@@ -250,6 +251,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (GaleleafEnemy) GaleleafEnemy->ResetEnemy();
     if (Guide) Guide->ResetDialogue();
     if (FlightBloom) FlightBloom->ResetBloom();
+    for(AReferenceWingBox* Box:ReferenceWingBoxes)if(Box)Box->ResetBox();
     if (FlightSwitch) FlightSwitch->RefreshFromProgress();
     if (Stormkeeper) Stormkeeper->ResetToSpawn();
     if (CloudflagRace) CloudflagRace->ResetRace();
@@ -417,6 +419,12 @@ void AThunderMeadowStage::BuildGuideAndLauncher()
     AddSign(FVector(-3050, 1500, 0), TEXT("AERI'S SKYBLOOM\nG / D-pad Down: talk or interact nearby"));
 }
 
+void AThunderMeadowStage::BuildReferenceFlight()
+{
+    for(const FVector& Position:{FVector(-6710,2170,1300),FVector(3789,-1818,3340),FVector(400,-6500,350)})
+        ReferenceWingBoxes.Add(GetWorld()->SpawnActor<AReferenceWingBox>(Position,FRotator::ZeroRotator));
+}
+
 void AThunderMeadowStage::BuildFlightBloom()
 {
     FlightBloom = GetWorld()->SpawnActor<AThunderFlightBloom>(FVector(-2600, 2800, 0), FRotator::ZeroRotator);
@@ -516,6 +524,8 @@ void AThunderMeadowStage::BeginPlay()
         BuildGuideAndLauncher();
         BuildSkyCache();
         BuildScarletTrail();
+        BuildReferenceFlight();
+        BuildSkyChimes();
         BuildLighting();
         return;
     }
@@ -650,6 +660,12 @@ void AThunderMeadowStage::BuildScarletTrail()
 
 void AThunderMeadowStage::BuildSkyChimes()
 {
+    if(AReferenceBattlefieldTerrain::IsReferenceCourse())
+    {
+        SkyChimes=GetWorld()->SpawnActor<AThunderSkyChimes>();
+        SkyChimes->Configure({FVector(-1506,-1250,5517),FVector(-300,-1250,4200),FVector(1000,-1250,3600),FVector(2000,-1250,3600),FVector(3000,-1250,3600)},FVector(-6600,-1250,1000));
+        return;
+    }
     if (GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->GetSelectedMissionNumber() != 5) return;
     SkyChimes = GetWorld()->SpawnActor<AThunderSkyChimes>();
     SkyChimes->Configure({FVector(-1200, 2000, 2400), FVector(-400, 2000, 2400), FVector(400, 2000, 2400), FVector(1200, 2000, 2400), FVector(2000, 2000, 2400)}, SkyIslandTop + FVector(-250, 250, 100));
