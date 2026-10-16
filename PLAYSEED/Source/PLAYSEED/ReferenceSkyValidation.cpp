@@ -155,13 +155,18 @@ void UReferencePaintingTestSubsystem::UpdateReferenceSky(float DeltaSeconds,AWin
     {
         UE_LOG(LogTemp,Display,TEXT("WING RING: actual centre%d power%.2f"),WingCentre+1,Flight->GetRemaining());++WingCentre;Elapsed=0;
         if(WingCentre==5){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderWingFiveCentres.png"),false,false);Phase=99;}
+        const FVector Next=WingCentre==5?Rings->GetRewardRestLocation():Rings->GetCoins()[WingCentre]->GetActorLocation();
+        // 中心だけを追い続けると旋回の最小半径で周回するため、手前から向きを揃えます。
+        WingApproachPoint=Next-(Next-Hero->GetActorLocation()).GetSafeNormal()*650;bWingApproachReady=false;
     }
-    const FVector Target=Phase==99?Rings->GetRewardRestLocation():Rings->GetCoins()[WingCentre]->GetActorLocation(),Delta=Target-Hero->GetActorLocation();
+    const FVector FinalTarget=Phase==99?Rings->GetRewardRestLocation():Rings->GetCoins()[WingCentre]->GetActorLocation();
+    if(!bWingApproachReady&&FVector::Dist(Hero->GetActorLocation(),WingApproachPoint)<250)bWingApproachReady=true;
+    const FVector Target=bWingApproachReady?FinalTarget:WingApproachPoint,Delta=Target-Hero->GetActorLocation();
     const FRotator Desired=Delta.Rotation();const float Yaw=FRotator::NormalizeAxis(Desired.Yaw-Flight->GetFlightYaw()),Pitch=FMath::Clamp(Desired.Pitch,-60.f,70.f)-Flight->GetFlightPitch();
     // 製品のマウス軸とW/Sだけで向きと速さを調整します。飛行速度や座標を直接設定しません。
     PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::MouseX,IE_Axis,FMath::Clamp(Yaw*.6f,-40.f,40.f)));
     PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::MouseY,IE_Axis,FMath::Clamp(-Pitch*.6f,-40.f,40.f)));
-    const bool bSlow=Delta.Size()<650;
+    const bool bSlow=(Phase==98&&WingCentre>0)||FVector::Dist(Hero->GetActorLocation(),FinalTarget)<900;
     if(!bWingFlightKeysSet||bSlow!=bWingSlow)
     {
         PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::W,bSlow?IE_Released:IE_Pressed,bSlow?0:1));
