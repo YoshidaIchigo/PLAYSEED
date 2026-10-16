@@ -44,8 +44,14 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBoulders(float DeltaSeconds
         if(Health->GetHealth()!=8)
         {
             // 最後の足元へ着く前に目的の実鉄球が当たっても、その本物の接触を検証します。
-            if(Health->GetHealth()==6&&Field->GetBalls()[bPit?2:1]->GetConfirmedHits()==1){Phase=bPit?131:134;Elapsed=0;return;}
-            Finish(false,TEXT("Reference walking route took unintended damage"));return;
+            if(!bPit)
+            {
+                if(Field->GetBalls()[0]->GetConfirmedHits()==1)BoulderRoadHitIndex=0;
+                else if(Field->GetBalls()[1]->GetConfirmedHits()==1)BoulderRoadHitIndex=1;
+            }
+            if(Health->GetHealth()==6&&(bPit?Field->GetBalls()[2]->GetConfirmedHits()==1:BoulderRoadHitIndex>=0))
+            {Phase=bPit?131:134;Elapsed=0;return;}
+            Finish(false,FString::Printf(TEXT("Unintended boulder-route damage phase%d point%d health%d hero%s hits%d/%d/%d/%d/%d"),Phase,BoulderWaypoint,Health->GetHealth(),*Hero->GetActorLocation().ToString(),Field->GetBalls()[0]->GetConfirmedHits(),Field->GetBalls()[1]->GetConfirmedHits(),Field->GetBalls()[2]->GetConfirmedHits(),Field->GetBalls()[3]->GetConfirmedHits(),Field->GetBalls()[4]->GetConfirmedHits()));return;
         }
         if(BoulderWaypoint>=Count)
         {if(!Move->IsMovingOnGround())return;Move->StopMovementImmediately();Phase=bPit?131:134;Elapsed=0;return;}
@@ -57,13 +63,20 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBoulders(float DeltaSeconds
     }
     if(Phase==131||Phase==134)
     {
-        const bool bPit=Phase==131;AThunderRollingBoulder* Ball=Field->GetBalls()[bPit?2:1];
+        const bool bPit=Phase==131;AThunderRollingBoulder* Ball=Field->GetBalls()[bPit?2:BoulderRoadHitIndex>=0?BoulderRoadHitIndex:1];
         if(Hero->RecoveryCount!=(bPit?0:1)){Finish(false,TEXT("Boulder contact unexpectedly killed or recovered the hero"));return;}
         if(Health->GetHealth()<8)
         {
             if(Health->GetHealth()!=6||Ball->GetConfirmedHits()!=1||Health->GetLastImpulse().Size2D()<400)
             {Finish(false,TEXT("Moving reference ball did not deal one real two-point impact and knockback"));return;}
-            if(bPit)bBoulderPitVerified=true;else bBoulderRoadVerified=true;
+            if(bPit)bBoulderPitVerified=true;
+            else
+            {
+                if(Field->GetBalls()[0]->GetCompletedCycles()<1||Field->GetBalls()[1]->GetCompletedCycles()<1)
+                {Finish(false,TEXT("Both mountain balls did not actually complete their full paths"));return;}
+                bBoulderRoadVerified=true;
+                UE_LOG(LogTemp,Display,TEXT("BOULDER QA: actual mountain ball%d hit once, health%d, both completed paths %d/%d"),BoulderRoadHitIndex,Health->GetHealth(),Field->GetBalls()[0]->GetCompletedCycles(),Field->GetBalls()[1]->GetCompletedCycles());
+            }
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/(bPit?TEXT("Validation/ThunderPitBoulderImpact.png"):TEXT("Validation/ThunderRoadBoulderImpact.png")),false,false);
             Phase=bPit?132:135;Elapsed=0;return;
         }

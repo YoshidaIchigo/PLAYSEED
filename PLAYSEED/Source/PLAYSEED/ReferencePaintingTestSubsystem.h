@@ -34,7 +34,7 @@ private:
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     bool bBoulderTest=false,bBoulderPitVerified=false,bBoulderRoadVerified=false,bBoulderResetVerified=false;
-    int32 BoulderWaypoint=0,BoulderRecoveryBaseline=0;
+    int32 BoulderWaypoint=0,BoulderRoadHitIndex=-1;
     float BoulderLegElapsed=0;
     bool bWingOwnedReplay=false;
     bool bHundredTest=false,bSequentialChainTest=false,bAllStarReadTest=false;
