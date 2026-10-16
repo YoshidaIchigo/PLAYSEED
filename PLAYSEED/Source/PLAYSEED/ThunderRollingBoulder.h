@@ -17,6 +17,7 @@ public:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
     void ConfigurePath(const TArray<FVector>& FootPath);
+    void ConfigureReferencePath(const TArray<FVector>& FootPath,bool bContinuousLoop=false);
     void ResetMotion();
     bool IsWaiting() const { return bWaiting; }
     float GetWaitRemaining() const { return WaitRemaining; }
@@ -39,6 +40,9 @@ private:
     float TravelledDistance = 0;
     float WaitRemaining = 0;
     bool bWaiting = false;
-    static constexpr float Radius = 70;
-    static constexpr float Speed = 450;
+    // 半径と速さは仕掛け側の設定です。検証側は位置・速度を変更しません。
+    float Radius = 70;
+    float Speed = 450;
+    bool bLoop = false;
+    bool bReference = false;
 };
