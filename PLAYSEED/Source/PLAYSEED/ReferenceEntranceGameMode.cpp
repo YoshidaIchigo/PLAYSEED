@@ -65,6 +65,7 @@ void AReferenceEntranceRoom::BeginPlay()
     }
     auto* Post=GetWorld()->SpawnActor<APostProcessVolume>();Post->bUnbound=true;
     Post->Settings.bOverride_AutoExposureMethod=true;Post->Settings.AutoExposureMethod=AEM_Manual;
+    Post->Settings.bOverride_AutoExposureApplyPhysicalCameraExposure=true;Post->Settings.AutoExposureApplyPhysicalCameraExposure=false;
     Post->Settings.bOverride_AutoExposureBias=true;Post->Settings.AutoExposureBias=0;
     Post->Settings.bOverride_ToneCurveAmount=true;Post->Settings.ToneCurveAmount=0;
 }

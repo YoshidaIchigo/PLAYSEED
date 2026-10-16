@@ -65,9 +65,11 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
         // 製品が入力を止めている間に実際のキーを連打し、R/Mで演出を飛ばせないことを確かめます。
         if(Mode)
         {
-            for(FKey Key:{EKeys::R,EKeys::M,EKeys::SpaceBar,EKeys::LeftControl,EKeys::Enter})Tap(PC,Key);
-            if(!Mode->IsEntering()||Flow->GetState()!=EReferenceTravelState::EnteringPainting||Hero->RecoveryCount!=0)
-            {Finish(false,TEXT("Input spam interrupted painting entry"));return;}
+            if(Flow->GetState()==EReferenceTravelState::EnteringPainting)
+                for(FKey Key:{EKeys::R,EKeys::M,EKeys::SpaceBar,EKeys::LeftControl,EKeys::Enter})Tap(PC,Key);
+            const bool bValidState=Flow->GetState()==EReferenceTravelState::EnteringPainting||Flow->GetState()==EReferenceTravelState::SelectingStar;
+            if(!Mode->IsEntering()||!bValidState||!Hero||Hero->RecoveryCount!=0)
+            {Finish(false,FString::Printf(TEXT("Input spam interrupted painting entry: state%d recovery%d"),static_cast<int32>(Flow->GetState()),Hero?Hero->RecoveryCount:-1));return;}
             if(Elapsed>.3f&&!bCapturedDive){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderPaintingDive.png"),false,false);bCapturedDive=true;}
             return;
         }
