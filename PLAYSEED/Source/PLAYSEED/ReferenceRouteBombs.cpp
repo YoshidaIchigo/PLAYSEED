@@ -25,7 +25,11 @@ bool UReferencePaintingTestSubsystem::UpdateReferenceRouteBombs(float DeltaSecon
             {Nearest=Distance;RouteBombTarget=*It;}
         }
         if(RouteBombTarget.IsValid())
-        {RouteBombElapsed=RouteBombAttackClock=RouteBombAfterBurst=0;bRouteBombKicked=bRouteBombJumped=false;UE_LOG(LogTemp,Display,TEXT("ROUTE BOMB: ordinary LMB approach%s phase%d"),*RouteBombTarget->GetActorLocation().ToString(),Phase);}
+        {
+            // 通常R後も通算カウンターは残るため、この挑戦の実生成だけを数えます。
+            RouteBombExpectedDrops=RouteBombTarget->GetDropGenerationCount()+(RouteBombTarget->GetDropCoin()?0:1);
+            RouteBombElapsed=RouteBombAttackClock=RouteBombAfterBurst=0;bRouteBombKicked=bRouteBombJumped=false;UE_LOG(LogTemp,Display,TEXT("ROUTE BOMB: ordinary LMB approach%s phase%d"),*RouteBombTarget->GetActorLocation().ToString(),Phase);
+        }
     }
     if(!RouteBombTarget.IsValid())return false;
     AReferenceBomb* Bomb=RouteBombTarget.Get();RouteBombElapsed+=DeltaSeconds;RouteBombAttackClock+=DeltaSeconds;
@@ -35,7 +39,7 @@ bool UReferencePaintingTestSubsystem::UpdateReferenceRouteBombs(float DeltaSecon
         if(Move->IsMovingOnGround())Move->StopMovementImmediately();RouteBombAfterBurst+=DeltaSeconds;
         if(RouteBombAfterBurst>.4f)
         {
-            if(Bomb->GetDropGenerationCount()!=1||!Bomb->GetDropCoin()){Finish(false,TEXT("Actual bomb burst did not generate its own one gold"));return true;}
+            if(Bomb->GetDropGenerationCount()!=RouteBombExpectedDrops||!Bomb->GetDropCoin()){Finish(false,FString::Printf(TEXT("Actual bomb burst gold count%d expected%d coin%d"),Bomb->GetDropGenerationCount(),RouteBombExpectedDrops,Bomb->GetDropCoin()!=nullptr));return true;}
             UE_LOG(LogTemp,Display,TEXT("ROUTE BOMB: actual burst after normal input, distance%.1f health%d"),FVector::Dist2D(Hero->GetActorLocation(),Bomb->GetActorLocation()),Hero->GetVitality()->GetHealth());RouteBombTarget.Reset();
         }
         return true;

@@ -54,6 +54,7 @@ private:
     FVector BossAvoidTarget=FVector::ZeroVector;
     TWeakObjectPtr<AReferenceWalker> RouteCombatTarget;
     TWeakObjectPtr<AReferenceBomb> RouteBombTarget;
+    int32 RouteBombExpectedDrops=0,RouteCombatExpectedDrops=0;
     float RouteBombElapsed=0,RouteBombAttackClock=0,RouteBombAfterBurst=0;
     bool bRouteBombKicked=false,bRouteBombJumped=false;
     float RouteCombatElapsed=0,RouteAttackClock=0;
