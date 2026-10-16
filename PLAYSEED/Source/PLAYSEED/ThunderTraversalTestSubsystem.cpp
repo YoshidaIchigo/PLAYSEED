@@ -124,7 +124,7 @@ bool UThunderTraversalTestSubsystem::UpdateRoute(AWindseedCharacter* Player, flo
             bWaitedAtLowerBoulderEnd = true;
             UE_LOG(LogTemp, Display, TEXT("COIN TRAIL: real lower boulder cycle finished; passing the scarlet edge on the centre path."));
         }
-        if (!bYieldingToBoulder && CoinBoulder && !CoinBoulder->IsWaiting() && RockDistance < 600 && FMath::Abs(CoinFeet - RockFeet) < 220)
+        if (bWaitedAtLowerBoulderEnd && !bYieldingToBoulder && CoinBoulder && !CoinBoulder->IsWaiting() && RockDistance < 600 && FMath::Abs(CoinFeet - RockFeet) < 220)
         {
             const FVector Outward = (Player->GetActorLocation() - FVector(2200, 2100, 0)).GetSafeNormal2D();
             BoulderYieldPoint = FVector(2200, 2100, Player->GetActorLocation().Z) + Outward * 1240;
