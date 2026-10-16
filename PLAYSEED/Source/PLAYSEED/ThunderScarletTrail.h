@@ -19,12 +19,15 @@ public:
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     void Configure(const TArray<FVector>& CoinLocations);
     void ResetTrail();
+    void SetRewardRestLocation(FVector Location) { FixedRewardLocation=Location;bFixedReward=true; }
     int32 GetCollectedCount() const { return CollectedIds.Num(); }
     const TArray<TObjectPtr<APlayseedCoin>>& GetCoins() const { return Coins; }
     APlayseedLantern* GetReward() const { return Reward.Get(); }
     int32 GetRewardGenerationCount() const { return RewardGenerationCount; }
-    FVector GetRewardRestLocation() const { return GetActorLocation() + FVector(0, 200, 100); }
+    FVector GetRewardRestLocation() const { return bFixedReward?FixedRewardLocation:GetActorLocation() + FVector(0, 200, 100); }
 private:
+    FVector FixedRewardLocation=FVector::ZeroVector;
+    bool bFixedReward=false;
     void BindLedger();
     void HandleCoin(FName CoinId, EPlayseedCoinKind Kind);
     UPROPERTY() TArray<TObjectPtr<APlayseedCoin>> Coins;

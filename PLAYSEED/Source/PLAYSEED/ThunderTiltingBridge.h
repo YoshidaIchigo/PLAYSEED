@@ -20,6 +20,10 @@ public:
     UStaticMeshComponent* GetSurface() const { return Surface; }
     FVector GetDeckPoint(float LongitudinalOffset) const;
 private:
+    bool bReferenceBridge=false;
+    int32 ReferencePitch=0;
+    float ReferenceVelocity=0,BaseYaw=0;
+    double ReferenceAccumulator=0;
     // UPROPERTY で UE に Component の所有関係を伝え、Actor と同じ寿命で保持します。
     UPROPERTY() TObjectPtr<UStaticMeshComponent> Surface;
 };

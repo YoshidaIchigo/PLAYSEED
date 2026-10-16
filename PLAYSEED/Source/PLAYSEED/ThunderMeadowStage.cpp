@@ -1,6 +1,7 @@
 #include "ThunderMeadowStage.h"
 #include "ReferenceBattlefieldTerrain.h"
 #include "ThunderMovingPlatform.h"
+#include "ReferenceCheckerPlatform.h"
 #include "ThunderTiltingBridge.h"
 #include "ThunderShortcutGate.h"
 #include "ThunderWarpPair.h"
@@ -233,6 +234,7 @@ void AThunderMeadowStage::BuildMovingPlatform()
 void AThunderMeadowStage::ResetMechanisms()
 {
     if (MovingPlatform) MovingPlatform->ResetMotion();
+    for(AReferenceCheckerPlatform* Platform:ReferenceCheckers)if(Platform)Platform->ResetMotion();
     if (TiltingBridge) TiltingBridge->ResetTilt();
     if (ShortcutGate) ShortcutGate->ResetGate();
     if (WarpPair) WarpPair->ResetWarps();
@@ -513,6 +515,7 @@ void AThunderMeadowStage::BeginPlay()
         BuildCloudflagRace();
         BuildGuideAndLauncher();
         BuildSkyCache();
+        BuildScarletTrail();
         BuildLighting();
         return;
     }
@@ -618,6 +621,21 @@ void AThunderMeadowStage::BuildSkyCache()
 
 void AThunderMeadowStage::BuildScarletTrail()
 {
+    if(AReferenceBattlefieldTerrain::IsReferenceCourse())
+    {
+        TiltingBridge=GetWorld()->SpawnActor<AThunderTiltingBridge>(FVector(-2303,-1024,717),FRotator(0,-45,0));
+        ScarletTrail=GetWorld()->SpawnActor<AThunderScarletTrail>();
+        ScarletTrail->SetRewardRestLocation(FVector(-6000,-2400,1000));
+        // 元のコイン底位置を、縦32cm半径の自作円盤の中心へ30cmだけ上げます。
+        ScarletTrail->Configure({FVector(-5500,-2400,798),FVector(-6500,-2400,798),FVector(1135,7161,1950),FVector(250,-1920,1030),
+            FVector(1600,-4440,1010),FVector(-2755,4083,30),FVector(4934,-861,1382),FVector(4100,-1629,3702)});
+        for(int32 Index=0;Index<2;++Index)
+        {
+            auto* Platform=GetWorld()->SpawnActor<AReferenceCheckerPlatform>(FVector(1612,-4611,300),FRotator::ZeroRotator);
+            Platform->Configure(Index);ReferenceCheckers.Add(Platform);
+        }
+        return;
+    }
     // どの目的で入場しても探索できます。各地点はPLAYSEED独自の配置です。
     const FVector Court(1200, -1300, 0);
     // 山道の赤は道幅の内側の縁へ置き、既存の中央の金コイン周回と重ねません。
