@@ -592,11 +592,12 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBoss(float DeltaSeconds,AWi
         if(BossAvoidRemaining<=0)
         {
             auto* Field=Stage->GetReferenceBoulderField();auto* Terrain=Cast<AReferenceBattlefieldTerrain>(UGameplayStatics::GetActorOfClass(GetWorld(),AReferenceBattlefieldTerrain::StaticClass()));
-            if(Field&&Terrain)for(AThunderRollingBoulder* Ball:Field->GetBalls())
+            if(Field&&Terrain)for(int32 Index=0;Index<FMath::Min(2,Field->GetBalls().Num());++Index)
             {
+                AThunderRollingBoulder* Ball=Field->GetBalls()[Index]; // 山道の2体を避けます。くぼ地の周回を追いかけません。
                 const FVector D=Ball->GetActorLocation()-Hero->GetActorLocation();const float Feet=Hero->GetActorLocation().Z-82;
                 if(Ball->IsWaiting()||D.Size2D()>800||FMath::Abs(Ball->GetActorLocation().Z-Feet-100)>350)continue;
-                const FVector Side=FVector(D.Y,-D.X,0).GetSafeNormal();float Best=99999;FVector Choice;
+                const FVector Side=FVector(D.Y,-D.X,0).GetSafeNormal();float Best=99999;FVector Choice=FVector::ZeroVector;
                 for(float Sign:{-1.f,1.f})
                 {
                     FVector Floor;if(!Terrain->FindFloor(Hero->GetActorLocation()-FVector(0,0,82)+Side*Sign*200,Floor)||FMath::Abs(Floor.Z-Feet)>90)continue;
