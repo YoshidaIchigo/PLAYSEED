@@ -50,6 +50,7 @@ void UReferencePaintingTestSubsystem::Initialize(FSubsystemCollectionBase& Colle
 {
     Super::Initialize(Collection);
 #if !UE_BUILD_SHIPPING
+    bDefaultStartTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderDefaultStartTest"));
     bFadeTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderFadeTest"));
     bCameraTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderCameraTest"));
     bSaveFailureTest=bCameraTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderSaveFailureTest"));
@@ -67,7 +68,7 @@ void UReferencePaintingTestSubsystem::Initialize(FSubsystemCollectionBase& Colle
     bStarTest=bReferenceSkyTest||bReferenceRedTest||bReferenceCannonTest||bReferenceRaceTest||bReferenceBossTest||bSelectionTest||bSaveFailureTest||bFadeTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest"));
     bReadMode=FParse::Param(FCommandLine::Get(),TEXT("ThunderStarReadTest"));
     bChainTest=bStarTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderChainTest"));
-    bDropTest=bChainTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderDropTest"));
+    bDropTest=bDefaultStartTest||bChainTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderDropTest"));
     bEnabled=bReadMode||bDropTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderPaintingTest"));
 #endif
 }
@@ -116,6 +117,8 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
     if(Phase==0)
     {
         if(Map!=TEXT("Entrance")||!Hero||!Mode||Elapsed<1)return;
+        if(bDefaultStartTest&&(!AReferenceBattlefieldTerrain::IsReferenceCourse()||FParse::Param(FCommandLine::Get(),TEXT("ReferenceCourse"))))
+        {Finish(false,TEXT("Default startup still depends on the preview flag"));return;}
         if(!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_"))||Progress->GetEarnedRewardCount()!=(bReadMode?AfterRewardCount:BeforeRewardCount)||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0)!=(bReadMode||BeforeRewardCount>0)||(bReadMode&&!Progress->HasEarnedReward(ExpectedReward)))
         {Finish(false,TEXT("Painting QA requires a fresh isolated save"));return;}
         if(bReferenceSkyTest&&(!Progress->HasEarnedReward(1)||!Progress->HasEarnedReward(2)||!Progress->HasEarnedReward(3)||!Progress->HasEarnedReward(4)||!Progress->IsLauncherUnlocked()||(bWingOwnedReplay&&!Progress->HasEarnedReward(5)))){Finish(false,TEXT("Wing QA requires actual earned stars1/2/3/4 and legitimate cannon access, plus actual5 for owned replay"));return;}
@@ -249,10 +252,17 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
         }
         if(Flow->GetState()!=EReferenceTravelState::InCourse||!bSawDrop||!bCapturedLanding||!Movement->IsMovingOnGround()||FVector::Dist2D(Hero->GetActorLocation(),FVector(-6558,-6464,0))>40)
         {Finish(false,TEXT("Drop did not land at the reference entrance and release input once"));return;}
+        if(bDefaultStartTest)
+        {
+            if(!Cast<AReferenceHero>(Hero)||!UGameplayStatics::GetActorOfClass(GetWorld(),AReferenceBattlefieldTerrain::StaticClass()))
+            {Finish(false,TEXT("Default entry did not create the current hero and reference terrain"));return;}
+            Tap(PC,EKeys::H);
+        }
         ++VerifiedDropVisits;Phase=7;Elapsed=0;return;
     }
     if(Phase==7&&Elapsed>1)
     {
+        if(bDefaultStartTest)Tap(PC,EKeys::H);
         PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;Phase=8;Elapsed=0;return;
     }
     if(Phase==8)
