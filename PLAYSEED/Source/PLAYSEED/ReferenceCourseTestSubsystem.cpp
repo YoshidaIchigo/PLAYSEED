@@ -64,6 +64,9 @@ void UReferenceCourseTestSubsystem::Tick(float DeltaSeconds)
     if(Phase==1)
     {
         if(!Terrain || !Player || Elapsed<1)return;
+        FVector StartFloor;
+        if(!Terrain->FindFloor(FVector(-6558,-6464,0),StartFloor) || !Player->GetCharacterMovement()->IsMovingOnGround())
+        {Finish(false,TEXT("Reference start does not have an upward facing walkable floor and grounded character"));return;}
         if(FVector::Dist2D(Player->GetActorLocation(),FVector(-6558,-6464,0))>30){Finish(false,TEXT("Reference spawn is not at the documented start"));return;}
         RecoveryBaseline=Player->RecoveryCount;
         Route.Reset();for(const auto& Point:ReferenceSummitWalk)Route.Add(FVector(Point.X,Point.Y,Point.Z));

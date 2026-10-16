@@ -52,6 +52,8 @@ void AReferenceBattlefieldTerrain::BeginPlay()
     }
     Vertices.Reset();for(const auto& P:CollisionVertices)Vertices.Add(FVector(P.X,P.Y,P.Z));
     Indices.Reset();Indices.Append(CollisionIndices,UE_ARRAY_COUNT(CollisionIndices));
+    // 参照資料は反時計回り、UEの衝突面は時計回りです。逆のままだと床で落下状態が続きます。
+    for(int32 I=0;I<Indices.Num();I+=3)Swap(Indices[I+1],Indices[I+2]);
     Collision->CreateMeshSection(0,Vertices,Indices,TArray<FVector>(),TArray<FVector2D>(),TArray<FColor>(),Tangents,true);
     Collision->SetMeshSectionVisible(0,false);
     UE_LOG(LogTemp,Display,TEXT("REFERENCE TERRAIN: 1101 render triangles, 1060 collision triangles; start(-6558,-6464), summit4294, island3072."));
