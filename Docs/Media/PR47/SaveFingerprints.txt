@@ -1,0 +1,8 @@
+{
+  "normal_before": "ABSENT",
+  "game_exit": 0,
+  "slot": "Validation_PR47_Reference_G",
+  "normal_after": "ABSENT"
+}
+Validation slot file exists: False
+Normal save file exists: False

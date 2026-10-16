@@ -1,4 +1,5 @@
 #include "ThunderMeadowGameMode.h"
+#include "ReferenceBattlefieldTerrain.h"
 #include "BattlefieldUI.h"
 #include "ThunderCoinLedger.h"
 #include "ThunderLivesComponent.h"
@@ -77,7 +78,7 @@ void AThunderMeadowGameMode::StartPlay()
     if(InputComponent)InputComponent->BindKey(EKeys::H,IE_Pressed,this,&AThunderMeadowGameMode::ToggleControls);
     if (auto* Player = Cast<AWindseedCharacter>(UGameplayStatics::GetPlayerPawn(this, 0)))
     {
-        Player->SetTrailStartLocation(FVector(-600, -600, 100));
+        Player->SetTrailStartLocation(AReferenceBattlefieldTerrain::IsReferenceCourse() ? FVector(-6558,-6464,100) : FVector(-600,-600,100));
         Player->ReturnToTrail();
         Player->RecoveryCount = 0;
     }
