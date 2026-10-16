@@ -146,7 +146,7 @@ void AReferenceHero::UpdateCameraVisibility()
     if(bHide==bBodyHiddenForCamera)return;
     bBodyHiddenForCamera=bHide;if(bHide)++CameraHideCount;
     // HiddenInGameは表示だけの設定です。衝突・体力・移動はそのままにし、羽やピースのVisibility設定も保ちます。
-    TArray<USceneComponent*> Children;Visual->GetChildrenComponents(true,Children);
-    for(auto* Child:Children)if(auto* Shape=Cast<UPrimitiveComponent>(Child))Shape->SetHiddenInGame(bHide,false);
+    TArray<USceneComponent*> VisualChildren;Visual->GetChildrenComponents(true,VisualChildren);
+    for(auto* Child:VisualChildren)if(auto* Shape=Cast<UPrimitiveComponent>(Child))Shape->SetHiddenInGame(bHide,false);
     UE_LOG(LogTemp,Display,TEXT("REFERENCE CAMERA BODY: %s at actual distance %.1f; hide count%d"),bHide?TEXT("hidden"):TEXT("restored"),ActualCameraDistance,CameraHideCount);
 }
