@@ -27,6 +27,8 @@ void UReferencePaintingTestSubsystem::UpdateReferenceRed(float DeltaSeconds,AWin
     {Finish(false,TEXT("Reference red actors disappeared or normal play recovered unexpectedly"));return;}
     auto* Move=Hero->GetCharacterMovement();auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
     if(JumpHold>0){JumpHold-=DeltaSeconds;if(JumpHold<=0)PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Released,0));}
+    if((Phase==70||Phase==73||Phase==75||Phase==78)&&UpdateReferenceRouteCombat(DeltaSeconds,Hero,PC)){Elapsed-=DeltaSeconds;return;}
+    if((Phase==70||Phase==73||Phase==75||Phase==78)&&UpdateReferenceRoadAvoidance(DeltaSeconds,Hero,PC)){Elapsed-=DeltaSeconds;return;}
     if(Stage->GetTiltingBridge()&&Hero->GetMovementBaseObject()==Stage->GetTiltingBridge()->GetSurface())bRedBridgeRidden=true;
     auto Walk=[&](FVector Target)
     {

@@ -22,6 +22,7 @@ private:
     void StepMotion();
     UPROPERTY() TObjectPtr<UStaticMeshComponent> Surface;
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Tiles;
+    UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Axles;
     FVector Origin=FVector::ZeroVector,Offset=FVector::ZeroVector;
     double Accumulator=0;
     int32 PlatformIndex=0,Action=1,Timer=0,MoveAngle=0,FaceAngle=0;

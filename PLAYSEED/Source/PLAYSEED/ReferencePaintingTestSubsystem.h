@@ -34,12 +34,14 @@ private:
     void UpdateReferenceCannon(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceRace(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceBoss(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
+    bool UpdateReferenceRoadAvoidance(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     bool UpdateReferenceRouteCombat(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateChain(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateStarCapture(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void ObserveFade(APlayerController* PC);
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
+    bool bRedOwnedReplay=false;
     bool bBossOwnedReplay=false,bBossHeartUsed=false,bBossAvoidJumped=false;
     int32 BossHeartWaypoint=0;
     float BossAvoidRemaining=0;
