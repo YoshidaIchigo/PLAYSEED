@@ -44,8 +44,7 @@ bool UReferencePaintingTestSubsystem::UpdateReferenceRouteCombat(float DeltaSeco
     }
     const FVector Delta=Target-Hero->GetActorLocation();const float Distance=Delta.Size2D();
     const bool bFacing=FVector::DotProduct(Hero->GetActorForwardVector(),Delta.GetSafeNormal2D())>.85f;
-    // 近づきすぎてから止まると、実攻撃の命中時間より先に接触されます。
-    if(Enemy->IsDefeated()||Distance>220)
+    if(Enemy->IsDefeated()||Distance>173)
     {
         const FVector Desired=(Delta.GetSafeNormal2D()*Distance*4.5f).GetClampedToMaxSize2D(470);
         const FVector Correction=Desired-FVector(Hero->GetVelocity().X,Hero->GetVelocity().Y,0);
@@ -54,7 +53,7 @@ bool UReferencePaintingTestSubsystem::UpdateReferenceRouteCombat(float DeltaSeco
     else if(!bFacing)Hero->AddMovementInput(Delta.GetSafeNormal2D(),.25f);
     else if(Move->IsMovingOnGround())Move->StopMovementImmediately();
     PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(),FRotator(-18,Delta.Rotation().Yaw,0),DeltaSeconds,4));
-    if(!Enemy->IsDefeated()&&Distance<240&&bFacing&&RouteAttackClock>.28f){Tap(PC,EKeys::LeftMouseButton);RouteAttackClock=0;}
+    if(!Enemy->IsDefeated()&&Distance<180&&bFacing&&RouteAttackClock>.28f){Tap(PC,EKeys::LeftMouseButton);RouteAttackClock=0;}
     if(RouteCombatElapsed>15)Finish(false,FString::Printf(TEXT("Ordinary route combat blocked hero%s enemy%s health%d distance%.1f defeated%d"),*Hero->GetActorLocation().ToString(),*Enemy->GetActorLocation().ToString(),Hero->GetVitality()->GetHealth(),Distance,Enemy->IsDefeated()));
     return true;
 }

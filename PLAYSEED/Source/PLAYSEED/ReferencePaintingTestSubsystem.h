@@ -45,7 +45,7 @@ private:
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     bool bGroundOwnedReplay=false,bHundredOwnedReplay=false,bChainOwnedReplay=false,bDeathTest=false,bDeathVerified=false,bDeathStarted=false;
-    int32 HundredGroundTotal=0,HundredNeededSky=0,DeathWaypoint=0,DeathImpactBaseline=0,DeathDefeatBaseline=0;
+    int32 HundredGroundTotal=0,HundredNeededSky=0,DeathWaypoint=0,DeathImpactBaseline=0,DeathDefeatBaseline=0,DeathHealthBaseline=0,DeathNeededHits=0;
     float DeathLegElapsed=0;
     bool bRedOwnedReplay=false;
     bool bBossOwnedReplay=false,bBossHeartUsed=false,bBossAvoidJumped=false;
