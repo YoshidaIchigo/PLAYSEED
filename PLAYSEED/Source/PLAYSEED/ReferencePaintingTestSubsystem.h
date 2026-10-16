@@ -38,7 +38,7 @@ private:
     void ObserveFade(APlayerController* PC);
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
-    bool bBossOwnedReplay=false,bBossHeartUsed=false;
+    bool bBossOwnedReplay=false,bBossHeartUsed=false,bBossAvoidJumped=false;
     int32 BossHeartWaypoint=0;
     float BossAvoidRemaining=0;
     FVector BossAvoidTarget=FVector::ZeroVector;

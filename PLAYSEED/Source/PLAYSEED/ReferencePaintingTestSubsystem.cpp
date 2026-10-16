@@ -589,7 +589,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBoss(float DeltaSeconds,AWi
     };
     if(Phase==40||Phase==46||Phase==48)
     {
-        if(BossAvoidRemaining<=0)
+        if(BossAvoidRemaining<=0&&Movement->IsMovingOnGround())
         {
             auto* Field=Stage->GetReferenceBoulderField();auto* Terrain=Cast<AReferenceBattlefieldTerrain>(UGameplayStatics::GetActorOfClass(GetWorld(),AReferenceBattlefieldTerrain::StaticClass()));
             if(Field&&Terrain)for(int32 Index=0;Index<FMath::Min(2,Field->GetBalls().Num());++Index)
@@ -598,18 +598,27 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBoss(float DeltaSeconds,AWi
                 const FVector D=Ball->GetActorLocation()-Hero->GetActorLocation();const float Feet=Hero->GetActorLocation().Z-82;
                 if(Ball->IsWaiting()||D.Size2D()>800||FMath::Abs(Ball->GetActorLocation().Z-Feet-100)>350)continue;
                 const FVector Side=FVector(D.Y,-D.X,0).GetSafeNormal();float Best=99999;FVector Choice=FVector::ZeroVector;
-                for(float Sign:{-1.f,1.f})
+                for(float Distance:{150.f,100.f})for(float Sign:{-1.f,1.f})
                 {
-                    FVector Floor;if(!Terrain->FindFloor(Hero->GetActorLocation()-FVector(0,0,82)+Side*Sign*200,Floor)||FMath::Abs(Floor.Z-Feet)>90)continue;
-                    const float Cost=FMath::Abs(Floor.Z-Feet);if(Cost<Best){Best=Cost;Choice=Floor;}
+                    const FVector Start=Hero->GetActorLocation()-FVector(0,0,82);FVector Floor;
+                    if(!Terrain->FindFloor(Start+Side*Sign*Distance,Floor)||FMath::Abs(Floor.Z-Feet)>70)continue;
+                    // 点だけに床があっても、途中や着地の外周が崖なら横へ避けません。
+                    bool bSafe=true;
+                    for(int32 Step=1;Step<=5&&bSafe;++Step)for(int32 Edge=0;Edge<8;++Edge)
+                    {
+                        const float Angle=Edge*(2*PI/8);const FVector Probe=FMath::Lerp(Start,Floor,Step/5.f)+FVector(FMath::Cos(Angle)*70,FMath::Sin(Angle)*70,0);
+                        FVector Support;if(!Terrain->FindFloor(Probe,Support)||FMath::Abs(Support.Z-Probe.Z)>70){bSafe=false;break;}
+                    }
+                    const float Cost=FMath::Abs(Floor.Z-Feet)+(150-Distance);
+                    if(bSafe&&Cost<Best){Best=Cost;Choice=Floor;}
                 }
-                if(Best<99999){BossAvoidTarget=Choice;BossAvoidRemaining=1.2f;BossLegElapsed=0;UE_LOG(LogTemp,Display,TEXT("BOSS QA: ordinary side-step/jump from real ball at%s tofloor%s health%d"),*Ball->GetActorLocation().ToString(),*Choice.ToString(),Hero->GetVitality()->GetHealth());break;}
+                if(Best<99999){BossAvoidTarget=Choice;BossAvoidRemaining=1.2f;bBossAvoidJumped=false;BossLegElapsed=0;UE_LOG(LogTemp,Display,TEXT("BOSS QA: ordinary side-step/jump from real ball at%s tofloor%s health%d"),*Ball->GetActorLocation().ToString(),*Choice.ToString(),Hero->GetVitality()->GetHealth());break;}
             }
         }
         if(BossAvoidRemaining>0)
         {
             BossAvoidRemaining-=DeltaSeconds;WalkHeart(BossAvoidTarget);
-            if(Movement->IsMovingOnGround()&&JumpHold<=0){PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;}return;
+            if(!bBossAvoidJumped&&Movement->IsMovingOnGround()&&JumpHold<=0){PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;bBossAvoidJumped=true;}return;
         }
     }
     if(Phase==46||Phase==48)
