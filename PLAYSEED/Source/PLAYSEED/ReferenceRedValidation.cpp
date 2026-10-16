@@ -75,7 +75,9 @@ void UReferencePaintingTestSubsystem::UpdateReferenceRed(float DeltaSeconds,AWin
         if(Hero->GetMovementBaseObject()==Platform->GetSurface())
         {
             if(!bRedPlatformRidden){UE_LOG(LogTemp,Display,TEXT("RED ELEVATOR: actual CharacterMovement base contact at%s"),*Hero->GetActorLocation().ToString());FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderRedPlatformRide.png"),false,false);}
-            bRedPlatformRidden=true;
+            bRedPlatformRidden=true;RedPlatformRideSeconds+=DeltaSeconds;
+            // 実際に運ばれる時間を残してからジャンプし、接地1フレームだけの動画にならないようにします。
+            if(RedPlatformRideSeconds<.2f){Move->StopMovementImmediately();return;}
             if(!bRedPlatformJump){Jump();bRedPlatformJump=true;}
         }
         if(Trail->GetCoins()[4]->IsCollected()&&bRedPlatformRidden)
@@ -105,7 +107,8 @@ void UReferencePaintingTestSubsystem::UpdateReferenceRed(float DeltaSeconds,AWin
             PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::W,IE_Released,0));if(Hero->GetClimb()->IsClimbing())Tap(PC,EKeys::F);
             if(!bRedTreeClimbed||Trail->GetCollectedCount()!=8||Trail->GetRewardGenerationCount()!=1||!Trail->GetReward()||FVector::Dist(Trail->GetReward()->GetRestLocation(),FVector(-6000,-2400,1000))>1)
             {Finish(false,TEXT("Normal F/W climb did not generate exactly one fixed-position star4 after all eight reds"));return;}
-            FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderRedTreeCoin.png"),false,false);Phase=77;Elapsed=0;return;
+            FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderRedTreeCoin.png"),false,false);
+            Phase=bHundredTest?123:77;HundredWaypoint=0;HundredLegElapsed=0;Elapsed=0;return;
         }
         if(Elapsed>12)Finish(false,FString::Printf(TEXT("Normal F/W did not climb the island tree and touch red8: climbing%d hero%s"),Hero->GetClimb()->IsClimbing(),*Hero->GetActorLocation().ToString()));return;
     }

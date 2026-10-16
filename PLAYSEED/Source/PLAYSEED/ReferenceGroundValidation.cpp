@@ -53,7 +53,8 @@ void UReferencePaintingTestSubsystem::UpdateReferenceGround(float DeltaSeconds,A
             if(Collected!=36||Ledger->GetTotal()<36||Ledger->GetTotal()>=100||Box->GetBreakCount()!=1||Box->GetDropGenerationCount()!=1)
             {Finish(false,FString::Printf(TEXT("Ordinary field pickups incomplete: real gold%d score%d"),Collected,Ledger->GetTotal()));return;}
             bGroundCoinsVerified=true;FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderGroundCoins.png"),false,false);
-            UE_LOG(LogTemp,Display,TEXT("GROUND QA: actual36 field golds collected; score%d, no star awarded; testing real R reset next"),Ledger->GetTotal());
+            UE_LOG(LogTemp,Display,TEXT("GROUND QA: actual36 field golds collected; score%d, continuing hundred%d"),Ledger->GetTotal(),bHundredTest);
+            if(bHundredTest){Phase=120;HundredWaypoint=0;HundredLegElapsed=0;Elapsed=0;return;}
             Tap(PC,EKeys::R);Phase=115;Elapsed=0;return;
         }
         const auto& Point=ReferenceGroundWalk[GroundWaypoint];const FVector Target(Point.X,Point.Y,Point.Z);

@@ -1,0 +1,4 @@
+PASS
+Separate process loaded the same actual save with earned stars1..7, walked/jumped into the painting, and displayed all six main stars earned with total7, without awarding progress.
+CaptureFrames: 250
+UTC: 2026-10-16T15:58:32.385Z

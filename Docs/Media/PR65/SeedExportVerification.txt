@@ -1,0 +1,14 @@
+{
+  "source_sha256": "2629d6853a28016a09156507f6f6a1a5052be89da521491a63631cb129069ff2",
+  "original_frames": 1640,
+  "exported_frames": 1640,
+  "width": 960,
+  "height": 540,
+  "source_frame_rate": "15/1",
+  "duration_seconds": 109.333333,
+  "continuous_timestamps": true,
+  "export_sha256": "f1acaa2ccfcf3f2c8b8b72f993f8a740f38f4a94981c2e1367db5cad4d6ff73b",
+  "bytes": 16615613,
+  "encoder_crf": 22,
+  "encoder": "ffmpeg version 9.0.2-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers"
+}

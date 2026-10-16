@@ -82,7 +82,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceSky(float DeltaSeconds,AWin
     auto* Stage=Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(GetWorld(),AThunderMeadowStage::StaticClass()));
     if(!Stage||Stage->GetReferenceWingBoxes().Num()!=3||Stage->GetReferenceLaunchers().Num()!=6||!Stage->GetSkyChimes())
     {Finish(false,TEXT("Wing cap boxes, real rings or reference cannons were missing"));return;}
-    AReferenceWingBox* Box=Stage->GetReferenceWingBoxes()[2];AThunderLauncher* Cannon=Stage->GetReferenceLaunchers()[0];auto* Rings=Stage->GetSkyChimes();
+    AReferenceWingBox* Box=Stage->GetReferenceWingBoxes()[bHundredTest?1:2];AThunderLauncher* Cannon=Stage->GetReferenceLaunchers()[bHundredTest?4:0];auto* Rings=Stage->GetSkyChimes();
     if(Rings->GetCoins().Num()!=5||Rings->GetOuterCoins().Num()!=40||!Box->IsUnlocked())
     {Finish(false,TEXT("The real 5+40 gold coins or saved wing box access were missing"));return;}
     if(Phase==93||Phase==95)
@@ -108,7 +108,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceSky(float DeltaSeconds,AWin
             if(Box->GetSpawnCount()!=1||Box->GetHeadBumpCount()!=1||!Box->GetCap()||!Box->GetCap()->IsCollected()||Box->GetCap()->GetCollections()!=1||Flight->GetPowerGrants()!=1||Flight->GetRemaining()>60)
             {Finish(false,TEXT("Wing power did not follow one normal cap-box head bump and actual capsule pickup"));return;}
             if(!bWingPowerObserved){bWingPowerObserved=true;FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderWingCapPickup.png"),false,false);}
-            if(Move->IsMovingOnGround()){Phase=95;Elapsed=0;WingWaypoint=0;WingLegElapsed=0;return;}
+            if(Move->IsMovingOnGround()){Phase=bHundredTest?124:95;Elapsed=0;WingWaypoint=0;WingLegElapsed=0;HundredWaypoint=0;HundredLegElapsed=0;return;}
         }
         else if(Delta.Size2D()<50)Jump();
         if(Elapsed>12)Finish(false,FString::Printf(TEXT("Normal jumps did not break/pick up the wing cap: bumps%d spawn%d hero%s"),Box->GetHeadBumpCount(),Box->GetSpawnCount(),*Hero->GetActorLocation().ToString()));return;

@@ -1,0 +1,55 @@
+{
+  "full_export": {
+    "source_sha256": "afac4d950809bf2d2e0e12c78e91dce2ce3632dd2b960f846cc194f229970474",
+    "original_frames": 14213,
+    "exported_frames": 14213,
+    "width": 960,
+    "height": 540,
+    "source_frame_rate": "15/1",
+    "duration_seconds": 947.533333,
+    "continuous_timestamps": true,
+    "export_sha256": "8d33e06563aa4f6aec2feb712fe2a01cddc01f7c66c543c69d8c9bcc89cd2d34",
+    "bytes": 141247381,
+    "encoder_crf": 24,
+    "encoder": "ffmpeg version 9.0.2-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers"
+  },
+  "parts": [
+    {
+      "name": "PlaythroughPart01.mp4",
+      "frames": 5526,
+      "first_full_frame": 0,
+      "last_full_frame": 5525,
+      "sha256": "7f1f7ce1d73562f146ef1ddaf254f3c0fee5b9dfb871d6d8efa167c2c3a4761f",
+      "bytes": 49289598,
+      "duration_seconds": 368.4,
+      "first_local_pts": 0.0,
+      "continuous_local_timestamps": true
+    },
+    {
+      "name": "PlaythroughPart02.mp4",
+      "frames": 5292,
+      "first_full_frame": 5526,
+      "last_full_frame": 10817,
+      "sha256": "e47b0e4ef834672c93b6bbe0b20d79f35cb13fc997e7986b2efe74bf30ae2aae",
+      "bytes": 58946148,
+      "duration_seconds": 352.8,
+      "first_local_pts": 0.0,
+      "continuous_local_timestamps": true
+    },
+    {
+      "name": "PlaythroughPart03.mp4",
+      "frames": 3395,
+      "first_full_frame": 10818,
+      "last_full_frame": 14212,
+      "sha256": "03906a5cf665828b8399934e78633f78ae6319484843a00ed9e36616cc706e18",
+      "bytes": 33013319,
+      "duration_seconds": 226.333333,
+      "first_local_pts": 0.0,
+      "continuous_local_timestamps": true
+    }
+  ],
+  "frames": 14213,
+  "same_decoded_frames_in_same_order": true,
+  "no_reencoding": true,
+  "full_export_sha256_unchanged": true
+}

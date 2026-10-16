@@ -19,6 +19,8 @@ public:
 private:
     void Tap(APlayerController* PC,FKey Key);
     void Finish(bool bPassed,const FString& Message);
+    void UpdateReferenceHundred(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
+    void UpdateHundredFlight(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceGround(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceSky(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceRed(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
@@ -31,6 +33,10 @@ private:
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     bool bWingOwnedReplay=false;
+    bool bHundredTest=false,bSequentialChainTest=false,bAllStarReadTest=false;
+    bool bHundredMountainGold=false,bHundredHighGold=false,bHundredSkyComplete=false;
+    int32 HundredWaypoint=0,HundredFlightPoint=0;
+    float HundredLegElapsed=0,RedPlatformRideSeconds=0;
     bool bGroundCoinTest=false,bGroundCoinsVerified=false,bGroundResetVerified=false;
     int32 GroundWaypoint=0,GroundPost=-1,GroundDrop=0,GroundCircleAttempts=0;
     float GroundLegElapsed=0;
