@@ -42,7 +42,7 @@ bool UThunderPostTestSubsystem::JumpToPost(AWindseedCharacter* Player, float Del
     const FVector Offset = Post->GetActorLocation() - Player->GetActorLocation(); const float Feet = Player->GetActorLocation().Z - 82;
     if (Offset.Size2D() > 8) Player->AddMovementInput(Offset.GetSafeNormal2D(), FMath::Clamp(Offset.Size2D() / 100, .15f, 1.f));
     PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(), FRotator(-28, 0, 0), DeltaSeconds, 4));
-    if (!bJumpStarted && Move->IsMovingOnGround() && Offset.Size2D() < 330) { Player->Jump(); bJumpStarted = true; JumpTime = 0; BeforePounds = Post->GetPoundCount(); }
+    if (!bJumpStarted && Move->IsMovingOnGround() && Offset.Size2D() < 210) { Player->Jump(); bJumpStarted = true; JumpTime = 0; BeforePounds = Post->GetPoundCount(); UE_LOG(LogTemp, Display, TEXT("POST TEST: normal jump from %s toward actual top %.0f"), *Player->GetActorLocation().ToString(), Post->GetTopHeight()); }
     if (!bJumpStarted) return false;
     JumpTime += DeltaSeconds; if (JumpTime > .18f) Player->StopJumping();
     if (bPound && !bPoundPressed && !Move->IsMovingOnGround() && Offset.Size2D() < 45 && Feet > Post->GetTopHeight() + 45 && JumpTime > .2f) { PostTap(PC, EKeys::LeftControl); bPoundPressed = true; }
