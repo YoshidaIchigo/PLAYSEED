@@ -29,6 +29,7 @@ private:
     void UpdateReferenceBoulders(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceHundred(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateHundredFlight(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
+    void UpdateReferenceDeath(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceGround(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceSky(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceRed(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
@@ -43,6 +44,9 @@ private:
     void ObserveFade(APlayerController* PC);
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
+    bool bGroundOwnedReplay=false,bHundredOwnedReplay=false,bChainOwnedReplay=false,bDeathTest=false,bDeathVerified=false,bDeathStarted=false;
+    int32 HundredGroundTotal=0,HundredNeededSky=0,DeathWaypoint=0,DeathImpactBaseline=0,DeathDefeatBaseline=0;
+    float DeathLegElapsed=0;
     bool bRedOwnedReplay=false;
     bool bBossOwnedReplay=false,bBossHeartUsed=false,bBossAvoidJumped=false;
     int32 BossHeartWaypoint=0;

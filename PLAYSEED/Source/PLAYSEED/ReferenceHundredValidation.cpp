@@ -32,6 +32,9 @@ void UReferencePaintingTestSubsystem::UpdateReferenceHundred(float DeltaSeconds,
     {Finish(false,TEXT("Hundred ordinary route lost the actual hero, field or bonus mechanism"));return;}
     auto* Move=Hero->GetCharacterMovement();
     if(JumpHold>0){JumpHold-=DeltaSeconds;if(JumpHold<=0)PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Released,0));}
+    if(UpdateReferenceRouteBombs(DeltaSeconds,Hero,PC)){Elapsed-=DeltaSeconds;return;}
+    if(UpdateReferenceRouteCombat(DeltaSeconds,Hero,PC)){Elapsed-=DeltaSeconds;return;}
+    if(UpdateReferenceRoadAvoidance(DeltaSeconds,Hero,PC)){Elapsed-=DeltaSeconds;return;}
     const auto* Points=Phase==120?ReferenceHundredReturn:Phase==121?ReferenceHundredMountain:Phase==122?ReferenceHundredHighGold:Phase==123?ReferenceHundredIslandCap:ReferenceHundredIslandCannon;
     const int32 Count=Phase==120?UE_ARRAY_COUNT(ReferenceHundredReturn):Phase==121?UE_ARRAY_COUNT(ReferenceHundredMountain):Phase==122?UE_ARRAY_COUNT(ReferenceHundredHighGold):Phase==123?UE_ARRAY_COUNT(ReferenceHundredIslandCap):UE_ARRAY_COUNT(ReferenceHundredIslandCannon);
     if(HundredWaypoint>=Count)
@@ -48,8 +51,11 @@ void UReferencePaintingTestSubsystem::UpdateReferenceHundred(float DeltaSeconds,
         else if(Phase==123)
         {
             for(APlayseedCoin* Coin:Field->GetCoins())if(!Coin->IsCollected()){Finish(false,TEXT("A ground gold was still uncollected before the island wing flight"));return;}
-            if(!bGroundCoinsVerified||!bHundredMountainGold||!bHundredHighGold||Ledger->GetTotal()!=62||Bonus->HasReachedHundred())
-            {Finish(false,FString::Printf(TEXT("Actual ground total before wings was not62: %d"),Ledger->GetTotal()));return;}
+            if(!bGroundCoinsVerified||!bHundredMountainGold||!bHundredHighGold||Ledger->GetTotal()<62||Ledger->GetTotal()>=100||Bonus->HasReachedHundred())
+            {Finish(false,FString::Printf(TEXT("Actual ground total before wings was outside62..99: %d"),Ledger->GetTotal()));return;}
+            // 実敵コインも含む集計を読み、残りの空コインを計算します。枚数の注入はしません。
+            HundredGroundTotal=Ledger->GetTotal();HundredNeededSky=100-HundredGroundTotal;
+            UE_LOG(LogTemp,Display,TEXT("HUNDRED QA: observed real ground%d; remaining real sky%d"),HundredGroundTotal,HundredNeededSky);
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderHundredGroundTotal.png"),false,false);Phase=94;
         }
         else Phase=96;
@@ -107,8 +113,8 @@ void UReferencePaintingTestSubsystem::UpdateHundredFlight(float DeltaSeconds,AWi
         {
             int32 SkyCoins=0;for(APlayseedCoin* Coin:Rings->GetCoins())if(Coin->IsCollected())++SkyCoins;
             for(APlayseedCoin* Coin:Rings->GetOuterCoins())if(Coin->IsCollected())++SkyCoins;
-            if(Ledger->GetTotal()<100||SkyCoins<38||Bonus->GetGenerationCount()!=1||Bonus->GetTriggerTotal()!=100||!Bonus->GetReward())
-            {Finish(false,TEXT("Actual100 did not follow62 ground points and at least38 real sky coins"));return;}
+            if(Ledger->GetTotal()<100||HundredGroundTotal<62||HundredNeededSky<1||SkyCoins<HundredNeededSky||Bonus->GetTriggerCoinId().IsNone()||Bonus->GetGenerationCount()!=1||Bonus->GetTriggerTotal()!=100||!Bonus->GetReward())
+            {Finish(false,TEXT("Actual100 did not follow the observed real ground total and required actual sky coins"));return;}
             bHundredSkyComplete=true;Phase=99;Elapsed=0;
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderHundredThreshold.png"),false,false);
             UE_LOG(LogTemp,Display,TEXT("HUNDRED QA: actual threshold100 from coin%s, sky%d, score%d, power%.2f"),*Bonus->GetTriggerCoinId().ToString(),SkyCoins,Ledger->GetTotal(),Flight->GetRemaining());

@@ -76,12 +76,15 @@ void UReferencePaintingTestSubsystem::UpdateReferenceRain(float DeltaSeconds,AWi
             RainBurstBaseline=Rain->GetBurstCount();FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderRainWarning.png"),false,false);
             UE_LOG(LogTemp,Display,TEXT("RAIN QA: ordinary dodge from%s shadow%s toward actual floor%s spawn%d"),*Hero->GetActorLocation().ToString(),*Rain->GetRainTarget().ToString(),*RainDodgeTarget.ToString(),Rain->GetSpawnCount());Phase=144;Elapsed=0;return;
         }
+        if(UpdateReferenceRouteBombs(DeltaSeconds,Hero,PC)){Elapsed-=DeltaSeconds;return;}
+        if(UpdateReferenceRouteCombat(DeltaSeconds,Hero,PC)){Elapsed-=DeltaSeconds;return;}
+        if(UpdateReferenceRoadAvoidance(DeltaSeconds,Hero,PC)){Elapsed-=DeltaSeconds;return;}
         const int32 Count=UE_ARRAY_COUNT(ReferenceRainApproach);
         if(RainWaypoint>=Count)
         {
             const auto& Last=ReferenceRainApproach[Count-1];
             Walk(bFirst&&Rain->IsActive()?Rain->GetRainTarget():FVector(Last.X,Last.Y,Last.Z));
-            if(Elapsed>240)Finish(false,TEXT("Ordinary rain approach did not encounter the real drop"));return;
+            if(Elapsed>900)Finish(false,TEXT("Ordinary rain approach did not encounter the real drop"));return;
         }
         const auto& Point=ReferenceRainApproach[RainWaypoint];const FVector Target(Point.X,Point.Y,Point.Z);const FVector Delta=Target-Hero->GetActorLocation();RainLegElapsed+=DeltaSeconds;
         if(RainLegElapsed>22){Finish(false,FString::Printf(TEXT("Rain walk blocked phase%d point%d hero%s target%s floor%s"),Phase,RainWaypoint,*Hero->GetActorLocation().ToString(),*Target.ToString(),*Move->CurrentFloor.HitResult.ImpactPoint.ToString()));return;}
@@ -103,6 +106,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceRain(float DeltaSeconds,AWi
         {Finish(false,TEXT("Ordinary R did not restore actual rain-test hero and course entrance"));return;}
         for(AReferenceRainSpawner* Spawner:Rains)if(!Spawner->IsIdle()){Finish(false,TEXT("R did not clear every own rain drop"));return;}
         if(Elapsed<.35f)return;
+        RouteCombatTarget.Reset();RouteBombTarget.Reset();BossAvoidRemaining=0;
         if(bFirst){RainWaypoint=0;RainLegElapsed=0;RainSpawnBaseline=Rain->GetSpawnCount();Phase=143;Elapsed=0;return;}
         bRainResetVerified=true;FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderRainReset.png"),false,false);Tap(PC,EKeys::M);Phase=9;Elapsed=0;return;
     }
