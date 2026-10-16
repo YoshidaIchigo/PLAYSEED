@@ -142,7 +142,8 @@ void AReferenceHero::UpdateCameraVisibility()
     // 予定のアーム長ではなく、壁で押し戻された後のカメラ位置を使います。
     const FVector CameraPoint=PC->GetViewTarget()==this?GetCameraBoom()->GetSocketTransform(USpringArmComponent::SocketName,RTS_World).GetLocation():PC->PlayerCameraManager->GetCameraLocation();
     ActualCameraDistance=FVector::Dist(CameraPoint,GetActorLocation());
-    const bool bHide=ActualCameraDistance<(bBodyHiddenForCamera?190.f:140.f);
+    // 身長約170cmの全身が画面を埋めない距離で再表示します。二つの距離で境界の点滅も防ぎます。
+    const bool bHide=ActualCameraDistance<(bBodyHiddenForCamera?340.f:260.f);
     if(bHide==bBodyHiddenForCamera)return;
     bBodyHiddenForCamera=bHide;if(bHide)++CameraHideCount;
     // HiddenInGameは表示だけの設定です。衝突・体力・移動はそのままにし、羽やピースのVisibility設定も保ちます。
