@@ -49,7 +49,7 @@ void AThunderMeadowHUD::DrawHUD()
     if(Mode->ShouldShowControls())
     {
         UI.Rect(30,82,260,114,FLinearColor(0,0,0,.85f));
-        const TCHAR* Lines[]={TEXT("そうさ"),TEXT("WASD / 左スティック: いどう"),TEXT("Space / A: ジャンプ   Shift / LB: はしる"),TEXT("マウス / 右スティック: カメラ"),TEXT("E/X: もつ   F/Y: のぼる   G/下: はなす"),TEXT("Ctrl/RB: ヒップドロップ  LMB/RT: こうげき"),TEXT("R/B: やりなおし   M: スターえらび"),TEXT("F1: このひょうじを とじる")};
+        const TCHAR* Lines[]={TEXT("そうさ"),TEXT("WASD / 左スティック: いどう"),TEXT("Space / A: ジャンプ   Shift / LB: はしる"),TEXT("マウス / 右スティック: カメラ"),TEXT("E/X: もつ   F/Y: のぼる   G/下: はなす"),TEXT("Ctrl/RB: ヒップドロップ  LMB/RT: こうげき"),TEXT("R/B: やりなおし   M: スターえらび"),TEXT("H: このひょうじを とじる")};
         for(int32 I=0;I<8;++I)UI.Text(Lines[I],42,89+I*12,7.5f,FLinearColor::White,false,false,true);
     }
     if(!Progress->GetProgressProblem().IsEmpty()){UI.Rect(20,180,280,28,FLinearColor(0,0,0,.8f));UI.Text(Progress->GetProgressProblem(),25,187,7,FLinearColor(1,.35f,.25f));}
@@ -74,7 +74,7 @@ void AThunderMeadowGameMode::StartPlay()
     // 各 Actor の準備が終わってから最初の Tick が進みます。
     Stage = GetWorld()->SpawnActor<AThunderMeadowStage>();
     Super::StartPlay();
-    if(InputComponent)InputComponent->BindKey(EKeys::F1,IE_Pressed,this,&AThunderMeadowGameMode::ToggleControls);
+    if(InputComponent)InputComponent->BindKey(EKeys::H,IE_Pressed,this,&AThunderMeadowGameMode::ToggleControls);
     if (auto* Player = Cast<AWindseedCharacter>(UGameplayStatics::GetPlayerPawn(this, 0)))
     {
         Player->SetTrailStartLocation(FVector(-600, -600, 100));

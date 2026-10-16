@@ -268,7 +268,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         { Fail(TEXT("Restart in the new stage failed")); return; }
         if(bPresentationTest && !bPresentationControlsChecked)
         {
-            auto* Mode=Cast<AThunderMeadowGameMode>(CurrentMode);Tap(PC,EKeys::F1);
+            auto* Mode=Cast<AThunderMeadowGameMode>(CurrentMode);Tap(PC,EKeys::H);
             if(!Mode){Fail(TEXT("Presentation game mode missing"));return;}
             Step=47;Elapsed=0;return;
         }
@@ -665,13 +665,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     }
     else if(Step==47 && Player && Elapsed>.6f)
     {
-        if(!Cast<AThunderMeadowGameMode>(CurrentMode)->ShouldShowControls()){Fail(TEXT("F1 controls did not open"));return;}
+        if(!Cast<AThunderMeadowGameMode>(CurrentMode)->ShouldShowControls()){Fail(TEXT("H controls did not open"));return;}
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderControls.png"),false,false);Step=48;Elapsed=0;
     }
-    else if(Step==48 && Player && Elapsed>.2f){Tap(PC,EKeys::F1);Step=49;Elapsed=0;}
+    else if(Step==48 && Player && Elapsed>.2f){Tap(PC,EKeys::H);Step=49;Elapsed=0;}
     else if(Step==49 && Player && Elapsed>.2f)
     {
-        if(Cast<AThunderMeadowGameMode>(CurrentMode)->ShouldShowControls()){Fail(TEXT("F1 controls did not close"));return;}
+        if(Cast<AThunderMeadowGameMode>(CurrentMode)->ShouldShowControls()){Fail(TEXT("H controls did not close"));return;}
         bPresentationControlsChecked=true;Step=3;Elapsed=1.1f;
     }
     else if (Step == 45)
