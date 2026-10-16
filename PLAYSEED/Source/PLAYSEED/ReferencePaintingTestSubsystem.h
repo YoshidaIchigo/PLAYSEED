@@ -19,11 +19,16 @@ public:
 private:
     void Tap(APlayerController* PC,FKey Key);
     void Finish(bool bPassed,const FString& Message);
+    void UpdateReferenceBoss(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateChain(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateStarCapture(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void ObserveFade(APlayerController* PC);
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
+    bool bReferenceBossTest=false,bBossRouteJump=false;
+    int32 ExpectedReward=6,BossWaypoint=0,BossThrows=0;
+    float BossLegElapsed=0;
+    FVector BossCarryStart=FVector::ZeroVector;
     float Elapsed=0,JumpHold=0;
     int32 Phase=0;
     bool bEnabled=false,bFinished=false,bJumped=false,bCapturedDive=false;

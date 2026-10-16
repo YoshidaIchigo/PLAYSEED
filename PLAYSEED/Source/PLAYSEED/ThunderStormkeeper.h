@@ -28,9 +28,10 @@ public:
     FVector GetArenaFloor() const { return ArenaFloor; }
 protected:
     virtual void OnThrownLanding(const FHitResult& Hit) override;
-    virtual FVector GetCarryOffset() const override { return FVector(150, 0, 90); }
+    virtual FVector GetCarryOffset() const override;
     virtual FVector GetThrowVelocity(const AWindseedCharacter* Player) const override;
 private:
+    bool CanStandAt(FVector Position) const;
     void ReturnToArena();
     void PaintBody();
     void BeginRecovery(bool bOffArena);
@@ -43,6 +44,8 @@ private:
     int32 FrontCounters = 0;
     int32 OffArenaReturns = 0;
     float RecoveryTime = 0;
+    bool bReferenceBoss = false;
+    bool bRecoverInPlace = false;
     bool bRecovering = false;
     bool bDefeated = false;
 };
