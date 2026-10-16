@@ -28,8 +28,8 @@ AThunderStormkeeper::AThunderStormkeeper()
         {
             AddPart(Sphere.Object,FVector(46,Side*16,15),FVector(.1f,.1f,.16f),White);
             AddPart(Sphere.Object,FVector(50,Side*16,15),FVector(.035f,.045f,.1f),Black);
-            AddPart(Sphere.Object,FVector(0,Side*43,-8),FVector(.18f),FLinearColor(.02f,.1f,.8f));
-            AddPart(Sphere.Object,FVector(0,Side*57,-8),FVector(.23f),Gold);
+            AddPart(Sphere.Object,FVector(0,Side*51,-8),FVector(.18f),FLinearColor(.02f,.1f,.8f));
+            AddPart(Sphere.Object,FVector(0,Side*65,-8),FVector(.23f),Gold);
             AddPart(Sphere.Object,FVector(8,Side*22,-41),FVector(.35f,.27f,.16f),Gold);
         }
         AddPart(Sphere.Object,FVector(38,-25,28),FVector(.025f,.2f,.11f),FLinearColor(.16f,.19f,.24f));
