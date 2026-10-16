@@ -395,6 +395,21 @@ void AThunderMeadowStage::BuildGaleleafEnemy()
 
 void AThunderMeadowStage::BuildGuideAndLauncher()
 {
+    if(AReferenceBattlefieldTerrain::IsReferenceCourse())
+    {
+        const int32 Act=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->GetSelectedMissionNumber();
+        Guide=GetWorld()->SpawnActor<AThunderGuide>(FVector(-5723,-6017,140),FRotator(0,-90,0));Guide->ConfigureOpeningGuide(Act>1);
+        auto* Friend=GetWorld()->SpawnActor<AThunderGuide>(FVector(-6250,-6680,0),FRotator(0,-90,0));Friend->ConfigureOpeningGuide(false);
+        const FVector Positions[]={FVector(-5694,-5600,128),FVector(-5018,3533,1332),FVector(6349,7066,2080),FVector(4243,2451,3071),FVector(4352,-1229,3072),FVector(5376,-4610,1537)};
+        const float Yaws[]={-90,-90,180,180,90,0};
+        for(int32 Index=0;Index<6;++Index)
+        {
+            if(Index==0&&Act==1)continue; // 最初の目的では、この位置は水爆弾用の砲台です。
+            auto* Cannon=GetWorld()->SpawnActor<AThunderLauncher>(Positions[Index],FRotator::ZeroRotator);
+            Cannon->ConfigureAimYaw(Yaws[Index]);ReferenceLaunchers.Add(Cannon);if(Index==3)Launcher=Cannon;
+        }
+        SkyIslandTop=FVector(4600,-1200,3072);return;
+    }
     Guide = GetWorld()->SpawnActor<AThunderGuide>(FVector(-2800, 1800, 0), FRotator::ZeroRotator);
     Launcher = GetWorld()->SpawnActor<AThunderLauncher>(FVector(-2400, 1800, 0), FRotator::ZeroRotator);
     AddSign(FVector(-3050, 1500, 0), TEXT("AERI'S SKYBLOOM\nG / D-pad Down: talk or interact nearby"));
@@ -496,6 +511,8 @@ void AThunderMeadowStage::BeginPlay()
         BuildReferenceChain();
         BuildStormkeeper();
         BuildCloudflagRace();
+        BuildGuideAndLauncher();
+        BuildSkyCache();
         BuildLighting();
         return;
     }
@@ -592,6 +609,8 @@ void AThunderMeadowStage::Tick(float DeltaSeconds)
 void AThunderMeadowStage::BuildSkyCache()
 {
     if (GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->GetSelectedMissionNumber() != 3) return;
+    if(AReferenceBattlefieldTerrain::IsReferenceCourse())
+    {SkyCache=GetWorld()->SpawnActor<AThunderSkyCache>(FVector(5540,-1200,3350),FRotator::ZeroRotator);SkyCache->ConfigureBox(TEXT("ReferenceIslandStarBox"));return;}
     SkyCache = GetWorld()->SpawnActor<AThunderSkyCache>(SkyIslandTop + FVector(200, 150, 0), FRotator::ZeroRotator);
     SkyCache->ConfigureBox(TEXT("SkyLanternCache"));
     AddSign(SkyIslandTop + FVector(200, 330, 0), TEXT("THE SKYSEED CACHE\nStrike the copper box - claim its lantern"));

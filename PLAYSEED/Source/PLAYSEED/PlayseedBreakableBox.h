@@ -30,6 +30,8 @@ public:
 protected:
     // 後続の報酬箱はここを上書きでき、破壊・重複防止の処理を再利用できます。
     virtual void SpawnContents(AWindseedCharacter* Player);
+    UStaticMeshComponent* GetBoxBody() const { return Body; }
+    const TArray<TObjectPtr<UStaticMeshComponent>>& GetBoxBands() const { return Bands; }
 private:
     void HandlePound(FVector ImpactPoint);
     void BreakBox(AWindseedCharacter* Player);

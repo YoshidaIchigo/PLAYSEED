@@ -16,10 +16,12 @@ public:
     AThunderGuide();
     virtual void BeginPlay() override;
     virtual void Interact(AWindseedCharacter* Player) override;
+    void ConfigureOpeningGuide(bool bOpens) { bCanOpenCannon=bOpens; }
     void ResetDialogue() { bAwaitingConfirmation = false; }
     bool IsAwaitingConfirmation() const { return bAwaitingConfirmation; }
 private:
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Parts;
     TArray<FLinearColor> Colors;
+    bool bReferenceGuide=false,bCanOpenCannon=true;
     bool bAwaitingConfirmation = false;
 };

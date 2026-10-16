@@ -29,6 +29,21 @@ void AThunderMeadowHUD::DrawHUD()
     auto* Mode=Cast<AThunderMeadowGameMode>(GetWorld()->GetAuthGameMode());
     auto* Player=Cast<AWindseedCharacter>(UGameplayStatics::GetPlayerPawn(this,0));
     if(!Mode || !Player)return;
+    if(AReferenceBattlefieldTerrain::IsReferenceCourse()&&Player->GetLaunch()->IsAiming())
+    {
+        // 同心円の境界を横帯で描き、HUDの手前ではなく背景だけを丸く切り取ります。
+        for(int32 Y=0;Y<240;Y+=2)
+        {
+            const float Dy=Y+1-120;const float Outer=FMath::Abs(Dy)<104?FMath::Sqrt(104*104-Dy*Dy):0;
+            UI.Rect(0,Y,160-Outer,2,FLinearColor::Black);UI.Rect(160+Outer,Y,160-Outer,2,FLinearColor::Black);
+            for(int32 Ring=0;Ring<5;++Ring)
+            {
+                const float R0=94+Ring*2,R1=R0+2;
+                const float A=FMath::Abs(Dy)<R0?FMath::Sqrt(R0*R0-Dy*Dy):0,B=FMath::Abs(Dy)<R1?FMath::Sqrt(R1*R1-Dy*Dy):0;
+                if(B>A){const FLinearColor Shade(0,0,0,(Ring+1)/5.f);UI.Rect(160-B,Y,B-A,2,Shade);UI.Rect(160+A,Y,B-A,2,Shade);}
+            }
+        }
+    }
     auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
     const FLinearColor Number(1,.37f,.025f),Multiply(.55f,.53f,.85f);
     UI.Face(FVector2D(29,20));UI.Text(TEXT("×"),42,9,19,Multiply);UI.Text(FString::FromInt(Mode->GetLives()->GetRemaining()),59,8,20,Number);
@@ -51,8 +66,19 @@ void AThunderMeadowHUD::DrawHUD()
     }
     if(Player->GetLaunch()->IsAiming())
     {
-        UI.Rect(153,119,14,1,FLinearColor::Black);UI.Rect(159,113,1,14,FLinearColor::Black);
-        UI.Rect(155,120,10,1,FLinearColor::White);UI.Rect(160,115,1,10,FLinearColor::White);
+        if(AReferenceBattlefieldTerrain::IsReferenceCourse())
+        {
+            const FLinearColor Sight(.2f,.2f,.3f,.9f);
+            UI.Triangle(FVector2D(154,100),FVector2D(166,100),FVector2D(160,108),Sight);
+            UI.Triangle(FVector2D(154,140),FVector2D(166,140),FVector2D(160,132),Sight);
+            UI.Triangle(FVector2D(140,114),FVector2D(140,126),FVector2D(148,120),Sight);
+            UI.Triangle(FVector2D(180,114),FVector2D(180,126),FVector2D(172,120),Sight);
+        }
+        else
+        {
+            UI.Rect(153,119,14,1,FLinearColor::Black);UI.Rect(159,113,1,14,FLinearColor::Black);
+            UI.Rect(155,120,10,1,FLinearColor::White);UI.Rect(160,115,1,10,FLinearColor::White);
+        }
     }
     if(AReferenceBattlefieldTerrain::IsReferenceCourse())
     {
@@ -76,11 +102,11 @@ void AThunderMeadowHUD::DrawHUD()
         UI.Rect(44,77,232,64,FLinearColor(0,0,0,.75f));
         if(AReferenceBattlefieldTerrain::IsReferenceCourse())
         {
-            // 日本語は空白で単語を分けないため、改行と26文字幅で読みやすく折り返します。
+            // 日本語は空白で単語を分けないため、改行と23文字幅で読みやすく折り返します。
             FString Line;float Y=84;
             for(TCHAR Character:Player->GetInteraction()->GetMessage())
             {
-                if(Character==TEXT('\n')||Line.Len()>=26)
+                if(Character==TEXT('\n')||Line.Len()>=23)
                 {UI.Text(Line,52,Y,8,FLinearColor::White,false,false,true);Line.Reset();Y+=12;}
                 if(Character!=TEXT('\n'))Line.AppendChar(Character);
             }

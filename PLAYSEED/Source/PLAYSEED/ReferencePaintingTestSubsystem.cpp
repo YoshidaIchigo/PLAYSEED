@@ -6,6 +6,11 @@
 #include "ReferenceChainWalk.h"
 #include "ReferenceSummitWalk.h"
 #include "ReferenceRaceRoute.h"
+#include "ReferenceCannonWalk.h"
+#include "ThunderGuide.h"
+#include "ThunderLauncher.h"
+#include "ThunderSkyCache.h"
+#include "PlayseedLaunchComponent.h"
 #include "ThunderCloudflagRace.h"
 #include "ReferenceBattlefieldTerrain.h"
 #include "ThunderStormkeeper.h"
@@ -42,9 +47,10 @@ void UReferencePaintingTestSubsystem::Initialize(FSubsystemCollectionBase& Colle
     bSelectionTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderSelectionTest"));
     bReferenceBossTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceBossTest"));
     bReferenceRaceTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceRaceTest"));
-    ExpectedReward=bReferenceBossTest?1:bReferenceRaceTest?2:6;
-    BeforeRewardCount=bReferenceRaceTest?1:0;AfterRewardCount=BeforeRewardCount+1;
-    bStarTest=bReferenceRaceTest||bReferenceBossTest||bSelectionTest||bSaveFailureTest||bFadeTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest"));
+    bReferenceCannonTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceCannonTest"));
+    ExpectedReward=bReferenceBossTest?1:bReferenceRaceTest?2:bReferenceCannonTest?3:6;
+    BeforeRewardCount=bReferenceCannonTest?2:bReferenceRaceTest?1:0;AfterRewardCount=BeforeRewardCount+1;
+    bStarTest=bReferenceCannonTest||bReferenceRaceTest||bReferenceBossTest||bSelectionTest||bSaveFailureTest||bFadeTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest"));
     bReadMode=FParse::Param(FCommandLine::Get(),TEXT("ThunderStarReadTest"));
     bChainTest=bStarTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderChainTest"));
     bDropTest=bChainTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderDropTest"));
@@ -55,6 +61,7 @@ void UReferencePaintingTestSubsystem::Tap(APlayerController* PC,FKey Key)
 {PC->InputKey(FInputKeyEventArgs::CreateSimulated(Key,IE_Pressed,1));PC->InputKey(FInputKeyEventArgs::CreateSimulated(Key,IE_Released,0));}
 void UReferencePaintingTestSubsystem::Finish(bool bPassed,const FString& Message)
 {
+    if(bReferenceCannonTest&&bPassed&&(!bCannonAimHidden||!bCannonSawFlight))bPassed=false;
     if(bReferenceRaceTest&&bPassed&&!bRaceSprintSeen)bPassed=false;
     if(bSelectionTest&&bPassed&&(!bSelectionInitialVerified||!bSelectionEarnedVerified))bPassed=false;
     if(bCameraTest&&bPassed&&(!bSawCameraHidden||!bSawCameraRestored))bPassed=false;
@@ -84,6 +91,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
     }
     if(bFadeTest&&Phase>0)ObserveFade(PC);
     if(bFinished)return;
+    if(bReferenceCannonTest&&Phase>=60){UpdateReferenceCannon(DeltaSeconds,Hero,PC);return;}
     if(bReferenceRaceTest&&Phase>=50){UpdateReferenceRace(DeltaSeconds,Hero,PC);return;}
     if(bReferenceBossTest&&Phase>=40){UpdateReferenceBoss(DeltaSeconds,Hero,PC);return;}
     if(bChainTest&&Phase>=20){UpdateChain(DeltaSeconds,Hero,PC);return;}
@@ -92,6 +100,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
         if(Map!=TEXT("Entrance")||!Hero||!Mode||Elapsed<1)return;
         if(!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_"))||Progress->GetEarnedRewardCount()!=(bReadMode?AfterRewardCount:BeforeRewardCount)||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0)!=(bReadMode||BeforeRewardCount>0)||(bReadMode&&!Progress->HasEarnedReward(ExpectedReward)))
         {Finish(false,TEXT("Painting QA requires a fresh isolated save"));return;}
+        if(bReferenceCannonTest&&(!Progress->HasEarnedReward(1)||!Progress->HasEarnedReward(2))){Finish(false,TEXT("Cannon QA requires actually earned star1/2"));return;}
         if(bReferenceRaceTest&&!Progress->HasEarnedReward(1)){Finish(false,TEXT("Race requires the previously actually earned star1 save"));return;}
         if(!GetGameInstance()->GetSubsystem<UPlayseedRecordingSubsystem>()->StartRecording(TEXT("Validation/CoursePlaythrough.avi"))){Finish(false,TEXT("Painting recording failed"));return;}
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderPaintingRoom.png"),false,false);
@@ -131,6 +140,12 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
         {
             if(Map!=TEXT("MissionSelect")||Progress->GetEarnedRewardCount()!=AfterRewardCount||!Progress->HasEarnedReward(ExpectedReward)||!UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
             {Finish(false,TEXT("Earned star6 did not persist through painting entry"));return;}
+            if(bReferenceCannonTest)
+            {
+                auto* Menu=Cast<AThunderMissionSelectionGameMode>(GetWorld()->GetAuthGameMode());
+                if(!Menu||Menu->GetVisibleMissionCount()!=4||!Menu->IsMissionSelectable(1)||!Menu->IsMissionSelectable(2)||!Menu->IsMissionSelectable(3)||!Menu->IsMissionSelectable(4)||Menu->IsMissionSelectable(5))
+                {Finish(false,TEXT("Actual stars1/2/3 did not reveal exactly the next mission4"));return;}
+            }
             if(bReferenceRaceTest)
             {
                 auto* Menu=Cast<AThunderMissionSelectionGameMode>(GetWorld()->GetAuthGameMode());
@@ -170,7 +185,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
                 if(!bSelectionInitialShot){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderSelectionInitial.png"),false,false);bSelectionInitialShot=true;}
             }
             else FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderPaintingSelection.png"),false,false);
-            Tap(PC,bReferenceRaceTest?EKeys::Two:EKeys::One);Phase=6;Elapsed=0;return;
+            Tap(PC,bReferenceCannonTest?EKeys::Three:bReferenceRaceTest?EKeys::Two:EKeys::One);Phase=6;Elapsed=0;return;
         }
         if(Elapsed>10)
         {
@@ -180,7 +195,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
         return;
     }
     if(Phase==4&&Elapsed>1){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/CourseComplete.png"),false,false);Phase=5;Elapsed=0;return;}
-    if(Phase==5&&Elapsed>1)Finish(!bStarTest||(bMReentryChecked&&bPoseObserved&&bPoseShot),bReadMode?(bReferenceRaceTest?TEXT("Loaded previously actually earned star1, normal G race start, real sprint/walk/jump summit arrival before rival, waited for rival, G win dialogue, actual fixed-position star2 save, pose/fades/painting return and earned1/2 next3 menu."):bReferenceBossTest?TEXT("Actual M return and painting reentry, ordinary mountain route, three E rear pickups and real physical summit throws, actual fixed-position star1 save, pose/fades/painting return and earned1 menu persistence."):bStarTest?TEXT("Actual M return and painting reentry, second physical drop, reference post3 and gate collision, actual star6 save, pose/camera/held star, transition input spam and duplicate guard, automatic painting return, earned6 menu display persisted."):TEXT("Separate process loaded the actual star6 save, walked and jumped into the painting, and displayed earned6/count1 in selection without awarding progress.")):TEXT("Normal walking and Space jump into painting, ripple/dive/fade to star selection; R/M/Space/Ctrl/Enter spam blocked during transition; fresh progress remains zero and unsaved."));
+    if(Phase==5&&Elapsed>1)Finish(!bStarTest||(bMReentryChecked&&bPoseObserved&&bPoseShot),bReadMode?(bReferenceCannonTest?TEXT("Loaded actually earned stars1/2, normal guide dialogue and saved cannon access, ordinary mountain walking, normal G aim/mouse controls/LMB physical2600 launch and island landing, actual upward jump head-bump box once, real star3 save total3, pose/fades/painting return and earned1/2/3 next4 menu."):bReferenceRaceTest?TEXT("Loaded previously actually earned star1, normal G race start, real sprint/walk/jump summit arrival before rival, waited for rival, G win dialogue, actual fixed-position star2 save, pose/fades/painting return and earned1/2 next3 menu."):bReferenceBossTest?TEXT("Actual M return and painting reentry, ordinary mountain route, three E rear pickups and real physical summit throws, actual fixed-position star1 save, pose/fades/painting return and earned1 menu persistence."):bStarTest?TEXT("Actual M return and painting reentry, second physical drop, reference post3 and gate collision, actual star6 save, pose/camera/held star, transition input spam and duplicate guard, automatic painting return, earned6 menu display persisted."):TEXT("Separate process loaded the actual star6 save, walked and jumped into the painting, and displayed earned6/count1 in selection without awarding progress.")):TEXT("Normal walking and Space jump into painting, ripple/dive/fade to star selection; R/M/Space/Ctrl/Enter spam blocked during transition; fresh progress remains zero and unsaved."));
     if(Phase==6)
     {
         if(Map!=TEXT("ThunderMeadow")||!Hero)return;
@@ -218,6 +233,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
             if(!bSawJump||!Hero->GetCharacterMovement()->IsMovingOnGround()){Finish(false,TEXT("Ordinary jump was not available after drop landing"));return;}
             if(bStarTest&&VerifiedDropVisits==1){Tap(PC,EKeys::M);Phase=13;Elapsed=0;return;}
             if(bStarTest&&VerifiedDropVisits>=2)bMReentryChecked=true;
+            if(bReferenceCannonTest){Phase=60;Elapsed=0;CannonWaypoint=0;CannonLegElapsed=0;return;}
             if(bReferenceRaceTest){Phase=50;Elapsed=0;RaceWaypoint=0;RaceLegElapsed=0;return;}
             if(bReferenceBossTest){Phase=40;Elapsed=0;BossWaypoint=0;BossLegElapsed=0;return;}
             if(bChainTest){Phase=20;Elapsed=0;ChainWaypoint=0;ChainLegElapsed=0;return;}
@@ -370,7 +386,7 @@ void UReferencePaintingTestSubsystem::UpdateStarCapture(float DeltaSeconds,AWind
                 {
                     if(bCameraTest&&Model->IsBodyHiddenForCamera()){Finish(false,TEXT("Star pose stayed hidden after the camera moved out"));return;}
                     if(!Cast<ACameraActor>(PC->GetViewTarget())){Finish(false,TEXT("Star camera did not become the actual view target"));return;}
-                    if(bReferenceRaceTest)
+                    if(bReferenceRaceTest||bReferenceCannonTest)
                     {
                         FCollisionQueryParams Query(SCENE_QUERY_STAT(RaceStarPoseVisibility),true,Hero);FHitResult Obstacle;
                         if(GetWorld()->LineTraceSingleByChannel(Obstacle,PC->GetViewTarget()->GetActorLocation(),Hero->GetActorLocation()+FVector(0,0,60),ECC_Camera,Query))
@@ -667,5 +683,120 @@ void UReferencePaintingTestSubsystem::UpdateReferenceRace(float DeltaSeconds,AWi
         if(Delta.Size2D()<220&&Movement->IsMovingOnGround()&&JumpHold<=0)
         {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;}
         if(Elapsed>15)Finish(false,TEXT("Ordinary walk/jump did not touch actual star2"));
+    }
+}
+
+void UReferencePaintingTestSubsystem::UpdateReferenceCannon(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC)
+{
+    auto* Stage=Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(GetWorld(),AThunderMeadowStage::StaticClass()));
+    auto* Cannon=Stage?Stage->GetLauncher():nullptr;auto* Guide=Stage?Stage->GetGuide():nullptr;auto* Box=Stage?Stage->GetSkyCache():nullptr;
+    if(!Hero||!Cannon||!Guide||!Box||Hero->RecoveryCount!=0||Stage->GetReferenceLaunchers().Num()!=6)
+    {Finish(false,TEXT("Reference cannon/guide/box disappeared or the ordinary route recovered"));return;}
+    auto* Movement=Hero->GetCharacterMovement();auto* Launch=Hero->GetLaunch();
+    auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
+    if(JumpHold>0){JumpHold-=DeltaSeconds;if(JumpHold<=0)PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Released,0));}
+    if(Phase==60||Phase==62||Phase==66)
+    {
+        const auto* Points=Phase==60?ReferenceGuideApproach:Phase==62?ReferenceCannonApproach:ReferenceIslandWalk;
+        const int32 Count=Phase==60?UE_ARRAY_COUNT(ReferenceGuideApproach):Phase==62?UE_ARRAY_COUNT(ReferenceCannonApproach):UE_ARRAY_COUNT(ReferenceIslandWalk);
+        if(CannonWaypoint>=Count)
+        {
+            if(!Movement->IsMovingOnGround())return;
+            Movement->StopMovementImmediately();
+            if(Phase==60){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderCannonGuide.png"),false,false);Phase=61;}
+            else if(Phase==62){Phase=63;}
+            else {Phase=67;}
+            Elapsed=0;return;
+        }
+        const auto& Point=Points[CannonWaypoint];const FVector Target(Point.X,Point.Y,Point.Z),Delta=Target-Hero->GetActorLocation();CannonLegElapsed+=DeltaSeconds;
+        if(CannonLegElapsed>18){Finish(false,FString::Printf(TEXT("Cannon ordinary walk blocked phase%d point%d hero%s target%s"),Phase,CannonWaypoint,*Hero->GetActorLocation().ToString(),*Target.ToString()));return;}
+        if(Delta.Size2D()<25&&FMath::Abs(Hero->GetActorLocation().Z-82-Target.Z)<80)
+        {UE_LOG(LogTemp,Display,TEXT("CANNON WALK phase%d point%d"),Phase,CannonWaypoint);++CannonWaypoint;CannonLegElapsed=0;bCannonRouteJump=false;return;}
+        PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(),FRotator(-18,Delta.Rotation().Yaw,0),DeltaSeconds,4));
+        if(Movement->IsFalling())
+        {
+            const FVector Desired=(Delta.GetSafeNormal2D()*Delta.Size2D()*4.5f).GetClampedToMaxSize2D(470),Correction=Desired-FVector(Hero->GetVelocity().X,Hero->GetVelocity().Y,0);
+            Hero->AddMovementInput(Correction.GetSafeNormal2D(),FMath::Clamp(Correction.Size2D()/150,0.f,1.f));
+        }
+        else Hero->AddMovementInput(Delta.GetSafeNormal2D(),FMath::Clamp(Delta.Size2D()/140,.25f,1.f));
+        if(Point.bJump&&!bCannonRouteJump&&Movement->IsMovingOnGround())
+        {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;bCannonRouteJump=true;}
+        if(Movement->IsMovingOnGround()&&JumpHold<=0&&Delta.Size2D()<450&&Target.Z>Hero->GetActorLocation().Z-12)
+        {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;}
+        return;
+    }
+    if(Phase==61)
+    {
+        PC->SetControlRotation(FRotator(-12,(Guide->GetActorLocation()-Hero->GetActorLocation()).Rotation().Yaw,0));
+        if(!bGuideSent&&Elapsed>.5f){Tap(PC,EKeys::G);bGuideSent=true;}
+        if(bGuideSent&&Elapsed>1&&Progress->IsLauncherUnlocked()&&Cannon->IsOpen())
+        {FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderCannonOpen.png"),false,false);Phase=62;Elapsed=0;CannonWaypoint=0;CannonLegElapsed=0;return;}
+        if(Guide->IsAwaitingConfirmation()&&Elapsed>1.1f&&!bGuideConfirmed){Tap(PC,EKeys::G);bGuideConfirmed=true;}
+        if(Elapsed>5)Finish(false,TEXT("Normal two-step G guide dialogue did not save/open the actual cannons"));return;
+    }
+    if(Phase==63)
+    {
+        PC->SetControlRotation(FRotator(-12,(Cannon->GetActorLocation()-Hero->GetActorLocation()).Rotation().Yaw,0));
+        if(!bAimSent&&Elapsed>.4f){Tap(PC,EKeys::G);bAimSent=true;}
+        if(Launch->IsAiming())
+        {
+            const FVector Origin=Cannon->GetSeatLocation(),Target(5000,-1250,3072+82),Delta=Target-Origin;
+            const double D=Delta.Size2D(),A=FMath::Abs(Movement->GetGravityZ())*D*D/(2*2600.*2600.);
+            const double Discriminant=D*D-4*A*(A+Delta.Z);
+            if(Discriminant<=0){Finish(false,TEXT("Reference high cannon cannot physically reach the island"));return;}
+            CannonGoalYaw=Delta.Rotation().Yaw;CannonGoalPitch=FMath::RadiansToDegrees(FMath::Atan((D-FMath::Sqrt(Discriminant))/(2*A)));
+            UE_LOG(LogTemp,Display,TEXT("CANNON QA: normal input goal yaw%.3f pitch%.3f, actual seat%s"),CannonGoalYaw,CannonGoalPitch,*Origin.ToString());
+            Phase=64;Elapsed=0;return;
+        }
+        if(Elapsed>4)Finish(false,TEXT("Normal G did not enter the open high mountain cannon"));return;
+    }
+    if(Phase==64)
+    {
+        if(!Launch->IsAiming()){Finish(false,TEXT("Cannon aim exited before normal LMB fire"));return;}
+        const float YawError=FRotator::NormalizeAxis(CannonGoalYaw-Launch->GetAimYaw()),PitchError=CannonGoalPitch-Launch->GetAimPitch();
+        // 通常のマウス軸へ少しずつ入力します。照準値やプレイヤー速度は直接設定しません。
+        PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::MouseX,IE_Axis,FMath::Clamp(YawError*.4f,-20.f,20.f)));
+        PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::MouseY,IE_Axis,FMath::Clamp(-PitchError*.4f,-20.f,20.f)));
+        if(FMath::Abs(YawError)<.08f&&FMath::Abs(PitchError)<.08f)CannonAimStable+=DeltaSeconds;else CannonAimStable=0;
+        if(CannonAimStable>.3f&&!bCannonAimShot)
+        {
+            auto* Model=Cast<AReferenceHero>(Hero);
+            if(!Model||!Model->IsBodyHiddenForCamera()){Finish(false,TEXT("The close cannon camera still rendered the hero body"));return;}
+            bCannonAimHidden=true;bCannonAimShot=true;FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderCannonAim.png"),false,false);
+        }
+        if(CannonAimStable>1)
+        {Tap(PC,EKeys::LeftMouseButton);Phase=65;Elapsed=0;return;}
+        if(Elapsed>15)Finish(false,FString::Printf(TEXT("Actual mouse aiming did not settle: yaw%.2f/%.2f pitch%.2f/%.2f"),Launch->GetAimYaw(),CannonGoalYaw,Launch->GetAimPitch(),CannonGoalPitch));return;
+    }
+    if(Phase==65)
+    {
+        if(Launch->GetLaunchCount()==1&&!Launch->IsAiming()&&Movement->IsFalling())bCannonSawFlight=true;
+        if(Elapsed>.4f&&Movement->IsMovingOnGround())
+        {
+            if(!bCannonSawFlight||Launch->GetLaunchCount()!=1||FMath::Abs(Hero->GetActorLocation().Z-82-3072)>40||FVector::Dist2D(Hero->GetActorLocation(),FVector(5000,-1250,3072))>450
+                ||FVector::Dist(Launch->GetLastLaunchOrigin(),Cannon->GetSeatLocation())>2||FMath::Abs(Launch->GetLastLaunchVelocity().Size()-2600)>1)
+            {Finish(false,FString::Printf(TEXT("Actual ballistic shot did not land on island: hero%s origin%s"),*Hero->GetActorLocation().ToString(),*Launch->GetLastLaunchOrigin().ToString()));return;}
+            Movement->StopMovementImmediately();FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderCannonLanding.png"),false,false);
+            Phase=66;Elapsed=0;CannonWaypoint=0;CannonLegElapsed=0;return;
+        }
+        if(Elapsed>8)Finish(false,TEXT("Actual LMB physical shot did not land within8s"));return;
+    }
+    if(Phase==67)
+    {
+        if(Flow->IsCelebrating())
+        {
+            if(!Box->IsBroken()||Box->GetHeadBumpCount()!=1||Box->GetBreakCount()!=1||Box->GetRewardGenerationCount()!=1)
+            {Finish(false,TEXT("Star3 did not follow one actual upward head bump and one reward generation"));return;}
+            ObservedStar=Box->GetReward();Phase=26;Elapsed=0;return;
+        }
+        if(Box->IsBroken()&&(!Box->GetReward()||Box->GetReward()->GetRewardNumber()!=3))
+        {Finish(false,TEXT("Physically broken island box did not produce the actual star3"));return;}
+        const FVector Delta=Box->GetActorLocation()-Hero->GetActorLocation();
+        PC->SetControlRotation(FRotator(-12,Delta.Rotation().Yaw,0));
+        if(Delta.Size2D()>12)Hero->AddMovementInput(Delta.GetSafeNormal2D(),FMath::Clamp(Delta.Size2D()/120,.2f,1.f));
+        else if(Movement->IsMovingOnGround())Movement->StopMovementImmediately();
+        if(Movement->IsMovingOnGround()&&JumpHold<=0&&Delta.Size2D()<50)
+        {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;}
+        if(Elapsed>18)Finish(false,FString::Printf(TEXT("Normal upward jumps did not break/collect island box: broken%d bumps%d hero%s"),Box->IsBroken(),Box->GetHeadBumpCount(),*Hero->GetActorLocation().ToString()));
     }
 }

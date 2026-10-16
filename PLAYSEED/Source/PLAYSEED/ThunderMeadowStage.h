@@ -72,6 +72,7 @@ public:
     APlayseedGaleleafEnemy* GetGaleleafEnemy() const { return GaleleafEnemy; }
     AThunderGuide* GetGuide() const { return Guide; }
     AThunderLauncher* GetLauncher() const { return Launcher; }
+    const TArray<TObjectPtr<AThunderLauncher>>& GetReferenceLaunchers() const { return ReferenceLaunchers; }
     AThunderFlightBloom* GetFlightBloom() const { return FlightBloom; }
     AThunderFlightSwitch* GetFlightSwitch() const { return FlightSwitch; }
     AThunderStormkeeper* GetStormkeeper() const { return Stormkeeper; }
@@ -151,6 +152,7 @@ private:
     UPROPERTY() TObjectPtr<APlayseedGaleleafEnemy> GaleleafEnemy;
     UPROPERTY() TObjectPtr<AThunderGuide> Guide;
     UPROPERTY() TObjectPtr<AThunderLauncher> Launcher;
+    UPROPERTY() TArray<TObjectPtr<AThunderLauncher>> ReferenceLaunchers;
     UPROPERTY() TObjectPtr<AThunderFlightBloom> FlightBloom;
     UPROPERTY() TObjectPtr<AThunderFlightSwitch> FlightSwitch;
     UPROPERTY() TObjectPtr<AThunderStormkeeper> Stormkeeper;
