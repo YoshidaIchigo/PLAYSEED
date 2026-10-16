@@ -18,7 +18,7 @@ namespace { void PostTap(APlayerController* PC, FKey Key) { PC->InputKey(FInputK
 void UThunderPostTestSubsystem::Next(int32 Number) { Phase = Number; PhaseTime = 0; Waypoint = 0; bJumpStarted = bPoundPressed = false; JumpTime = 0; UE_LOG(LogTemp, Display, TEXT("POST TEST phase %d round %d"), Number, Round); }
 void UThunderPostTestSubsystem::BeginTest(AWindseedCharacter* Player, AThunderMeadowStage* InStage, bool bReadProcess)
 {
-    Stage = InStage; Error.Reset(); Round = 0; RecoveryBaseline = Player->RecoveryCount; BreakBaseline = Stage->GetPrisonGate()->GetBreakCount();
+    Stage = InStage; Error.Reset(); Round = 0; RecoveryBaseline = Player->RecoveryCount; BreakBaseline = Stage->GetPrisonGate()->GetBreakCount(); ContactBaseline = Stage->GetBoundSentinel()->GetConfirmedHits();
     auto* Progress = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
     if (!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_")) || !Progress->GetProgressProblem().IsEmpty() || Progress->GetEarnedRewardCount() != (bReadProcess ? 1 : 0) || Progress->HasEarnedReward(6) != bReadProcess) { Error = TEXT("Post test needs isolated expected actual reward6 state"); return; }
     Next(bReadProcess ? 20 : 0);
@@ -63,7 +63,18 @@ bool UThunderPostTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
     if (!Post || !Gate || !Enemy || !PC) { Error = TEXT("Post/gate/sentinel/controller missing"); return false; }
     PhaseTime += DeltaSeconds;
     if (PhaseTime > 45) { Error = FString::Printf(TEXT("Post phase %d round %d timed out hero %s enemy %s pounds%d"), Phase, Round, *Player->GetActorLocation().ToString(), *Enemy->GetActorLocation().ToString(), Post->GetPoundCount()); return false; }
-    if (Player->GetVitality()->GetHealth() != 8 || !Progress->GetProgressProblem().IsEmpty()) { Error = FString::Printf(TEXT("Post route phase %d waypoint %d at %s unexpectedly took damage or save failed"), Phase, Waypoint, *Player->GetActorLocation().ToString()); return false; }
+    // 通常着地の負例では、無防備な静止に番獣が接触する場合も実観測してからRへ進みます。
+    // 実際の杭の床情報・位置・接触回数が一致する場合だけを許し、その後の本攻略は体力8を守ります。
+    const auto* Movement = Player->GetCharacterMovement();
+    const bool bOrdinaryTop = Phase == 2 && Round == 0 && Movement->CurrentFloor.IsWalkableFloor() && Movement->CurrentFloor.HitResult.GetActor() == Post && FVector::Dist2D(Player->GetActorLocation(), Post->GetActorLocation()) < 50 && FMath::Abs(Player->GetActorLocation().Z - 82 - Post->GetTopHeight()) < 6;
+    const bool bObservedTopContact = bOrdinaryTop && Player->GetVitality()->GetHealth() == 6 && Enemy->GetConfirmedHits() == ContactBaseline + 1;
+    if ((Player->GetVitality()->GetHealth() != 8 && !bObservedTopContact) || !Progress->GetProgressProblem().IsEmpty()) { Error = FString::Printf(TEXT("Post route phase %d waypoint %d at %s enemy %s unexpectedly took damage or save failed"), Phase, Waypoint, *Player->GetActorLocation().ToString(), *Enemy->GetActorLocation().ToString()); return false; }
+    if (bOrdinaryTop)
+    {
+        if (Post->GetPoundCount() != 0 || Enemy->IsReleased() || Gate->IsBroken() || Gate->GetReward()) { Error = TEXT("Ordinary physical floor landing incorrectly advanced post"); return false; }
+        UE_LOG(LogTemp, Display, TEXT("POST TEST: actual post floor landing excluded, observed health%d actual enemy contacts%d; R before positive pound route."), Player->GetVitality()->GetHealth(), Enemy->GetConfirmedHits() - ContactBaseline);
+        Player->StopJumping(); PostTap(PC, EKeys::R); Next(4); return false;
+    }
     if (Phase < 9 && Progress->GetEarnedRewardCount() != 0) { Error = TEXT("Reward6 was saved before walking to actual lantern"); return false; }
     if (Phase == 0) { if (Approach(Player, DeltaSeconds)) Next(1); }
     else if (Phase == 1) { if (Enemy->IsRecovering()) Next(2); }

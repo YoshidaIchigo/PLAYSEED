@@ -19,7 +19,7 @@ private:
     bool JumpToPost(AWindseedCharacter* Player, float DeltaSeconds, bool bPound);
     TWeakObjectPtr<AThunderMeadowStage> Stage;
     FString Error;
-    int32 Phase = 0, Waypoint = 0, Round = 0, RecoveryBaseline = 0, BeforePounds = 0, BreakBaseline = 0;
+    int32 Phase = 0, Waypoint = 0, Round = 0, RecoveryBaseline = 0, BeforePounds = 0, BreakBaseline = 0, ContactBaseline = 0;
     float PhaseTime = 0, JumpTime = 0;
     bool bJumpStarted = false, bPoundPressed = false;
 };
