@@ -177,7 +177,7 @@ void UReferencePaintingTestSubsystem::UpdateChain(float DeltaSeconds,AWindseedCh
             if(!Gate->IsBroken()||Gate->GetBreakCount()!=1||!Gate->GetReward()||!Chomp->IsDeparted())
             {Finish(false,TEXT("Reference gate did not break once from the released Chomp"));return;}
             bChainGateVerified=true;
-            PC->SetControlRotation(FRotator(10,(Gate->GetRewardLocation()-Hero->GetActorLocation()).Rotation().Yaw,0));
+            PC->SetControlRotation(FRotator(10,(Gate->GetRewardLocation()-Hero->GetActorLocation()).Rotation().Yaw+35,0));
             PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::MouseWheelAxis,IE_Axis,2));
             Phase=24;Elapsed=0;return;
         }
