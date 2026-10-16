@@ -24,13 +24,15 @@
 #include "Misc/Parse.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "HAL/FileManager.h"
 #include "UnrealClient.h"
 void UReferencePaintingTestSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 #if !UE_BUILD_SHIPPING
     bFadeTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderFadeTest"));
-    bStarTest=bFadeTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest"));
+    bSaveFailureTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderSaveFailureTest"));
+    bStarTest=bSaveFailureTest||bFadeTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest"));
     bReadMode=FParse::Param(FCommandLine::Get(),TEXT("ThunderStarReadTest"));
     bChainTest=bStarTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderChainTest"));
     bDropTest=bChainTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderDropTest"));
@@ -41,10 +43,12 @@ void UReferencePaintingTestSubsystem::Tap(APlayerController* PC,FKey Key)
 {PC->InputKey(FInputKeyEventArgs::CreateSimulated(Key,IE_Pressed,1));PC->InputKey(FInputKeyEventArgs::CreateSimulated(Key,IE_Released,0));}
 void UReferencePaintingTestSubsystem::Finish(bool bPassed,const FString& Message)
 {
+    if(bSaveFailureTest&&bPassed&&(!bSaveObstacleCreated||!bSaveFailureObserved||!bSaveObstacleRemoved))bPassed=false;
     if(bFadeTest&&bPassed&&(ObservedFadeOut.Num()!=7||ObservedFadeCovered.Num()!=7||ObservedFadeIn.Num()!=7||GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>()->GetCompletedFades()!=7)){bPassed=false;UE_LOG(LogTemp,Error,TEXT("FADE QA incomplete sequences: out%d covered%d in%d"),ObservedFadeOut.Num(),ObservedFadeCovered.Num(),ObservedFadeIn.Num());}
     bFinished=true;auto* Recording=GetGameInstance()->GetSubsystem<UPlayseedRecordingSubsystem>();const int32 Frames=Recording->FinishRecording();
     bPassed=bPassed&&!Recording->HasCaptureError()&&Frames>=150;
-    const FString Result=FString::Printf(TEXT("%s\n%s\nCaptureFrames: %d\nUTC: %s\n"),bPassed?TEXT("PASS"):TEXT("FAIL"),*Message,Frames,*FDateTime::UtcNow().ToIso8601());
+    const FString Details=Message+(bSaveFailureTest?TEXT(" Actual SaveGameToSlot failure from own empty QA directory, rollback0 and visible star, physical exit, nonrecursive removal of own empty obstacle, real recontact saved6 once and returned to painting."):TEXT(""));
+    const FString Result=FString::Printf(TEXT("%s\n%s\nCaptureFrames: %d\nUTC: %s\n"),bPassed?TEXT("PASS"):TEXT("FAIL"),*Details,Frames,*FDateTime::UtcNow().ToIso8601());
     FFileHelper::SaveStringToFile(Result,*(FPaths::ProjectSavedDir()/TEXT("Validation/Result.txt")),FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
     UE_LOG(LogTemp,Display,TEXT("PAINTING TEST %s"),*Result);FPlatformMisc::RequestExit(false);
 }
@@ -185,6 +189,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
 
 void UReferencePaintingTestSubsystem::UpdateChain(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC)
 {
+    if(bSaveFailureTest&&Phase==28){UpdateSaveRetry(DeltaSeconds,Hero,PC);return;}
     if(bStarTest&&Phase>=26){UpdateStarCapture(DeltaSeconds,Hero,PC);return;}
     auto* Stage=Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(GetWorld(),AThunderMeadowStage::StaticClass()));
     if(!Hero||!Stage||!Stage->GetBindingPost()||!Stage->GetPrisonGate()||!Stage->GetBoundSentinel()||Hero->RecoveryCount!=0)
@@ -253,10 +258,23 @@ void UReferencePaintingTestSubsystem::UpdateChain(float DeltaSeconds,AWindseedCh
     if(Phase==22&&Gate->IsBroken()&&Chomp->IsDeparted())
     {Phase=23;Elapsed=0;ChainWaypoint=0;ChainLegElapsed=0;}
     if(Phase==24&&Elapsed>1.2f)
-    {FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderChainGate.png"),false,false);Phase=bStarTest?25:9;Elapsed=0;}
+    {
+        if(bSaveFailureTest&&!PrepareSaveFailure()){Finish(false,TEXT("Could not safely create a new empty obstacle for own QA save"));return;}
+        FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderChainGate.png"),false,false);Phase=bStarTest?25:9;Elapsed=0;
+    }
     if(Phase==25)
     {
         auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
+        auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
+        if(bSaveFailureTest&&!bSaveFailureObserved&&!Progress->GetProgressProblem().IsEmpty())
+        {
+            ObservedStar=Gate->GetReward();
+            if(Flow->GetState()!=EReferenceTravelState::InCourse||Progress->GetEarnedRewardCount()!=0||Progress->HasEarnedReward(6)||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0)||!ObservedStar.IsValid()||ObservedStar->IsCollected()||ObservedStar->IsHidden()||ObservedStar->GetSuccessfulCollections()!=0||!IFileManager::Get().DirectoryExists(*SaveObstaclePath))
+            {Finish(false,TEXT("Actual failed save did not keep progress0, visible uncollected star and ordinary play"));return;}
+            bSaveFailureObserved=true;Phase=28;Elapsed=0;RetryOutsideElapsed=0;
+            FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderSaveFailure.png"),false,false);
+            UE_LOG(LogTemp,Display,TEXT("SAVE RETRY QA: real star contact failed SaveGameToSlot; rollback0, visible star, no celebration."));return;
+        }
         if(Flow->IsCelebrating())
         {ObservedStar=Gate->GetReward();Phase=26;Elapsed=0;return;}
         const FVector Delta=Gate->GetRewardLocation()-Hero->GetActorLocation();
@@ -273,6 +291,8 @@ void UReferencePaintingTestSubsystem::UpdateStarCapture(float DeltaSeconds,AWind
     auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
     const FString Map=UGameplayStatics::GetCurrentLevelName(GetWorld(),true);
     if(Flow->IsFading()&&!Flow->IsCelebrating())return;
+    if(bSaveFailureTest&&(!bSaveFailureObserved||!bSaveObstacleRemoved||!Progress->GetProgressProblem().IsEmpty()||IFileManager::Get().DirectoryExists(*SaveObstaclePath)))
+    {Finish(false,TEXT("Save retry did not clear the error or remove only the own obstacle"));return;}
     if(!Hero||Progress->GetEarnedRewardCount()!=1||!Progress->HasEarnedReward(6)||!UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
     {Finish(false,TEXT("Real star6 was not saved before the capture animation"));return;}
     if(Phase==26)
@@ -305,6 +325,42 @@ void UReferencePaintingTestSubsystem::UpdateStarCapture(float DeltaSeconds,AWind
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderStarReturn.png"),false,false);
         bReadMode=true;bJumped=false;bCapturedDive=false;JumpHold=0;Phase=1;Elapsed=0;
     }
+}
+
+bool UReferencePaintingTestSubsystem::PrepareSaveFailure()
+{
+    auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();const FString Slot=Progress->GetSaveSlotName();
+    if(!bSaveFailureTest||bSaveObstacleCreated||!Slot.StartsWith(TEXT("Validation_"))||Progress->GetEarnedRewardCount()!=0||!Progress->GetProgressProblem().IsEmpty()||UGameplayStatics::DoesSaveGameExist(Slot,0))return false;
+    const FString Directory=FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()/TEXT("SaveGames"));
+    SaveObstaclePath=FPaths::ConvertRelativePathToFull(Directory/(Slot+TEXT(".sav")));
+    // QA専用の未使用スロットだけに空のフォルダを作ります。既存のファイル・権限・セーブ内容は触りません。
+    if(SaveObstaclePath!=Directory/(Slot+TEXT(".sav"))||!SaveObstaclePath.StartsWith(Directory+TEXT("/"))||IFileManager::Get().FileExists(*SaveObstaclePath)||IFileManager::Get().DirectoryExists(*SaveObstaclePath))return false;
+    bSaveObstacleCreated=IFileManager::Get().MakeDirectory(*SaveObstaclePath,false);
+    if(bSaveObstacleCreated)UE_LOG(LogTemp,Display,TEXT("SAVE RETRY QA: created own fresh empty Validation_ .sav directory; no save data injected."));
+    return bSaveObstacleCreated;
+}
+void UReferencePaintingTestSubsystem::UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC)
+{
+    auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
+    if(!Hero||Hero->RecoveryCount!=0||!ObservedStar.IsValid()||ObservedStar->IsCollected()||ObservedStar->IsHidden()||ObservedStar->GetSuccessfulCollections()!=0||Flow->GetState()!=EReferenceTravelState::InCourse||Progress->GetEarnedRewardCount()!=0||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0)||!bSaveFailureObserved||!bSaveObstacleCreated||bSaveObstacleRemoved)
+    {Finish(false,TEXT("Failed-save state changed before physical exit and retry"));return;}
+    auto* Movement=Hero->GetCharacterMovement();
+    if(Movement->IsMovingOnGround()&&FVector::Dist2D(Hero->GetActorLocation(),ObservedStar->GetActorLocation())>250)
+    {
+        Movement->StopMovementImmediately();RetryOutsideElapsed+=DeltaSeconds;
+        if(RetryOutsideElapsed<1.25f)return;
+        const FString Expected=FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()/TEXT("SaveGames")/(Progress->GetSaveSlotName()+TEXT(".sav")));
+        TArray<FString> Entries;IFileManager::Get().FindFiles(Entries,*(SaveObstaclePath/TEXT("*")),true,true);
+        // 自分で作った同一の空フォルダだけを、再帰なしで消します。中身があれば必ず中止します。
+        if(SaveObstaclePath!=Expected||!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_"))||Entries.Num()!=0||!IFileManager::Get().DirectoryExists(*SaveObstaclePath)||!IFileManager::Get().DeleteDirectory(*SaveObstaclePath,true,false))
+        {Finish(false,TEXT("Own save obstacle was not safely removable as an empty nonrecursive directory"));return;}
+        bSaveObstacleRemoved=true;Phase=25;Elapsed=0;
+        FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderSaveRetryReady.png"),false,false);
+        UE_LOG(LogTemp,Display,TEXT("SAVE RETRY QA: actual physical exit and cooldown; removed only own empty directory, now walking/jumping to real star again."));return;
+    }
+    RetryOutsideElapsed=0;const FVector Delta=FVector(1300,-700,768)-Hero->GetActorLocation();
+    PC->SetControlRotation(FRotator(-12,Delta.Rotation().Yaw,0));Hero->AddMovementInput(Delta.GetSafeNormal2D(),FMath::Clamp(Delta.Size2D()/120,.2f,1.f));
+    if(Elapsed>12)Finish(false,TEXT("Ordinary movement did not leave the failed-save star contact volume"));
 }
 
 void UReferencePaintingTestSubsystem::ObserveFade(APlayerController* PC)
