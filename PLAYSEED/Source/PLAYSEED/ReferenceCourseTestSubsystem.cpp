@@ -67,7 +67,7 @@ void UReferenceCourseTestSubsystem::Tick(float DeltaSeconds)
         if(FVector::Dist2D(Player->GetActorLocation(),FVector(-6558,-6464,0))>30){Finish(false,TEXT("Reference spawn is not at the documented start"));return;}
         RecoveryBaseline=Player->RecoveryCount;
         Route.Reset();for(const auto& Point:ReferenceSummitWalk)Route.Add(FVector(Point.X,Point.Y,Point.Z));
-        bFlatJumpStarted=true;JumpStartZ=Player->GetActorLocation().Z;Player->Jump();JumpTime=.14f;
+        bFlatJumpStarted=true;JumpStartZ=Player->GetActorLocation().Z;PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpTime=.14f;
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderReferenceStart.png"),false,false);
         Phase=2;Elapsed=0;return;
     }
@@ -81,9 +81,9 @@ void UReferenceCourseTestSubsystem::Tick(float DeltaSeconds)
             JumpObservationTime+=DeltaSeconds;
             if(Movement->IsFalling()){bFlatJumpAirborne=true;JumpPeak=FMath::Max(JumpPeak,static_cast<float>(Player->GetActorLocation().Z)-JumpStartZ);}
             else if(bFlatJumpAirborne && Movement->IsMovingOnGround())bFlatJumpFinished=true;
-            if(JumpObservationTime>3 && !bFlatJumpFinished){Finish(false,TEXT("Flat jump did not take off and land within three seconds"));return;}
+            if(JumpObservationTime>3 && !bFlatJumpFinished){Finish(false,FString::Printf(TEXT("Jump input did not take off and land: airborne%d finished%d peak%.1f hero%s velocity%s movement%d"),bFlatJumpAirborne,bFlatJumpFinished,JumpPeak,*Player->GetActorLocation().ToString(),*Player->GetVelocity().ToString(),Movement->MovementMode));return;}
         }
-        if(JumpTime>0){JumpTime-=DeltaSeconds;if(JumpTime<=0)Player->StopJumping();}
+        if(JumpTime>0){JumpTime-=DeltaSeconds;if(JumpTime<=0)PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Released,0));}
         if(Waypoint>=Route.Num())
         {
             if(Player->GetActorLocation().Z<4200 || !bFlatJumpFinished || JumpPeak<100){Finish(false,TEXT("Walking route did not reach the real summit or ordinary jump did not rise 100cm"));return;}
@@ -111,8 +111,8 @@ void UReferenceCourseTestSubsystem::Tick(float DeltaSeconds)
         // 目標足場が高く近い時だけ通常Jumpを使います。加速・座標・速度を直接設定しません。
         const float Feet=Player->GetActorLocation().Z-82;
         if(ReferenceSummitWalk[Waypoint].bJump && !bRouteJumpIssued && Movement->IsMovingOnGround())
-        {Player->Jump();JumpTime=.14f;bRouteJumpIssued=true;UE_LOG(LogTemp,Display,TEXT("REFERENCE WALK: ordinary jump across real mountain path gap"));}
-        if(Movement->IsMovingOnGround() && JumpTime<=0 && Delta.Size2D()<450 && Target.Z>Feet+70){Player->Jump();JumpTime=.14f;}
+        {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpTime=.14f;bRouteJumpIssued=true;UE_LOG(LogTemp,Display,TEXT("REFERENCE WALK: ordinary jump across real mountain path gap"));}
+        if(Movement->IsMovingOnGround() && JumpTime<=0 && Delta.Size2D()<450 && Target.Z>Feet+70){PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpTime=.14f;}
         return;
     }
     if(Phase==3 && Elapsed>2){Tap(PC,EKeys::R);Phase=4;Elapsed=0;return;}
