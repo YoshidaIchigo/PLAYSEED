@@ -1,6 +1,7 @@
 #include "ReferencePaintingTestSubsystem.h"
 #include "ReferenceEntranceGameMode.h"
 #include "ReferenceTravelSubsystem.h"
+#include "ThunderMissionSelectionGameMode.h"
 #include "ReferenceHero.h"
 #include "ReferenceChainWalk.h"
 #include "ThunderMeadowStage.h"
@@ -28,7 +29,8 @@ void UReferencePaintingTestSubsystem::Initialize(FSubsystemCollectionBase& Colle
 {
     Super::Initialize(Collection);
 #if !UE_BUILD_SHIPPING
-    bStarTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest"));
+    bFadeTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderFadeTest"));
+    bStarTest=bFadeTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest"));
     bReadMode=FParse::Param(FCommandLine::Get(),TEXT("ThunderStarReadTest"));
     bChainTest=bStarTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderChainTest"));
     bDropTest=bChainTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderDropTest"));
@@ -39,6 +41,7 @@ void UReferencePaintingTestSubsystem::Tap(APlayerController* PC,FKey Key)
 {PC->InputKey(FInputKeyEventArgs::CreateSimulated(Key,IE_Pressed,1));PC->InputKey(FInputKeyEventArgs::CreateSimulated(Key,IE_Released,0));}
 void UReferencePaintingTestSubsystem::Finish(bool bPassed,const FString& Message)
 {
+    if(bFadeTest&&bPassed&&(ObservedFadeOut.Num()!=7||ObservedFadeCovered.Num()!=7||ObservedFadeIn.Num()!=7||GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>()->GetCompletedFades()!=7)){bPassed=false;UE_LOG(LogTemp,Error,TEXT("FADE QA incomplete sequences: out%d covered%d in%d"),ObservedFadeOut.Num(),ObservedFadeCovered.Num(),ObservedFadeIn.Num());}
     bFinished=true;auto* Recording=GetGameInstance()->GetSubsystem<UPlayseedRecordingSubsystem>();const int32 Frames=Recording->FinishRecording();
     bPassed=bPassed&&!Recording->HasCaptureError()&&Frames>=150;
     const FString Result=FString::Printf(TEXT("%s\n%s\nCaptureFrames: %d\nUTC: %s\n"),bPassed?TEXT("PASS"):TEXT("FAIL"),*Message,Frames,*FDateTime::UtcNow().ToIso8601());
@@ -53,6 +56,8 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
     auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
     const FString Map=UGameplayStatics::GetCurrentLevelName(GetWorld(),true);
     auto* Hero=Cast<AReferenceHero>(PC->GetPawn());auto* Mode=Cast<AReferenceEntranceGameMode>(GetWorld()->GetAuthGameMode());
+    if(bFadeTest&&Phase>0)ObserveFade(PC);
+    if(bFinished)return;
     if(bChainTest&&Phase>=20){UpdateChain(DeltaSeconds,Hero,PC);return;}
     if(Phase==0)
     {
@@ -68,6 +73,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
         if(!Hero||!Mode){Finish(false,TEXT("Entrance player disappeared before entry"));return;}
         if(Mode->IsEntering()){Phase=2;Elapsed=0;return;}
         if(Hero->RecoveryCount!=0){Finish(false,TEXT("QA route recovered instead of walking and jumping"));return;}
+        if(Flow->IsFading())return;
         Hero->AddMovementInput(FVector::ForwardVector,1);
         if(Hero->GetActorLocation().X>155&&!bJumped)
         {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));bJumped=true;JumpHold=.14f;}
@@ -160,6 +166,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
     if(Phase==9&&Elapsed>1){Tap(PC,EKeys::M);Phase=10;Elapsed=0;return;}
     if(Phase==10&&Elapsed>1)
     {
+        if(Flow->IsFading())return;
         if(Map!=TEXT("Entrance")||!Hero||Flow->GetState()!=EReferenceTravelState::AtPainting||FVector::Dist2D(Hero->GetActorLocation(),FVector(-600,0,0))>40||Progress->GetEarnedRewardCount()!=0||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
         {Finish(false,TEXT("M did not return to the painting front with unchanged progress"));return;}
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderPaintingReturn.png"),false,false);Phase=11;Elapsed=0;return;
@@ -168,6 +175,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
     if(Phase==12&&Elapsed>1)Finish(!bChainTest||bChainGateVerified,bChainTest?TEXT("Painting entry, physical drop, ordinary walking to reference post, three real ground pounds, released Chomp physical sweep breaks gate once, visible original-position star6, stop before collection and M returns to painting. No recovery, no injected state, zero progress unchanged."):TEXT("Painting dive -> actual star selection -> physical 1000cm drop -> ground contact and landing pose -> ordinary Space jump -> M returns to painting front. R/M/Space/Ctrl/Enter spam blocked during transition, no recovery and fresh zero progress unchanged."));
     if(Phase==13&&Elapsed>1)
     {
+        if(Flow->IsFading())return;
         if(Map!=TEXT("Entrance")||!Hero||Flow->GetState()!=EReferenceTravelState::AtPainting||FVector::Dist2D(Hero->GetActorLocation(),FVector(-600,0,0))>40)
         {Finish(false,TEXT("M return did not reach a usable painting entrance"));return;}
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderPaintingReentry.png"),false,false);
@@ -264,6 +272,7 @@ void UReferencePaintingTestSubsystem::UpdateStarCapture(float DeltaSeconds,AWind
 {
     auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
     const FString Map=UGameplayStatics::GetCurrentLevelName(GetWorld(),true);
+    if(Flow->IsFading()&&!Flow->IsCelebrating())return;
     if(!Hero||Progress->GetEarnedRewardCount()!=1||!Progress->HasEarnedReward(6)||!UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
     {Finish(false,TEXT("Real star6 was not saved before the capture animation"));return;}
     if(Phase==26)
@@ -296,4 +305,33 @@ void UReferencePaintingTestSubsystem::UpdateStarCapture(float DeltaSeconds,AWind
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderStarReturn.png"),false,false);
         bReadMode=true;bJumped=false;bCapturedDive=false;JumpHold=0;Phase=1;Elapsed=0;
     }
+}
+
+void UReferencePaintingTestSubsystem::ObserveFade(APlayerController* PC)
+{
+    auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();if(!Flow->IsFading())return;
+    const int32 Sequence=Flow->GetFadeSequence();const auto Fade=Flow->GetFadePhase();const float Opacity=Flow->GetTransitionOpacity();
+    if(!Flow->IsTransitionLocked()||Opacity<0||Opacity>1){Finish(false,TEXT("Fade did not lock transition or opacity was invalid"));return;}
+    if(Fade==EReferenceFadePhase::Out)ObservedFadeOut.Add(Sequence);
+    if(Fade==EReferenceFadePhase::Covered)
+    {
+        if(Opacity!=1){Finish(false,TEXT("World change was not completely covered by white"));return;}
+        ObservedFadeCovered.Add(Sequence);
+    }
+    if(Fade==EReferenceFadePhase::In)ObservedFadeIn.Add(Sequence);
+    // 実際の入力経路へ連打します。保存・座標・体力を直接変える検証ではありません。
+    for(FKey Key:{EKeys::R,EKeys::M,EKeys::SpaceBar,EKeys::LeftControl,EKeys::Enter,EKeys::One,EKeys::Two,EKeys::Left,EKeys::Right})Tap(PC,Key);
+    if(auto* Menu=Cast<AThunderMissionSelectionGameMode>(GetWorld()->GetAuthGameMode()))
+    {
+        const int32 Current=Menu->GetHighlightedMission();
+        if(const int32* Expected=FadeMenuSelection.Find(Sequence)){if(*Expected!=Current){Finish(false,TEXT("Input spam changed selection during fade"));return;}}
+        else FadeMenuSelection.Add(Sequence,Current);
+    }
+    const int32 ShotKey=Sequence*10+static_cast<int32>(Fade);
+    if(FadeShots.Contains(ShotKey)||!((Fade==EReferenceFadePhase::Covered)||(Opacity>.4f&&Opacity<.6f)))return;
+    const TCHAR* Name=nullptr;
+    if(Sequence==1)Name=Fade==EReferenceFadePhase::Out?TEXT("ThunderFadeEntryOut.png"):Fade==EReferenceFadePhase::Covered?TEXT("ThunderFadeEntryWhite.png"):TEXT("ThunderFadeSelectionIn.png");
+    if(Sequence==2)Name=Fade==EReferenceFadePhase::Out?TEXT("ThunderFadeSelectionOut.png"):Fade==EReferenceFadePhase::Covered?TEXT("ThunderFadeDropWhite.png"):TEXT("ThunderFadeDropIn.png");
+    if(Sequence==6)Name=Fade==EReferenceFadePhase::Out?TEXT("ThunderFadeReturnOut.png"):Fade==EReferenceFadePhase::Covered?TEXT("ThunderFadeReturnWhite.png"):TEXT("ThunderFadeEntranceIn.png");
+    if(Name){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation")/Name,false,false);FadeShots.Add(ShotKey);}
 }

@@ -48,7 +48,7 @@ void APlayseedGameModeBase::ReturnToStageSelection()
     auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
     // 絵から入ったプレイは入口へ戻し、次回も同じ入場手順を使える状態にします。
     if(Flow->UsesEntrance())
-    {if(Flow->BeginReturn())UGameplayStatics::OpenLevel(this,FName(TEXT("/Game/Battlefield/Entrance")));}
+    {Flow->BeginReturn();}
     else UGameplayStatics::OpenLevel(this,FName(TEXT("/Game/ThunderMeadow/MissionSelect")));
 }
 

@@ -76,7 +76,7 @@ void APlayseedLantern::Tick(float DeltaSeconds)
     {
         SetActorHiddenInGame(true);
         if (bNewReward) { ++SuccessfulCollections; UE_LOG(LogTemp, Display, TEXT("STAR COLLECTED: actual reward %d, saved total %d."), RewardNumber, Progress->GetEarnedRewardCount()); }
-        if(!Flow->Celebrate(Player,RewardNumber)&&Flow->BeginReturn())UGameplayStatics::OpenLevel(this,FName(TEXT("/Game/Battlefield/Entrance")));
+        if(!Flow->Celebrate(Player,RewardNumber))Flow->BeginReturn();
     }
     else { bCollected=false;RetryRemaining=1;bNeedsExitAfterFailure=true; } // 保存失敗なら消さず、離れて再接触して試せます。
 }

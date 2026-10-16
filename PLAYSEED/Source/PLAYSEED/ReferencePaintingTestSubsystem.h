@@ -21,6 +21,7 @@ private:
     void Finish(bool bPassed,const FString& Message);
     void UpdateChain(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateStarCapture(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
+    void ObserveFade(APlayerController* PC);
     float Elapsed=0,JumpHold=0;
     int32 Phase=0;
     bool bEnabled=false,bFinished=false,bJumped=false,bCapturedDive=false;
@@ -32,4 +33,7 @@ private:
     int32 VerifiedDropVisits=0,PoseHealth=0;
     FVector PoseLocation=FVector::ZeroVector;
     TWeakObjectPtr<APlayseedLantern> ObservedStar;
+    bool bFadeTest=false;
+    TSet<int32> ObservedFadeOut,ObservedFadeCovered,ObservedFadeIn,FadeShots;
+    TMap<int32,int32> FadeMenuSelection;
 };
