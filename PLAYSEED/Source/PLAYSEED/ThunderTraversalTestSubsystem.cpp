@@ -151,7 +151,7 @@ bool UThunderTraversalTestSubsystem::UpdateRoute(AWindseedCharacter* Player, flo
     const auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(Player, AThunderMeadowStage::StaticClass()));
     const auto* Boulder = Meadow ? Meadow->GetRollingBoulder() : nullptr;
     const float Feet = Player->GetActorLocation().Z - Player->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-    const bool bAvoidBoulder = Boulder && !Boulder->IsWaiting() && FVector::Dist2D(Player->GetActorLocation(), Boulder->GetActorLocation()) < 450 &&
+    const bool bAvoidBoulder = Boulder && !Boulder->IsWaiting() && FVector::Dist2D(Player->GetActorLocation(), Boulder->GetActorLocation()) < 280 &&
         FMath::Abs(Feet - (Boulder->GetActorLocation().Z - 70)) < 160;
     if (((bJumpForSteps && Waypoint < AutoJumpWaypointLimit && Offset.Z > 50 && Offset.Size2D() < 480) || bAvoidBoulder) && Movement->IsMovingOnGround())
     { Player->Jump(); ++JumpCount; }
