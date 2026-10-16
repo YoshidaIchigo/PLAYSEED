@@ -1,4 +1,5 @@
 #include "ThunderBoundSentinel.h"
+#include "ThunderPrisonGate.h"
 #include "WindseedCharacter.h"
 #include "PlayseedVitalityComponent.h"
 #include "Components/SphereComponent.h"
@@ -63,6 +64,8 @@ void AThunderBoundSentinel::EnterState(EState Next)
 void AThunderBoundSentinel::ResetSentinel()
 {
     ++MotionRevision; PatrolTime = 0; LockedTarget = FVector::ZeroVector;
+    ReleaseGate.Reset(); SetActorHiddenInGame(false); Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    for (UStaticMeshComponent* Link : Links) Link->SetVisibility(true);
     SetActorLocation(GetHomeLocation()); SetActorRotation(FRotator::ZeroRotator); EnterState(EState::Patrol); UpdateTether();
 }
 void AThunderBoundSentinel::UpdateTether()
@@ -95,6 +98,21 @@ void AThunderBoundSentinel::Tick(float DeltaSeconds)
     Super::Tick(DeltaSeconds);
     auto* Player = Cast<AWindseedCharacter>(UGameplayStatics::GetPlayerPawn(this, 0)); if (!Player) return;
     const int32 Revision = MotionRevision; StateTime += DeltaSeconds; PatrolTime += DeltaSeconds;
+    if (State == EState::Departed) return;
+    if (State == EState::Stagger) { if (StateTime >= 1.4f) EnterState(EState::Return); UpdateTether(); return; }
+    if (State == EState::ReleaseWindup) { if (StateTime >= .9f) EnterState(EState::Released); UpdateTether(); return; }
+    if (State == EState::Released)
+    {
+        if (!ReleaseGate.IsValid()) { ResetSentinel(); return; }
+        const FVector Goal = ReleaseGate->GetActorLocation() + FVector(80, 0, -100);
+        const FVector Start = GetActorLocation(), Offset = Goal - Start; FHitResult Hit;
+        SetActorRotation(Offset.GetSafeNormal2D().Rotation());
+        SetActorLocation(FMath::VInterpConstantTo(GetActorLocation(), Goal, DeltaSeconds, 700), true, &Hit);
+        if (Hit.bBlockingHit) ReleaseGate->HandleReleasedImpact(this, Hit);
+        CheckContact(Start, GetActorLocation(), Player); if (Revision != MotionRevision) return;
+        if (FVector::Dist2D(GetActorLocation(), Goal) < 5) { EnterState(EState::Departed); SetActorHiddenInGame(true); Body->SetCollisionEnabled(ECollisionEnabled::NoCollision); }
+        return;
+    }
     const FVector ToPlayer = Player->GetActorLocation() - GetActorLocation();
     if (State == EState::Patrol)
     {
@@ -122,4 +140,13 @@ void AThunderBoundSentinel::Tick(float DeltaSeconds)
     if (Revision != MotionRevision) return;
     CheckContact(GetActorLocation(), GetActorLocation(), Player); if (Revision != MotionRevision) return;
     UpdateTether();
+}
+
+void AThunderBoundSentinel::StaggerFromPost() { ++MotionRevision; EnterState(EState::Stagger); }
+void AThunderBoundSentinel::ReleaseToward(AThunderPrisonGate* InGate)
+{
+    if (!InGate || IsReleased()) return;
+    ++MotionRevision; ReleaseGate = InGate; EnterState(EState::ReleaseWindup);
+    for (UStaticMeshComponent* Link : Links) Link->SetVisibility(false);
+    UE_LOG(LogTemp, Display, TEXT("SENTINEL RELEASE: actual third post pound freed the copper tether."));
 }
