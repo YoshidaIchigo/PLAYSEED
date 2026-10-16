@@ -20,7 +20,7 @@ public:
     // 通常のスター取得フローから使う見た目のポーズです。進行値は変更しません。
     void SetStarPose(bool bEnabled) { bStarPose=bEnabled; }
 private:
-    UStaticMeshComponent* Part(USceneComponent* Parent,UStaticMesh* Mesh,FVector Position,FVector Dimensions,FLinearColor Color);
+    UStaticMeshComponent* Part(USceneComponent* Parent,UStaticMesh* ShapeAsset,FVector Position,FVector Dimensions,FLinearColor Color);
     UPROPERTY() TObjectPtr<USceneComponent> Visual;
     UPROPERTY() TObjectPtr<USceneComponent> LeftArm;
     UPROPERTY() TObjectPtr<USceneComponent> RightArm;

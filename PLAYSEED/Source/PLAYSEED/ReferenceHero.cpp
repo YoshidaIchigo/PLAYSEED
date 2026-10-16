@@ -13,10 +13,10 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 
-UStaticMeshComponent* AReferenceHero::Part(USceneComponent* Parent,UStaticMesh* Mesh,FVector Position,FVector Dimensions,FLinearColor Color)
+UStaticMeshComponent* AReferenceHero::Part(USceneComponent* Parent,UStaticMesh* ShapeAsset,FVector Position,FVector Dimensions,FLinearColor Color)
 {
     auto* Shape=CreateDefaultSubobject<UStaticMeshComponent>(*FString::Printf(TEXT("ReferencePart%d"),Parts.Num()));
-    Shape->SetupAttachment(Parent);Shape->SetStaticMesh(Mesh);Shape->SetRelativeLocation(Position);
+    Shape->SetupAttachment(Parent);Shape->SetStaticMesh(ShapeAsset);Shape->SetRelativeLocation(Position);
     // 見た目の部品に衝突は付けません。ジャンプや壁判定は既存のカプセル一つに任せます。
     Shape->SetRelativeScale3D(Dimensions/100);Shape->SetCollisionEnabled(ECollisionEnabled::NoCollision);Shape->SetCastShadow(false);
     Parts.Add(Shape);Colors.Add(Color);return Shape;
@@ -86,7 +86,7 @@ void AReferenceHero::BeginPlay()
 {
     Super::BeginPlay();
     TArray<UStaticMeshComponent*> AllMeshes;GetComponents(AllMeshes);
-    for(auto* Mesh:AllMeshes)if(!Mesh->GetName().StartsWith(TEXT("Reference"))){Mesh->SetVisibility(false);Mesh->SetHiddenInGame(true);}
+    for(auto* ExistingPart:AllMeshes)if(!ExistingPart->GetName().StartsWith(TEXT("Reference"))){ExistingPart->SetVisibility(false);ExistingPart->SetHiddenInGame(true);}
     auto* Palette=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Battlefield/M_Actor.M_Actor"));
     for(int32 I=0;I<Parts.Num();++I)if(Palette)
     {
