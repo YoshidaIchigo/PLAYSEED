@@ -95,6 +95,7 @@ void UThunderTraversalTestSubsystem::ResetProgress(AWindseedCharacter* Player, b
     FinishTime = 0;
     Error.Reset();
     bScreenshotRequested = false;
+    bYieldingToBoulder = bWaitedAtLowerBoulderEnd = false;
     bIslandCollisionVerified = false;
     RecoveryBaseline = Player->RecoveryCount;
     if (auto* PC = Cast<APlayerController>(Player->GetController()); PC && bZoomOut)
@@ -107,6 +108,43 @@ bool UThunderTraversalTestSubsystem::UpdateRoute(AWindseedCharacter* Player, flo
     if (Player->RecoveryCount != RecoveryBaseline)
     { Error = TEXT("Unexpected fall recovery during terrain traversal"); return false; }
     auto* PC = Cast<APlayerController>(Player->GetController());
+    if (CaptureName == TEXT("ThunderCoinTrail"))
+    {
+        const auto* CoinStage = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(Player, AThunderMeadowStage::StaticClass()));
+        const auto* CoinBoulder = CoinStage ? CoinStage->GetRollingBoulder() : nullptr;
+        auto* CoinMovement = Player->GetCharacterMovement();
+        const float CoinFeet = Player->GetActorLocation().Z - Player->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+        const float RockFeet = CoinBoulder ? CoinBoulder->GetActorLocation().Z - 70 : 0;
+        const float RockDistance = CoinBoulder ? FVector::Dist2D(Player->GetActorLocation(), CoinBoulder->GetActorLocation()) : BIG_NUMBER;
+        // 最初の2点と草原80点の次、山道2番で実際の岩の通過を待ちます。
+        // これにより山道3番の赤コインへ退避で触れず、金100枚という検証条件を保ちます。
+        if (Waypoint == 85 && !bWaitedAtLowerBoulderEnd && CoinBoulder)
+        {
+            if (!CoinBoulder->IsWaiting()) { if (CoinMovement->IsMovingOnGround()) CoinMovement->StopMovementImmediately(); return false; }
+            bWaitedAtLowerBoulderEnd = true;
+            UE_LOG(LogTemp, Display, TEXT("COIN TRAIL: real lower boulder cycle finished; passing the scarlet edge on the centre path."));
+        }
+        if (bWaitedAtLowerBoulderEnd && !bYieldingToBoulder && CoinBoulder && !CoinBoulder->IsWaiting() && RockDistance < 600 && FMath::Abs(CoinFeet - RockFeet) < 220)
+        {
+            const FVector Outward = (Player->GetActorLocation() - FVector(2200, 2100, 0)).GetSafeNormal2D();
+            BoulderYieldPoint = FVector(2200, 2100, Player->GetActorLocation().Z) + Outward * 1240;
+            bYieldingToBoulder = true;
+            UE_LOG(LogTemp, Display, TEXT("COIN TRAIL: ordinary side-step to the outer path while the real boulder passes."));
+        }
+        if (bYieldingToBoulder)
+        {
+            if (!CoinBoulder || CoinBoulder->IsWaiting() || (RockFeet < CoinFeet - 100 && RockDistance > 330)) bYieldingToBoulder = false;
+            else
+            {
+                // 道幅420cmの外側140cmへ普通に歩いて待ちます。洞窟の低い天井では跳びません。
+                const FVector Side = BoulderYieldPoint - Player->GetActorLocation();
+                if (Side.Size2D() > 12) Player->AddMovementInput(Side.GetSafeNormal2D(), FMath::Clamp(Side.Size2D() / 90, .2f, 1.f));
+                else if (CoinMovement->IsMovingOnGround()) CoinMovement->StopMovementImmediately();
+                if (PC) PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(), FRotator(-20, (CoinBoulder->GetActorLocation() - Player->GetActorLocation()).Rotation().Yaw, 0), DeltaSeconds, 3));
+                return false;
+            }
+        }
+    }
     if (Waypoint == Route.Num())
     {
         if (CaptureName == TEXT("ThunderCoinTrail") && FinishTime == 0 && !VerifyCoinTrail(Player)) return false;
@@ -151,7 +189,7 @@ bool UThunderTraversalTestSubsystem::UpdateRoute(AWindseedCharacter* Player, flo
     const auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(Player, AThunderMeadowStage::StaticClass()));
     const auto* Boulder = Meadow ? Meadow->GetRollingBoulder() : nullptr;
     const float Feet = Player->GetActorLocation().Z - Player->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-    const bool bAvoidBoulder = Boulder && !Boulder->IsWaiting() && FVector::Dist2D(Player->GetActorLocation(), Boulder->GetActorLocation()) < 450 &&
+    const bool bAvoidBoulder = CaptureName != TEXT("ThunderCoinTrail") && Boulder && !Boulder->IsWaiting() && FVector::Dist2D(Player->GetActorLocation(), Boulder->GetActorLocation()) < 450 &&
         FMath::Abs(Feet - (Boulder->GetActorLocation().Z - 70)) < 160;
     if (((bJumpForSteps && Waypoint < AutoJumpWaypointLimit && Offset.Z > 50 && Offset.Size2D() < 480) || bAvoidBoulder) && Movement->IsMovingOnGround())
     { Player->Jump(); ++JumpCount; }

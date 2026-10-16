@@ -19,7 +19,7 @@ void AStageSelectionHUD::DrawHUD()
     Text(TEXT("1   WINDSEED GARDEN"), 300, 2, FLinearColor(.7f, 1, .82f));
     Text(TEXT("Six seeds across the floating gardens"), 350, 1.3f, FLinearColor::White);
     Text(TEXT("2   THUNDER MEADOW"), 440, 2, FLinearColor(.65f, .83f, 1));
-    Text(TEXT("A new expedition - terrain under construction"), 490, 1.3f, FLinearColor::White);
+    Text(TEXT("Six expeditions and a hundred-lightcoin bonus"), 490, 1.3f, FLinearColor::White);
     Text(TEXT("Press 1 or 2 to enter. Press M during play to return here."), 620, 1.3f, FLinearColor(.85f, .88f, .9f));
 }
 

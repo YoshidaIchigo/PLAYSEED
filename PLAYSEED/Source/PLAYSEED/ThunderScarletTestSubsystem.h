@@ -1,6 +1,7 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "ThunderCampaignValidation.h"
 #include "ThunderScarletTestSubsystem.generated.h"
 class AWindseedCharacter;
 class AThunderMeadowStage;
@@ -15,6 +16,7 @@ public:
     bool UpdateTest(AWindseedCharacter* Player, float DeltaSeconds);
     const FString& GetError() const { return Error; }
 private:
+    FThunderCampaignBaseline RewardBaseline;
     void SetPhase(int32 Number);
     void SetRoute(TArray<FVector> Points, int32 NextPhase);
     bool Walk(AWindseedCharacter* Player, FVector Goal, float DeltaSeconds, bool bJump = true);
@@ -30,4 +32,5 @@ private:
     int32 LaunchBefore = 0;
     float PhaseTime = 0;
     float HighestFeet = 0;
+    bool bCampaignRun = false, bReadRun = false, bSimultaneousShot = false;
 };

@@ -23,6 +23,7 @@ private:
     TWeakObjectPtr<AThunderMeadowStage> Stage;
     TArray<FVector> Route;
     FString Error;
+    int32 ExpectedRewards = 0;
     int32 Phase = 0;
     int32 Waypoint = 0;
     int32 RecoveryBefore = 0;

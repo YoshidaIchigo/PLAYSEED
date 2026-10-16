@@ -1,5 +1,6 @@
 #include "ThunderScarletTestSubsystem.h"
 #include "ThunderScarletTrail.h"
+#include "ThunderHundredLantern.h"
 #include "ThunderGuideTestSubsystem.h"
 #include "ThunderMeadowStage.h"
 #include "ThunderMeadowGameMode.h"
@@ -35,10 +36,18 @@ void UThunderScarletTestSubsystem::BeginTest(AWindseedCharacter* Player, AThunde
 {
     Stage = InStage; Error.Reset(); RecoveryBefore = Player->RecoveryCount; LaunchBefore = Player->GetLaunch()->GetLaunchCount(); HighestFeet = 0;
     auto* Progress = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
-    if (!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_")) || !Progress->GetProgressProblem().IsEmpty() || Progress->GetEarnedRewardCount() != (bReadProcess ? 1 : 0) || Progress->HasEarnedReward(4) != bReadProcess || Stage->GetScarletTrail()->GetCoins().Num() != 8) { Error = TEXT("Scarlet test needs eight target coins and isolated expected actual reward 4 state"); return; }
+    bCampaignRun = ThunderCampaignEnabled(); bReadRun = bReadProcess; bSimultaneousShot = false;
+    if (!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_")) || !Progress->GetProgressProblem().IsEmpty() || !RewardBaseline.Begin(Progress, 4, bReadProcess) || Progress->HasEarnedReward(4) != bReadProcess || Stage->GetScarletTrail()->GetCoins().Num() != 8) { Error = TEXT("Scarlet test needs eight target coins and isolated expected actual reward 4 state"); return; }
     TSet<FName> Ids; for (APlayseedCoin* Coin : Stage->GetScarletTrail()->GetCoins()) if (Coin) Ids.Add(Coin->GetCoinId());
     if (Ids.Num() != 8) { Error = TEXT("Scarlet target IDs are not unique"); return; }
     if (bReadProcess) { SetPhase(40); return; }
+    if (bCampaignRun)
+    {
+        if (!Progress->IsLauncherUnlocked() || !Progress->IsFlightUnlocked() || Progress->HasEarnedReward(7)) { Error = TEXT("Final campaign needs the actual earlier unlocks and unearned4/7"); return; }
+        TArray<FVector> Points = {FVector(-2800, -600, 82), FVector(-2800, 2500, 82)};
+        for (const FVector& Foot : Stage->GetMeadowCoinFootPath()) Points.Add(Foot + FVector(0, 0, 82));
+        SetRoute(MoveTemp(Points), 50); return;
+    }
     GetGameInstance()->GetSubsystem<UThunderGuideTestSubsystem>()->BeginTest(Player, InStage, false); SetPhase(0);
 }
 bool UThunderScarletTestSubsystem::CheckCount(int32 Expected)
@@ -69,12 +78,20 @@ bool UThunderScarletTestSubsystem::UpdateTest(AWindseedCharacter* Player, float 
     auto* Progress = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>(); auto* Move = Player->GetCharacterMovement();
     auto* Mode = Cast<AThunderMeadowGameMode>(Player->GetWorld()->GetAuthGameMode()); auto* Ledger = Mode ? Mode->GetCoinLedger() : nullptr;
     if (!Trail || !PC || !Ledger) { Error = TEXT("Scarlet stage/controller/ledger missing"); return false; }
+    if (!RewardBaseline.HasPrior(Progress)) { Error = TEXT("A previously earned campaign reward was lost"); return false; }
     PhaseTime += DeltaSeconds;
     if (PhaseTime > 90) { Error = FString::Printf(TEXT("Scarlet phase %d waypoint %d timed out at %s targets %d"), Phase, Waypoint, *Player->GetActorLocation().ToString(), Trail->GetCollectedCount()); return false; }
     if (Player->GetVitality()->GetHealth() != 8 || !Progress->GetProgressProblem().IsEmpty()) { Error = FString::Printf(TEXT("Scarlet route HP%d phase%d waypoint%d at%s boulder%s; save%s"), Player->GetVitality()->GetHealth(), Phase, Waypoint, *Player->GetActorLocation().ToString(), *Stage->GetRollingBoulder()->GetActorLocation().ToString(), *Progress->GetProgressProblem()); return false; }
     if (Phase != 0 && Phase != 3 && Phase != 28 && Phase != 41 && Player->RecoveryCount != RecoveryBefore) { Error = TEXT("Unexpected recovery during continuous eight-coin route"); return false; }
-    if (Phase < 26 && Progress->GetEarnedRewardCount() != 0) { Error = TEXT("Scarlet reward saved before its actual lantern contact"); return false; }
-    if (Phase == 0)
+    if ((Phase < 26 || Phase == 50 || Phase == 51) && Progress->GetEarnedRewardCount() != RewardBaseline.BeforeCount()) { Error = TEXT("Scarlet reward saved before its actual lantern contact"); return false; }
+    if (Phase == 50 && WalkRoute(Player, DeltaSeconds))
+    {
+        if (Ledger->GetTotal() != 80 || Ledger->GetRedCount() != 0 || !CheckCount(0) || Stage->GetHundredLantern()->GetReward()) { if (Error.IsEmpty()) Error = TEXT("Campaign did not really collect80 meadow golds before scarlet route"); return false; }
+        UE_LOG(LogTemp, Display, TEXT("CAMPAIGN:80 real meadow golds, starting continuous8scarlets with no R."));
+        SetRoute({FVector(-3000, 2500, 82), FVector(-3000, -600, 82)}, 51);
+    }
+    else if (Phase == 51 && WalkRoute(Player, DeltaSeconds)) SetPhase(4);
+    else if (Phase == 0)
     {
         auto* Guide = GetGameInstance()->GetSubsystem<UThunderGuideTestSubsystem>(); const bool bDone = Guide->UpdateTest(Player, DeltaSeconds);
         if (!Guide->GetError().IsEmpty()) { Error = Guide->GetError(); return false; }
@@ -202,14 +219,26 @@ bool UThunderScarletTestSubsystem::UpdateTest(AWindseedCharacter* Player, float 
     else if (Phase == 22 && WalkRoute(Player, DeltaSeconds)) SetPhase(23);
     else if (Phase == 23 && PhaseTime > .3f)
     {
-        if (!CheckCount(8) || Ledger->GetRedCount() != 8 || Ledger->GetTotal() != 20 || !Trail->GetReward() || Trail->GetRewardGenerationCount() != 1) { if (Error.IsEmpty()) Error = FString::Printf(TEXT("Eight actual scarlets expected16+4gold, total%d reds%d reward%d"), Ledger->GetTotal(), Ledger->GetRedCount(), Trail->GetReward() != nullptr); return false; }
+        if (!CheckCount(8) || Ledger->GetRedCount() != 8 || Ledger->GetTotal() != (bCampaignRun ? 100 : 20) || !Trail->GetReward() || Trail->GetRewardGenerationCount() != 1) { if (Error.IsEmpty()) Error = FString::Printf(TEXT("Eight actual scarlets with the expected real gold baseline, total%d reds%d reward%d"), Ledger->GetTotal(), Ledger->GetRedCount(), Trail->GetReward() != nullptr); return false; }
+        if (bCampaignRun && (!Stage->GetHundredLantern()->GetReward() || Stage->GetHundredLantern()->GetReward()->IsCollected() || Stage->GetHundredLantern()->GetGenerationCount() != 1 || Stage->GetHundredLantern()->GetTriggerTotal() != 100 || Trail->GetReward()->IsCollected())) { Error = TEXT("Actual final scarlet did not leave both main4 and bonus7 separately uncollected"); return false; }
+        if (bCampaignRun) UE_LOG(LogTemp, Display, TEXT("CAMPAIGN SIMULTANEOUS:84real gold +8scarlet=100; both reward4 and7 exist uncollected in this same World."));
+        if (bCampaignRun) { SetPhase(52); return false; }
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir() / TEXT("Validation/ThunderScarletEight.png"), false, false);
         const FVector Last = Trail->GetCoins()[7]->GetActorLocation() + FVector(0, 0, 20); SetRoute({Last + FVector(-150, 0, 0), Last}, 24);
+    }
+    else if (Phase == 52)
+    {
+        auto* Bonus = Stage->GetHundredLantern();
+        if (!Trail->GetReward() || !Bonus->GetReward() || Trail->GetReward()->IsCollected() || Bonus->GetReward()->IsCollected() || Progress->GetEarnedRewardCount() != RewardBaseline.BeforeCount()) { Error = TEXT("Both simultaneous rewards did not remain independently uncollected for observation"); return false; }
+        const FVector Middle = (Trail->GetRewardRestLocation() + Bonus->GetRewardLocation()) * .5f;
+        PC->SetControlRotation(FRotator(-18, (Middle - Player->GetActorLocation()).Rotation().Yaw, 0));
+        if (PhaseTime > .3f && !bSimultaneousShot) { bSimultaneousShot = true; FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir() / TEXT("Validation/ThunderCampaignBoth.png"), false, false); }
+        if (PhaseTime > 1.3f) { const FVector Last = Trail->GetCoins()[7]->GetActorLocation() + FVector(0, 0, 20); SetRoute({Last + FVector(-150, 0, 0), Last}, 24); }
     }
     else if (Phase == 24 && WalkRoute(Player, DeltaSeconds)) SetPhase(25);
     else if (Phase == 25 && PhaseTime > .3f)
     {
-        if (!CheckCount(8) || Trail->GetRewardGenerationCount() != 1 || Ledger->GetRedCount() != 8 || Ledger->GetTotal() != 20) { if (Error.IsEmpty()) Error = TEXT("Repeated real scarlet overlap duplicated count/reward"); return false; } SetPhase(26);
+        if (!CheckCount(8) || Trail->GetRewardGenerationCount() != 1 || Ledger->GetRedCount() != 8 || Ledger->GetTotal() != (bCampaignRun ? 100 : 20)) { if (Error.IsEmpty()) Error = TEXT("Repeated real scarlet overlap duplicated count/reward"); return false; } SetPhase(26);
     }
     else if (Phase == 26)
     {
@@ -217,24 +246,44 @@ bool UThunderScarletTestSubsystem::UpdateTest(AWindseedCharacter* Player, float 
     }
     else if (Phase == 27 && PhaseTime > .4f)
     {
-        if (!Progress->HasEarnedReward(4) || Progress->GetEarnedRewardCount() != 1 || !Trail->GetReward()->IsCollected() || Trail->GetReward()->GetSuccessfulCollections() != 1) { Error = TEXT("Actual court lantern pickup did not save reward 4 once"); return false; }
-        FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir() / TEXT("Validation/ThunderScarletReward.png"), false, false); ScarletTap(PC, EKeys::R); SetPhase(28);
+        if (!Progress->HasEarnedReward(4) || Progress->GetEarnedRewardCount() != RewardBaseline.AfterCount() || !Trail->GetReward()->IsCollected() || Trail->GetReward()->GetSuccessfulCollections() != 1) { Error = TEXT("Actual court lantern pickup did not save reward 4 once"); return false; }
+        FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir() / TEXT("Validation/ThunderScarletReward.png"), false, false);
+        if (bCampaignRun)
+        {
+            if (Progress->HasEarnedReward(7) || !Stage->GetHundredLantern()->GetReward() || Stage->GetHundredLantern()->GetReward()->IsCollected()) { Error = TEXT("Main4 pickup consumed or replaced the separate hundred reward7"); return false; }
+            SetPhase(45);
+        }
+        else { ScarletTap(PC, EKeys::R); SetPhase(28); }
     }
+    else if (Phase == 45)
+    {
+        Walk(Player, Stage->GetHundredLantern()->GetRewardLocation() - FVector(0, 0, 18), DeltaSeconds);
+        if (Progress->HasEarnedReward(7)) SetPhase(46);
+    }
+    else if (Phase == 46 && PhaseTime > .4f)
+    {
+        auto* Bonus = Stage->GetHundredLantern();
+        if (!ThunderHasExactRewards(Progress, {1, 2, 3, 4, 5, 6, 7}) || !Bonus->GetReward() || !Bonus->GetReward()->IsCollected() || Bonus->GetReward()->GetSuccessfulCollections() != 1 || Bonus->GetGenerationCount() != 1 || !Trail->GetReward()->IsCollected() || Ledger->GetTotal() != 100) { Error = TEXT("Both real contacts did not retain all7 unique rewards in the same actual campaign save"); return false; }
+        UE_LOG(LogTemp, Display, TEXT("CAMPAIGN ALL7 ACTUALLY EARNED: real main4 and bonus7 collected separately in the same visit; saved IDs1,2,3,4,5,6,7."));
+        FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir() / TEXT("Validation/ThunderCampaignSeven.png"), false, false); SetPhase(47);
+    }
+    else if (Phase == 47 && PhaseTime > 1) { ScarletTap(PC, EKeys::R); SetPhase(28); }
     else if (Phase == 28 && PhaseTime > .4f)
     {
-        if (Player->RecoveryCount != RecoveryBefore + 1 || Ledger->GetTotal() != 0 || Trail->GetReward() || !CheckCount(0) || !Progress->HasEarnedReward(4) || Progress->GetEarnedRewardCount() != 1) { if (Error.IsEmpty()) Error = TEXT("R did not clear visit targets and retain earned reward 4"); return false; }
+        if (Player->RecoveryCount != RecoveryBefore + 1 || Ledger->GetTotal() != 0 || Trail->GetReward() || !CheckCount(0) || !Progress->HasEarnedReward(4) || Progress->GetEarnedRewardCount() != RewardBaseline.AfterCount() + (bCampaignRun && !bReadRun ? 1 : 0)) { if (Error.IsEmpty()) Error = TEXT("R did not clear visit targets and retain earned reward 4"); return false; }
+        if (bCampaignRun && (!ThunderHasExactRewards(Progress, {1, 2, 3, 4, 5, 6, 7}) || Stage->GetHundredLantern()->GetReward() || Stage->GetHundredLantern()->HasReachedHundred())) { Error = TEXT("Campaign R lost actual all7 or kept bonus visit state"); return false; }
         for (APlayseedCoin* Coin : Trail->GetCoins()) if (!Coin || Coin->IsCollected() || Coin->IsHidden()) { Error = TEXT("R did not restore all eight target actors"); return false; }
         UE_LOG(LogTemp, Display, TEXT("SCARLET TEST PASS: training excluded, eight unique targets in one continuous tree/terraces/bridge/tilt/moving-base jump/mountain/actuallaunch/island/court route, duplicate excluded, actual lantern4 and R persistence.")); return true;
     }
     else if (Phase == 40 && PhaseTime > 1)
     {
-        if (!CheckCount(0) || Trail->GetReward() || Ledger->GetTotal() != 0 || !Progress->HasEarnedReward(4) || Progress->GetEarnedRewardCount() != 1) { if (Error.IsEmpty()) Error = TEXT("Restart did not load actual reward 4 with a fresh visit"); return false; }
+        if (!CheckCount(0) || Trail->GetReward() || Ledger->GetTotal() != 0 || !Progress->HasEarnedReward(4) || Progress->GetEarnedRewardCount() != RewardBaseline.AfterCount()) { if (Error.IsEmpty()) Error = TEXT("Restart did not load actual reward 4 with a fresh visit"); return false; }
         for (APlayseedCoin* Coin : Trail->GetCoins()) if (!Coin || Coin->IsCollected() || Coin->IsHidden()) { Error = TEXT("Restarted visit did not restore eight targets"); return false; }
         ScarletTap(PC, EKeys::R); SetPhase(41);
     }
     else if (Phase == 41 && PhaseTime > .4f)
     {
-        if (Player->RecoveryCount != RecoveryBefore + 1 || !Progress->HasEarnedReward(4) || Progress->GetEarnedRewardCount() != 1 || !CheckCount(0)) { if (Error.IsEmpty()) Error = TEXT("Restart-loaded scarlet reward lost on R"); return false; }
+        if (Player->RecoveryCount != RecoveryBefore + 1 || !Progress->HasEarnedReward(4) || Progress->GetEarnedRewardCount() != RewardBaseline.AfterCount() || !CheckCount(0)) { if (Error.IsEmpty()) Error = TEXT("Restart-loaded scarlet reward lost on R"); return false; }
         UE_LOG(LogTemp, Display, TEXT("SCARLET READ TEST PASS: separate process loaded actually earned reward4, restored eight targets, R retained reward; no fixtures.")); return true;
     }
     return false;

@@ -1,0 +1,34 @@
+PR42 isolated validation / normal save fingerprints
+Source: d822eaf27fc395f17845dccaac7dd78a26e59857
+
+PR42-Hundred-C.log
+{
+  "normal_before": "ABSENT",
+  "normal_after": "ABSENT",
+  "game_exit": 0,
+  "slot": "Validation_PR42_Hundred_C"
+}
+
+PR42-Hundred-Read.log
+{
+  "slot": "Validation_PR42_Hundred_C",
+  "game_exit": 0,
+  "normal_before": "ABSENT",
+  "normal_after": "ABSENT"
+}
+
+PR42-Campaign-A.log
+{
+  "slot": "Validation_PR42_Campaign_A",
+  "normal_after": "ABSENT",
+  "normal_before": "ABSENT",
+  "game_exit": 0
+}
+
+PR42-Campaign-Read.log
+{
+  "normal_before": "ABSENT",
+  "game_exit": 0,
+  "slot": "Validation_PR42_Campaign_A",
+  "normal_after": "ABSENT"
+}

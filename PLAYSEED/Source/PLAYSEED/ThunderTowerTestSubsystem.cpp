@@ -1,4 +1,5 @@
 #include "ThunderTowerTestSubsystem.h"
+#include "ThunderCampaignValidation.h"
 #include "ThunderTraversalTestSubsystem.h"
 #include "ThunderMeadowStage.h"
 #include "ThunderFlightSwitch.h"
@@ -36,8 +37,9 @@ void UThunderTowerTestSubsystem::BeginTest(AWindseedCharacter* Player, AThunderM
     RecoveryBefore = Player->RecoveryCount; GrantsBefore = Player->GetFlight()->GetPowerGrants();
     ActivationBefore = Stage->GetFlightSwitch()->GetActivationCount(); PoundsBefore = Player->GetActions()->GetCompletedPounds();
     auto* Progress = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
-    if (!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_")) || !Progress->GetProgressProblem().IsEmpty() || Progress->GetEarnedRewardCount() != 0 || Progress->IsFlightUnlocked() != bReadProcess || Stage->GetFlightSwitch()->IsActivated() != bReadProcess || Stage->GetFlightBloom()->IsAvailable() != bReadProcess)
-        Error = TEXT("Tower test needs healthy isolated progress with zero rewards and the expected wing unlock");
+    ExpectedRewards = ThunderCampaignEnabled() ? Progress->GetEarnedRewardCount() : 0;
+    if (!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_")) || !Progress->GetProgressProblem().IsEmpty() || Progress->GetEarnedRewardCount() != ExpectedRewards || Progress->IsFlightUnlocked() != bReadProcess || Stage->GetFlightSwitch()->IsActivated() != bReadProcess || Stage->GetFlightBloom()->IsAvailable() != bReadProcess)
+        Error = TEXT("Tower test needs healthy isolated progress with unchanged rewards and the expected wing unlock");
 }
 bool UThunderTowerTestSubsystem::WalkBloomRoute(AWindseedCharacter* Player, float DeltaSeconds)
 {
@@ -60,7 +62,7 @@ bool UThunderTowerTestSubsystem::UpdateTest(AWindseedCharacter* Player, float De
     if (!Stage.IsValid() || !PC) { Error = TEXT("Tower stage/controller missing"); return false; }
     PhaseTime += DeltaSeconds;
     if (PhaseTime > 90) { Error = FString::Printf(TEXT("Tower phase %d waypoint %d timed out at %s"), Phase, Waypoint, *Player->GetActorLocation().ToString()); return false; }
-    if (Player->GetVitality()->GetHealth() != 8 || Progress->GetEarnedRewardCount() != 0 || !Progress->GetProgressProblem().IsEmpty()) { Error = TEXT("Tower route changed health/rewards or failed to save"); return false; }
+    if (Player->GetVitality()->GetHealth() != 8 || Progress->GetEarnedRewardCount() != ExpectedRewards || !Progress->GetProgressProblem().IsEmpty()) { Error = TEXT("Tower route changed health/rewards or failed to save"); return false; }
     auto* Power = Player->GetFlight(); auto* Move = Player->GetCharacterMovement();
     if (Phase == 0)
     {
@@ -150,7 +152,7 @@ bool UThunderTowerTestSubsystem::UpdateTest(AWindseedCharacter* Player, float De
     else if (Phase == 25 && PhaseTime > .4f)
     {
         if (Power->HasPower() || Power->IsFlying() || Player->RecoveryCount != RecoveryBefore + 1 || !Progress->IsFlightUnlocked() || !Stage->GetFlightSwitch()->IsActivated() || !Stage->GetFlightBloom()->IsAvailable()) { Error = TEXT("Final R did not clear temporary power and retain persistent switch unlock"); return false; }
-        UE_LOG(LogTemp, Display, TEXT("TOWER TEST PASS: %s; actual flower pickup, powered flight, Space cancel, gravity landing and R persistence passed with zero rewards."), bReadProcess ? TEXT("loaded actual saved wing unlock after process restart") : TEXT("locked pickup rejected, ordinary jump/punch/landing excluded, tower climbed with normal jumps, top ground pound saved unlock, duplicate pound ignored"));
+        UE_LOG(LogTemp, Display, TEXT("TOWER TEST PASS: %s; actual flower pickup, powered flight, Space cancel, gravity landing and R persistence passed with unchanged rewards."), bReadProcess ? TEXT("loaded actual saved wing unlock after process restart") : TEXT("locked pickup rejected, ordinary jump/punch/landing excluded, tower climbed with normal jumps, top ground pound saved unlock, duplicate pound ignored"));
         return true;
     }
     return false;

@@ -31,6 +31,8 @@ private:
     float LegTime = 0;
     float FinishTime = 0;
     FString Error;
+    bool bYieldingToBoulder = false, bWaitedAtLowerBoulderEnd = false;
+    FVector BoulderYieldPoint = FVector::ZeroVector;
     bool bScreenshotRequested = false;
     bool bJumpForSteps = true;
     int32 MinimumJumps = 3;

@@ -19,7 +19,7 @@ void UThunderBossTestSubsystem::BeginTest(AWindseedCharacter* Player, AThunderMe
 {
     Stage = InStage; Error.Reset(); RecoveryBefore = Player->RecoveryCount; bInvalidThrowDone = false; ThrowsBefore = RouteIndex = 0;
     auto* Progress = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
-    if (!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_")) || !Progress->GetProgressProblem().IsEmpty() || Progress->GetEarnedRewardCount() != (bReadProcess ? 1 : 0) || Progress->HasEarnedReward(1) != bReadProcess) { Error = TEXT("Boss test needs actual isolated progress with expected reward 1 state"); return; }
+    if (!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_")) || !Progress->GetProgressProblem().IsEmpty() || !RewardBaseline.Begin(Progress, 1, bReadProcess) || Progress->HasEarnedReward(1) != bReadProcess) { Error = TEXT("Boss test needs actual isolated progress with expected reward 1 state"); return; }
     if (bReadProcess) { SetPhase(20); return; }
     TArray<FVector> Path = Stage->GetMountainFootPath(); Path.Pop(); // 中央の敵へ接触せず、山頂入口まで実際に歩きます。
     GetGameInstance()->GetSubsystem<UThunderTraversalTestSubsystem>()->BeginMountainRoute(Player, Path); SetPhase(0);
@@ -37,9 +37,10 @@ bool UThunderBossTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
     auto* Boss = Stage.IsValid() ? Stage->GetStormkeeper() : nullptr; auto* PC = Cast<APlayerController>(Player->GetController());
     auto* Progress = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>(); auto* Move = Player->GetCharacterMovement();
     if (!Boss || !PC) { Error = TEXT("Boss stage/controller missing"); return false; }
+    if (!RewardBaseline.HasPrior(Progress)) { Error = TEXT("A previously earned campaign reward was lost"); return false; }
     PhaseTime += DeltaSeconds;
     if (PhaseTime > 100) { Error = FString::Printf(TEXT("Boss phase %d timed out at %s, enemy %s yaw %.1f, valid %d held %d recovering %d"), Phase, *Player->GetActorLocation().ToString(), *Boss->GetActorLocation().ToString(), Boss->GetActorRotation().Yaw, Boss->GetValidThrows(), Boss->IsHeld(), Boss->IsRecovering()); return false; }
-    if (!Progress->GetProgressProblem().IsEmpty() || (Phase < 10 && Progress->GetEarnedRewardCount() != 0)) { Error = TEXT("Boss reward was saved before its real collection or save failed"); return false; }
+    if (!Progress->GetProgressProblem().IsEmpty() || (Phase < 10 && Progress->GetEarnedRewardCount() != RewardBaseline.BeforeCount())) { Error = TEXT("Boss reward was saved before its real collection or save failed"); return false; }
     if (Player->RecoveryCount != RecoveryBefore && Phase != 13 && Phase != 21) { Error = TEXT("Unexpected recovery during real boss traversal"); return false; }
     const FVector Center = Boss->GetArenaFloor();
     if (Phase == 0)
@@ -100,7 +101,7 @@ bool UThunderBossTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
     }
     else if (Phase == 11 && PhaseTime > .5f)
     {
-        if (!Progress->HasEarnedReward(1) || Progress->GetEarnedRewardCount() != 1 || !Boss->GetReward()->IsCollected() || Boss->GetReward()->GetSuccessfulCollections() != 1 || Player->GetVitality()->GetHealth() != 6) { Error = TEXT("Real lantern pickup did not save reward 1 once"); return false; }
+        if (!Progress->HasEarnedReward(1) || Progress->GetEarnedRewardCount() != RewardBaseline.AfterCount() || !Boss->GetReward()->IsCollected() || Boss->GetReward()->GetSuccessfulCollections() != 1 || Player->GetVitality()->GetHealth() != 6) { Error = TEXT("Real lantern pickup did not save reward 1 once"); return false; }
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir() / TEXT("Validation/ThunderBossReward.png"), false, false); SetPhase(12);
     }
     else if (Phase == 12)
@@ -109,21 +110,21 @@ bool UThunderBossTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
     }
     else if (Phase == 14)
     {
-        if (Walk(Player, Center + FVector(0, 0, 82), DeltaSeconds)) { if (Boss->GetReward()->GetSuccessfulCollections() != 1 || Progress->GetEarnedRewardCount() != 1) { Error = TEXT("Repeated overlap duplicated lantern"); return false; } BossTap(PC, EKeys::R); SetPhase(13); }
+        if (Walk(Player, Center + FVector(0, 0, 82), DeltaSeconds)) { if (Boss->GetReward()->GetSuccessfulCollections() != 1 || Progress->GetEarnedRewardCount() != RewardBaseline.AfterCount()) { Error = TEXT("Repeated overlap duplicated lantern"); return false; } BossTap(PC, EKeys::R); SetPhase(13); }
     }
     else if (Phase == 13 && PhaseTime > .4f)
     {
-        if (Player->RecoveryCount != RecoveryBefore + 1 || Boss->IsDefeated() || Boss->GetValidThrows() != 0 || Boss->GetReward() || Player->GetVitality()->GetHealth() != 8 || Progress->GetEarnedRewardCount() != 1 || !Progress->HasEarnedReward(1)) { Error = TEXT("R did not reset battle and retain earned reward"); return false; }
+        if (Player->RecoveryCount != RecoveryBefore + 1 || Boss->IsDefeated() || Boss->GetValidThrows() != 0 || Boss->GetReward() || Player->GetVitality()->GetHealth() != 8 || Progress->GetEarnedRewardCount() != RewardBaseline.AfterCount() || !Progress->HasEarnedReward(1)) { Error = TEXT("R did not reset battle and retain earned reward"); return false; }
         RecoveryBefore = Player->RecoveryCount; UE_LOG(LogTemp, Display, TEXT("BOSS TEST PASS: normal mountain walk, front counter, rear lifts, real off-arena throw excluded, three physical summit throws, actual lantern pickup, duplicate and R persistence.")); return true;
     }
     else if (Phase == 20 && PhaseTime > 1)
     {
-        if (Progress->GetEarnedRewardCount() != 1 || !Progress->HasEarnedReward(1) || Boss->IsDefeated() || Boss->GetReward()) { Error = TEXT("Restart did not load actually earned reward 1 with fresh battle"); return false; }
+        if (Progress->GetEarnedRewardCount() != RewardBaseline.AfterCount() || !Progress->HasEarnedReward(1) || Boss->IsDefeated() || Boss->GetReward()) { Error = TEXT("Restart did not load actually earned reward 1 with fresh battle"); return false; }
         BossTap(PC, EKeys::R); SetPhase(21);
     }
     else if (Phase == 21 && PhaseTime > .4f)
     {
-        if (Progress->GetEarnedRewardCount() != 1 || !Progress->HasEarnedReward(1) || Player->RecoveryCount != RecoveryBefore + 1) { Error = TEXT("Restart-loaded reward was lost on R"); return false; }
+        if (Progress->GetEarnedRewardCount() != RewardBaseline.AfterCount() || !Progress->HasEarnedReward(1) || Player->RecoveryCount != RecoveryBefore + 1) { Error = TEXT("Restart-loaded reward was lost on R"); return false; }
         RecoveryBefore = Player->RecoveryCount; UE_LOG(LogTemp, Display, TEXT("BOSS READ TEST PASS: a separate process loaded actual boss reward 1 and retained it on R; no reward fixtures.")); return true;
     }
     return false;
