@@ -1,0 +1,4 @@
+PASS
+Reference metal balls: two source mountain paths and three actual-floor pit loops; normal walking into a moving pit ball and actual mountain ball caused real damage/knockback, R restored hero and all five mechanisms twice, M returned to painting with legitimate earned1..7 unchanged. No injected hero position, velocity, health or progress.
+CaptureFrames: 1568
+UTC: 2026-10-16T16:43:04.724Z
