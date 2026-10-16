@@ -125,7 +125,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     { Fail(TEXT("Saved rewards changed during restart or re-entry")); return; }
     if (Step == 0 && Map == TEXT("StageSelect") && Elapsed > 3 && Recording->GetCapturedFrameCount() > 15)
     {
-        if (bCampaignRun && (Expedition->GetEarnedRewardCount() != 0 || Expedition->IsLauncherUnlocked() || Expedition->IsFlightUnlocked() || UGameplayStatics::DoesSaveGameExist(Expedition->GetSaveSlotName(), 0))) { Fail(TEXT("All7 campaign must start with a genuinely fresh isolated save"); return; }
+        if (bCampaignRun && (Expedition->GetEarnedRewardCount() != 0 || Expedition->IsLauncherUnlocked() || Expedition->IsFlightUnlocked() || UGameplayStatics::DoesSaveGameExist(Expedition->GetSaveSlotName(), 0))) { Fail(TEXT("All7 campaign must start with a genuinely fresh isolated save")); return; }
         Tap(PC, EKeys::Two);
         Step = 1;
         UE_LOG(LogTemp, Display, TEXT("SELECTION TEST: pressed 2 to enter Thunder Meadow."));
