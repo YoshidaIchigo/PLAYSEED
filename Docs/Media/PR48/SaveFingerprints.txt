@@ -1,0 +1,6 @@
+{
+  "slot": "Validation_PR48_Hero_A",
+  "normal_after": "ABSENT",
+  "game_exit": 0,
+  "normal_before": "ABSENT"
+}
