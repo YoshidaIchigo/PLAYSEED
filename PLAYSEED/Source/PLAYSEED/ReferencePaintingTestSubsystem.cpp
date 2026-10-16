@@ -123,6 +123,12 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
         {
             if(Map!=TEXT("MissionSelect")||Progress->GetEarnedRewardCount()!=1||!Progress->HasEarnedReward(ExpectedReward)||!UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
             {Finish(false,TEXT("Earned star6 did not persist through painting entry"));return;}
+            if(bReferenceBossTest)
+            {
+                auto* Menu=Cast<AThunderMissionSelectionGameMode>(GetWorld()->GetAuthGameMode());
+                if(!Menu||Menu->GetVisibleMissionCount()!=2||!Menu->IsMissionSelectable(1)||!Menu->IsMissionSelectable(2)||Menu->IsMissionSelectable(3))
+                {Finish(false,TEXT("Earned1 did not reveal exactly the next mission2"));return;}
+            }
             if(bSelectionTest)
             {
                 auto* Menu=Cast<AThunderMissionSelectionGameMode>(GetWorld()->GetAuthGameMode());
