@@ -37,7 +37,8 @@ void UPlayseedCarryComponent::Interact()
     if (Held.IsValid() && Held->IsHeldBy(Player)) { Held->Throw(); Held.Reset(); return; }
     Held.Reset();
     APlayseedCarryable* Closest = nullptr;
-    double BestDistance = 170;
+    // 拾える距離は対象自身が決めます。大きい相手も通常のE入力経路で選べます。
+    double BestDistance = TNumericLimits<double>::Max();
     // 探索対象は専用Actorだけです。無関係な地形や他ステージの収集物を持ち上げません。
     for (TActorIterator<APlayseedCarryable> It(GetWorld()); It; ++It)
     {

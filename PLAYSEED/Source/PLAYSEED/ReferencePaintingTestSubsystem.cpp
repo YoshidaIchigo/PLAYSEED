@@ -4,6 +4,10 @@
 #include "ThunderMissionSelectionGameMode.h"
 #include "ReferenceHero.h"
 #include "ReferenceChainWalk.h"
+#include "ReferenceSummitWalk.h"
+#include "ReferenceBattlefieldTerrain.h"
+#include "ThunderStormkeeper.h"
+#include "PlayseedCarryComponent.h"
 #include "ThunderMeadowStage.h"
 #include "ThunderBoundSentinel.h"
 #include "ThunderBindingPost.h"
@@ -34,7 +38,9 @@ void UReferencePaintingTestSubsystem::Initialize(FSubsystemCollectionBase& Colle
     bCameraTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderCameraTest"));
     bSaveFailureTest=bCameraTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderSaveFailureTest"));
     bSelectionTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderSelectionTest"));
-    bStarTest=bSelectionTest||bSaveFailureTest||bFadeTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest"));
+    bReferenceBossTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceBossTest"));
+    ExpectedReward=bReferenceBossTest?1:6;
+    bStarTest=bReferenceBossTest||bSelectionTest||bSaveFailureTest||bFadeTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest"));
     bReadMode=FParse::Param(FCommandLine::Get(),TEXT("ThunderStarReadTest"));
     bChainTest=bStarTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderChainTest"));
     bDropTest=bChainTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderDropTest"));
@@ -73,11 +79,12 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
     }
     if(bFadeTest&&Phase>0)ObserveFade(PC);
     if(bFinished)return;
+    if(bReferenceBossTest&&Phase>=40){UpdateReferenceBoss(DeltaSeconds,Hero,PC);return;}
     if(bChainTest&&Phase>=20){UpdateChain(DeltaSeconds,Hero,PC);return;}
     if(Phase==0)
     {
         if(Map!=TEXT("Entrance")||!Hero||!Mode||Elapsed<1)return;
-        if(!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_"))||Progress->GetEarnedRewardCount()!=(bReadMode?1:0)||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0)!=bReadMode||(bReadMode&&!Progress->HasEarnedReward(6)))
+        if(!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_"))||Progress->GetEarnedRewardCount()!=(bReadMode?1:0)||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0)!=bReadMode||(bReadMode&&!Progress->HasEarnedReward(ExpectedReward)))
         {Finish(false,TEXT("Painting QA requires a fresh isolated save"));return;}
         if(!GetGameInstance()->GetSubsystem<UPlayseedRecordingSubsystem>()->StartRecording(TEXT("Validation/CoursePlaythrough.avi"))){Finish(false,TEXT("Painting recording failed"));return;}
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderPaintingRoom.png"),false,false);
@@ -115,8 +122,14 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
     {
         if(bReadMode)
         {
-            if(Map!=TEXT("MissionSelect")||Progress->GetEarnedRewardCount()!=1||!Progress->HasEarnedReward(6)||!UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
+            if(Map!=TEXT("MissionSelect")||Progress->GetEarnedRewardCount()!=1||!Progress->HasEarnedReward(ExpectedReward)||!UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
             {Finish(false,TEXT("Earned star6 did not persist through painting entry"));return;}
+            if(bReferenceBossTest)
+            {
+                auto* Menu=Cast<AThunderMissionSelectionGameMode>(GetWorld()->GetAuthGameMode());
+                if(!Menu||Menu->GetVisibleMissionCount()!=2||!Menu->IsMissionSelectable(1)||!Menu->IsMissionSelectable(2)||Menu->IsMissionSelectable(3))
+                {Finish(false,TEXT("Earned1 did not reveal exactly the next mission2"));return;}
+            }
             if(bSelectionTest)
             {
                 auto* Menu=Cast<AThunderMissionSelectionGameMode>(GetWorld()->GetAuthGameMode());
@@ -154,7 +167,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
         return;
     }
     if(Phase==4&&Elapsed>1){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/CourseComplete.png"),false,false);Phase=5;Elapsed=0;return;}
-    if(Phase==5&&Elapsed>1)Finish(!bStarTest||(bMReentryChecked&&bPoseObserved&&bPoseShot),bReadMode?(bStarTest?TEXT("Actual M return and painting reentry, second physical drop, reference post3 and gate collision, actual star6 save, pose/camera/held star, transition input spam and duplicate guard, automatic painting return, earned6 menu display persisted."):TEXT("Separate process loaded the actual star6 save, walked and jumped into the painting, and displayed earned6/count1 in selection without awarding progress.")):TEXT("Normal walking and Space jump into painting, ripple/dive/fade to star selection; R/M/Space/Ctrl/Enter spam blocked during transition; fresh progress remains zero and unsaved."));
+    if(Phase==5&&Elapsed>1)Finish(!bStarTest||(bMReentryChecked&&bPoseObserved&&bPoseShot),bReadMode?(bReferenceBossTest?TEXT("Actual M return and painting reentry, ordinary mountain route, three E rear pickups and real physical summit throws, actual fixed-position star1 save, pose/fades/painting return and earned1 menu persistence."):bStarTest?TEXT("Actual M return and painting reentry, second physical drop, reference post3 and gate collision, actual star6 save, pose/camera/held star, transition input spam and duplicate guard, automatic painting return, earned6 menu display persisted."):TEXT("Separate process loaded the actual star6 save, walked and jumped into the painting, and displayed earned6/count1 in selection without awarding progress.")):TEXT("Normal walking and Space jump into painting, ripple/dive/fade to star selection; R/M/Space/Ctrl/Enter spam blocked during transition; fresh progress remains zero and unsaved."));
     if(Phase==6)
     {
         if(Map!=TEXT("ThunderMeadow")||!Hero)return;
@@ -192,6 +205,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
             if(!bSawJump||!Hero->GetCharacterMovement()->IsMovingOnGround()){Finish(false,TEXT("Ordinary jump was not available after drop landing"));return;}
             if(bStarTest&&VerifiedDropVisits==1){Tap(PC,EKeys::M);Phase=13;Elapsed=0;return;}
             if(bStarTest&&VerifiedDropVisits>=2)bMReentryChecked=true;
+            if(bReferenceBossTest){Phase=40;Elapsed=0;BossWaypoint=0;BossLegElapsed=0;return;}
             if(bChainTest){Phase=20;Elapsed=0;ChainWaypoint=0;ChainLegElapsed=0;return;}
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/CourseComplete.png"),false,false);Phase=9;Elapsed=0;
         }
@@ -299,7 +313,7 @@ void UReferencePaintingTestSubsystem::UpdateChain(float DeltaSeconds,AWindseedCh
         if(bSaveFailureTest&&!bSaveFailureObserved&&!Progress->GetProgressProblem().IsEmpty())
         {
             ObservedStar=Gate->GetReward();
-            if(Flow->GetState()!=EReferenceTravelState::InCourse||Progress->GetEarnedRewardCount()!=0||Progress->HasEarnedReward(6)||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0)||!ObservedStar.IsValid()||ObservedStar->IsCollected()||ObservedStar->IsHidden()||ObservedStar->GetSuccessfulCollections()!=0||!IFileManager::Get().DirectoryExists(*SaveObstaclePath))
+            if(Flow->GetState()!=EReferenceTravelState::InCourse||Progress->GetEarnedRewardCount()!=0||Progress->HasEarnedReward(ExpectedReward)||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0)||!ObservedStar.IsValid()||ObservedStar->IsCollected()||ObservedStar->IsHidden()||ObservedStar->GetSuccessfulCollections()!=0||!IFileManager::Get().DirectoryExists(*SaveObstaclePath))
             {Finish(false,TEXT("Actual failed save did not keep progress0, visible uncollected star and ordinary play"));return;}
             bSaveFailureObserved=true;Phase=28;Elapsed=0;RetryOutsideElapsed=0;
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderSaveFailure.png"),false,false);
@@ -323,7 +337,7 @@ void UReferencePaintingTestSubsystem::UpdateStarCapture(float DeltaSeconds,AWind
     if(Flow->IsFading()&&!Flow->IsCelebrating())return;
     if(bSaveFailureTest&&(!bSaveFailureObserved||!bSaveObstacleRemoved||!Progress->GetProgressProblem().IsEmpty()||IFileManager::Get().DirectoryExists(*SaveObstaclePath)))
     {Finish(false,TEXT("Save retry did not clear the error or remove only the own obstacle"));return;}
-    if(!Hero||Progress->GetEarnedRewardCount()!=1||!Progress->HasEarnedReward(6)||!UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
+    if(!Hero||Progress->GetEarnedRewardCount()!=1||!Progress->HasEarnedReward(ExpectedReward)||!UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
     {Finish(false,TEXT("Real star6 was not saved before the capture animation"));return;}
     if(Phase==26)
     {
@@ -421,4 +435,127 @@ void UReferencePaintingTestSubsystem::ObserveFade(APlayerController* PC)
     if(Sequence==2)Name=Fade==EReferenceFadePhase::Out?TEXT("ThunderFadeSelectionOut.png"):Fade==EReferenceFadePhase::Covered?TEXT("ThunderFadeDropWhite.png"):TEXT("ThunderFadeDropIn.png");
     if(Sequence==6)Name=Fade==EReferenceFadePhase::Out?TEXT("ThunderFadeReturnOut.png"):Fade==EReferenceFadePhase::Covered?TEXT("ThunderFadeReturnWhite.png"):TEXT("ThunderFadeEntranceIn.png");
     if(Name){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation")/Name,false,false);FadeShots.Add(ShotKey);}
+}
+
+void UReferencePaintingTestSubsystem::UpdateReferenceBoss(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC)
+{
+    auto* Stage=Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(GetWorld(),AThunderMeadowStage::StaticClass()));
+    auto* Boss=Stage?Stage->GetStormkeeper():nullptr;
+    if(!Hero||!Boss||Hero->RecoveryCount!=0||Boss->GetOffArenaReturns()!=0)
+    {Finish(false,TEXT("Reference boss/player disappeared, route recovered or a throw left summit"));return;}
+    auto* Movement=Hero->GetCharacterMovement();
+    if(JumpHold>0){JumpHold-=DeltaSeconds;if(JumpHold<=0)PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Released,0));}
+    if(Phase==40)
+    {
+        if(BossWaypoint>=UE_ARRAY_COUNT(ReferenceSummitWalk))
+        {
+            if(!Movement->IsMovingOnGround())return;
+            Movement->StopMovementImmediately();FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderBossSummit.png"),false,false);
+            Phase=41;Elapsed=0;return;
+        }
+        const auto& Point=ReferenceSummitWalk[BossWaypoint];const FVector Target(Point.X,Point.Y,Point.Z),Delta=Target-Hero->GetActorLocation();BossLegElapsed+=DeltaSeconds;
+        if(BossLegElapsed>18){Finish(false,FString::Printf(TEXT("Reference boss walk blocked %d hero%s target%s"),BossWaypoint,*Hero->GetActorLocation().ToString(),*Target.ToString()));return;}
+        if(Delta.Size2D()<25&&FMath::Abs(Hero->GetActorLocation().Z-82-Target.Z)<80)
+        {UE_LOG(LogTemp,Display,TEXT("BOSS WALK %d"),BossWaypoint);++BossWaypoint;BossLegElapsed=0;bBossRouteJump=false;return;}
+        PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(),FRotator(-18,Delta.Rotation().Yaw,0),DeltaSeconds,4));
+        if(Movement->IsFalling())
+        {
+            const FVector Desired=(Delta.GetSafeNormal2D()*Delta.Size2D()*4.5f).GetClampedToMaxSize2D(470),Correction=Desired-FVector(Hero->GetVelocity().X,Hero->GetVelocity().Y,0);
+            Hero->AddMovementInput(Correction.GetSafeNormal2D(),FMath::Clamp(Correction.Size2D()/150,0.f,1.f));
+        }
+        else Hero->AddMovementInput(Delta.GetSafeNormal2D(),FMath::Clamp(Delta.Size2D()/140,.25f,1.f));
+        if(Point.bJump&&!bBossRouteJump&&Movement->IsMovingOnGround())
+        {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;bBossRouteJump=true;}
+        if(Movement->IsMovingOnGround()&&JumpHold<=0&&Delta.Size2D()<450&&Target.Z>Hero->GetActorLocation().Z-12)
+        {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;}
+        return;
+    }
+    PC->SetControlRotation(FRotator(-18,(Boss->GetActorLocation()-Hero->GetActorLocation()).Rotation().Yaw,0));
+    if(Phase==41)
+    {
+        if(Elapsed>30){Finish(false,FString::Printf(TEXT("Rear E pickup timed out: hero%s boss%s valid%d"),*Hero->GetActorLocation().ToString(),*Boss->GetActorLocation().ToString(),Boss->GetValidThrows()));return;}
+        if(Boss->IsRecovering()||Boss->IsInThrownFlight())return;
+        if(!bBossCoaxed)
+        {
+            // 外周で一周せず、通常歩行で内側へ誘ってから背後へ回ります。
+            if(Boss->GetActorLocation().X>=2000){bBossCoaxed=true;Elapsed=0;}
+            else
+            {
+                const FVector Delta=FVector(2400,5200,4293)-Hero->GetActorLocation();
+                if(Delta.Size2D()>18)Hero->AddMovementInput(Delta.GetSafeNormal2D(),FMath::Clamp(Delta.Size2D()/120,.2f,1.f));
+                else if(Movement->IsMovingOnGround())Movement->StopMovementImmediately();
+                return;
+            }
+        }
+        if(Boss->IsHeldBy(Hero))
+        {
+            if(Hero->GetCarry()->GetHeldObject()!=Boss){Finish(false,TEXT("Boss bypassed normal carry component"));return;}
+            BossCarryStart=Hero->GetActorLocation();Phase=42;Elapsed=0;
+            FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderBossLift.png"),false,false);return;
+        }
+        const FVector Radial=(Hero->GetActorLocation()-Boss->GetActorLocation()).GetSafeNormal2D();
+        const float Distance=FVector::Dist2D(Hero->GetActorLocation(),Boss->GetActorLocation());
+        const float Rear=FVector::DotProduct(Radial,Boss->GetActorForwardVector());
+        if(Boss->CanBePickedUp(Hero)&&Rear<-.55f&&Movement->IsMovingOnGround())
+        {Movement->StopMovementImmediately();Tap(PC,EKeys::E);return;}
+        const FVector Tangent(-Radial.Y,Radial.X,0);
+        FVector Desired=Tangent*430+Radial*FMath::Clamp((295-Distance)*4,-470.f,470.f);
+        auto* Terrain=Cast<AReferenceBattlefieldTerrain>(UGameplayStatics::GetActorOfClass(GetWorld(),AReferenceBattlefieldTerrain::StaticClass()));
+        FVector Floor;
+        if(!Terrain||!Terrain->FindFloor(Hero->GetActorLocation()+Desired.GetSafeNormal2D()*180-FVector(0,0,82),Floor)||FMath::Abs(Floor.Z-4293)>25)
+            Desired=-Tangent*430+Radial*FMath::Clamp((295-Distance)*4,-470.f,470.f);
+        Hero->AddMovementInput(Desired.GetSafeNormal2D(),FMath::Clamp(Desired.Size2D()/470,.2f,1.f));return;
+    }
+    if(Phase==42)
+    {
+        if(!Boss->IsHeldBy(Hero)){Finish(false,TEXT("Normal E pickup did not stay held"));return;}
+        // 頭上に持ったまま通常の歩行で山の内側へ向きます。プレイヤーの回転を注入しません。
+        const FVector Direction=(FVector(3800,5000,4293)-Hero->GetActorLocation()).GetSafeNormal2D();
+        Hero->AddMovementInput(Direction,1);
+        if(FVector::Dist2D(Hero->GetActorLocation(),BossCarryStart)>90&&FVector::DotProduct(Hero->GetActorForwardVector(),Direction)>.98f)
+        {
+            Movement->StopMovementImmediately();BossThrows=Boss->GetValidThrows();bBossThrowObserved=false;Tap(PC,EKeys::E);
+            Phase=43;Elapsed=0;return;
+        }
+        if(Elapsed>4)Finish(false,TEXT("Ordinary carrying walk did not face summit interior"));return;
+    }
+    if(Phase==43)
+    {
+        // InputKeyは通常の次フレームで処理されます。送信直後の古い保持状態で失敗させません。
+        if(!bBossThrowObserved&&Boss->GetThrowCount()==BossThrows+1&&!Boss->IsHeld()&&!Hero->GetCarry()->GetHeldObject()
+            &&(Boss->IsInThrownFlight()||Boss->GetThrownLandingCount()>BossThrows))
+        {
+            bBossThrowObserved=true;
+            UE_LOG(LogTemp,Display,TEXT("BOSS QA: normal E physical throw %d observed"),Boss->GetThrowCount());
+        }
+        if(Elapsed>.5f&&!bBossThrowObserved){Finish(false,TEXT("Second E did not use the normal physical throw after input processing"));return;}
+        if(Boss->GetValidThrows()>BossThrows)
+        {
+            if(!bBossThrowObserved||Boss->GetPickupCount()!=BossThrows+1||Boss->GetThrowCount()!=BossThrows+1||Boss->GetThrownLandingCount()!=BossThrows+1)
+            {Finish(false,TEXT("Physical throw counts did not match real E inputs"));return;}
+            FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderBossThrow.png"),false,false);
+            if(Boss->IsDefeated())
+            {
+                // スターは見た目だけ±8cm浮くため、固定の配置は基準位置で検査します。
+                if(Boss->GetValidThrows()!=3||!Boss->GetReward()||Boss->GetReward()->GetRewardNumber()!=1||FVector::Dist(Boss->GetReward()->GetRestLocation(),FVector(2000,4500,4500))>1)
+                {Finish(false,TEXT("Three physical throws did not spawn star1 at reference position"));return;}
+                Phase=44;Elapsed=0;
+            }
+            else {Phase=41;Elapsed=0;}
+            return;
+        }
+        if(Elapsed>8)Finish(false,TEXT("Real thrown boss did not land on summit"));return;
+    }
+    if(Phase==44)
+    {
+        auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
+        if(Flow->IsCelebrating()){ObservedStar=Boss->GetReward();Phase=26;Elapsed=0;return;}
+        const FVector Delta=FVector(2000,4500,4500)-Hero->GetActorLocation();
+        PC->SetControlRotation(FRotator(-14,Delta.Rotation().Yaw,0));
+        if(Delta.Size2D()>15)Hero->AddMovementInput(Delta.GetSafeNormal2D(),FMath::Clamp(Delta.Size2D()/120,.2f,1.f));
+        else if(Movement->IsMovingOnGround())Movement->StopMovementImmediately();
+        if(Delta.Size2D()<220&&Movement->IsMovingOnGround()&&JumpHold<=0)
+        {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;}
+        if(Elapsed>20)Finish(false,TEXT("Ordinary walk/jump did not touch actual star1"));
+    }
 }

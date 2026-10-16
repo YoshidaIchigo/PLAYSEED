@@ -475,6 +475,12 @@ void AThunderMeadowStage::BuildStormkeeper()
 {
     // 主ミッション1だけに番人を配置します。別の目的で山頂を訪れる時は通行を妨げません。
     if (GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->GetSelectedMissionNumber() != 1) return;
+    if(AReferenceBattlefieldTerrain::IsReferenceCourse())
+    {
+        // 元資料(1636,4242,-5567)、yaw-147度をUEへ変換し、球の底を実床4293cmに合わせます。
+        Stormkeeper=GetWorld()->SpawnActor<AThunderStormkeeper>(FVector(1636,5567,4493),FRotator(0,123,0));
+        return;
+    }
     Stormkeeper = GetWorld()->SpawnActor<AThunderStormkeeper>(FVector(2200, 2100, 2100), FRotator(0, 180, 0));
     AddSign(FVector(2250, 2450, 2000), TEXT("THE STORMKEEPER\nCircle behind - E / X to lift and throw\nThree landings on the crown - cliffs do not count"));
 }
@@ -487,6 +493,7 @@ void AThunderMeadowStage::BeginPlay()
     {
         GetWorld()->SpawnActor<AReferenceBattlefieldTerrain>();
         BuildReferenceChain();
+        BuildStormkeeper();
         BuildLighting();
         return;
     }
