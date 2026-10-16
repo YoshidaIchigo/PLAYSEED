@@ -27,6 +27,9 @@ public:
     int32 GetMeleeHealth() const { return bDefeated ? 0 : MeleeHealth; }
     int32 GetReceivedStrikes() const { return ReceivedStrikes; }
 protected:
+    virtual int32 GetContactDamage() const { return 2; }
+    virtual float GetContactRadius() const { return 70; }
+    virtual float GetStompHeight() const { return 80; }
     virtual void OnDefeated(AWindseedCharacter* Player) {}
     // 派生Actorは色と撃破のきっかけだけを変え、共通の描画部品やガードは内部で保ちます。
     virtual FLinearColor GetBudTint() const { return FLinearColor(.25f, .35f, .55f); }

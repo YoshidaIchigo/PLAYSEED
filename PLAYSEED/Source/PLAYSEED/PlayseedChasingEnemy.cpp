@@ -20,7 +20,7 @@ void APlayseedChasingEnemy::Tick(float DeltaSeconds)
     const float Distance = FVector::Dist2D(Player->GetActorLocation(), GetActorLocation());
     if (State == EPlayseedChaseState::Idle)
     {
-        if (Distance < 650 && FMath::Abs(Player->GetActorLocation().Z - HomeLocation.Z - 82) < 180)
+        if (Distance < GetDetectionRadius() && FMath::Abs(Player->GetActorLocation().Z - HomeLocation.Z - 82) < 180)
         {
             FCollisionQueryParams Sight;
             Sight.AddIgnoredActor(this);
@@ -34,7 +34,7 @@ void APlayseedChasingEnemy::Tick(float DeltaSeconds)
         // 遠くまで引っ張られたら追跡をやめ、元の場所へ帰ります。
         if (Distance > 1000 || FVector::Dist2D(GetActorLocation(), HomeLocation) > 900)
             State = EPlayseedChaseState::Returning;
-        else MoveOnGround(Player->GetActorLocation(), 180, DeltaSeconds);
+        else MoveOnGround(Player->GetActorLocation(), GetChasingSpeed(), DeltaSeconds);
     }
     else
     {
@@ -55,7 +55,7 @@ void APlayseedChasingEnemy::MoveOnGround(FVector Goal, float Speed, float DeltaS
     Params.AddIgnoredActor(UGameplayStatics::GetPlayerPawn(this, 0));
     FHitResult Wall, Floor;
     // 簡単な地上AIです。壁を抜けず、高い段差や崖へそのまま歩き込みません。
-    if (GetWorld()->SweepSingleByChannel(Wall, Start + FVector(0, 0, 80), Candidate + FVector(0, 0, 80), FQuat::Identity,
+    if (GetWorld()->SweepSingleByChannel(Wall, Start + FVector(0, 0, GetGroundProbeHeight()), Candidate + FVector(0, 0, GetGroundProbeHeight()), FQuat::Identity,
         ECC_Visibility, FCollisionShape::MakeSphere(70), Params)) return;
     if (!GetWorld()->LineTraceSingleByChannel(Floor, Candidate + FVector(0, 0, 150), Candidate - FVector(0, 0, 150), ECC_Visibility, Params) ||
         Floor.ImpactNormal.Z < .7f || FMath::Abs(Floor.ImpactPoint.Z - Start.Z) > 35) return;
