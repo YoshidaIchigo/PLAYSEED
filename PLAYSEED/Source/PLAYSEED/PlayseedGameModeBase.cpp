@@ -43,8 +43,8 @@ bool APlayseedGameModeBase::HasPassedSelectionTest() const
 
 void APlayseedGameModeBase::ReturnToStageSelection()
 {
-    if (UGameplayStatics::GetCurrentLevelName(this, true) != TEXT("StageSelect"))
-        UGameplayStatics::OpenLevel(this, FName(TEXT("/Game/Playseed/StageSelect")));
+    if (UGameplayStatics::GetCurrentLevelName(this, true) != TEXT("MissionSelect"))
+        UGameplayStatics::OpenLevel(this, FName(TEXT("/Game/ThunderMeadow/MissionSelect")));
 }
 
 void APlayseedGameModeBase::RestartStage(AWindseedCharacter* Player)

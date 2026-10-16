@@ -2,7 +2,6 @@
 #include "PlayseedGameModeBase.h"
 #include "PlayseedRecordingSubsystem.h"
 #include "WindseedCharacter.h"
-#include "WindseedStage.h"
 #include "ThunderExpeditionSubsystem.h"
 #include "ThunderMeadowStage.h"
 #include "ThunderTraversalTestSubsystem.h"
@@ -57,6 +56,7 @@
 #include "Misc/Paths.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
+#include "UnrealClient.h"
 
 namespace
 {
@@ -75,7 +75,7 @@ void UPlayseedSelectionTestSubsystem::BeginStage()
 {
     Elapsed = 0;
     auto* Recording = GetGameInstance()->GetSubsystem<UPlayseedRecordingSubsystem>();
-    if (!Recording->StartRecording(TEXT("Validation/WindseedPlaythrough.avi")))
+    if (!Recording->StartRecording(TEXT("Validation/CoursePlaythrough.avi")))
         Fail(TEXT("Stage selection recording could not start"));
     RunProgressTestOnce();
 }
@@ -130,12 +130,12 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     const bool bChimeTest = (bCampaignRun && CampaignTarget == 5) || (!bCampaignRun && (FParse::Param(FCommandLine::Get(), TEXT("ThunderChimeTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderChimeReadTest"))));
     if (bProgressTest && (Expedition->GetEarnedRewardCount() != 2 || !Expedition->HasEarnedReward(1) || !Expedition->HasEarnedReward(7)))
     { Fail(TEXT("Saved rewards changed during restart or re-entry")); return; }
-    if (Step == 0 && Map == TEXT("StageSelect") && Elapsed > 3 && Recording->GetCapturedFrameCount() > 15)
+    if (Step == 0 && Map == TEXT("MissionSelect") && Elapsed > 3 && Recording->GetCapturedFrameCount() > 15)
     {
         if (bCampaignRun && (Expedition->GetEarnedRewardCount() != 0 || Expedition->IsLauncherUnlocked() || Expedition->IsFlightUnlocked() || UGameplayStatics::DoesSaveGameExist(Expedition->GetSaveSlotName(), 0))) { Fail(TEXT("All7 campaign must start with a genuinely fresh isolated save")); return; }
-        Tap(PC, EKeys::Two);
-        Step = 1;
-        UE_LOG(LogTemp, Display, TEXT("SELECTION TEST: pressed 2 to enter Thunder Meadow."));
+        Tap(PC, bRaceTest ? EKeys::Two : bBossTest ? EKeys::One : bSkyCacheTest ? EKeys::Three : bScarletTest ? EKeys::Four : bChimeTest ? EKeys::Five : EKeys::Six);
+        Step = 7; Elapsed = 0;
+        UE_LOG(LogTemp, Display, TEXT("COURSE ENTRY TEST: entered the only course from mission selection; no Garden menu."));
     }
     else if (Step == 1 && Map == TEXT("MissionSelect") && Elapsed > 3)
     {
@@ -231,11 +231,9 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             UE_LOG(LogTemp, Display, TEXT("SELECTION TEST: a new World entry with mission 2 passed."));
             return;
         }
-        TArray<AActor*> Gardens;
-        UGameplayStatics::GetAllActorsOfClass(CurrentMode, AWindseedStage::StaticClass(), Gardens);
         TArray<AActor*> Meadows;
         UGameplayStatics::GetAllActorsOfClass(CurrentMode, AThunderMeadowStage::StaticClass(), Meadows);
-        if (Gardens.Num() || Meadows.Num() != 1 || FVector::Dist2D(Player->GetActorLocation(), FVector(-600, -600, 100)) > 5)
+        if (Meadows.Num() != 1 || FVector::Dist2D(Player->GetActorLocation(), FVector(-600, -600, 100)) > 5)
         { Fail(TEXT("The new stage has mixed actors or a wrong start")); return; }
         InputStart = Player->GetActorLocation();
         PC->SetControlRotation(FRotator(-18, 0, 0));
@@ -639,10 +637,10 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     {
         auto* Test=GetGameInstance()->GetSubsystem<UThunderLivesTestSubsystem>();
         if(Map==TEXT("ThunderMeadow") && Player) Test->UpdateTest(Player,DeltaSeconds);
-        else if(Map==TEXT("StageSelect"))
+        else if(Map==TEXT("MissionSelect"))
         {
             if(!Test->HasObservedGameOver()) { Fail(TEXT("Returned to menu before observing actual game over")); return; }
-            bSecondMissionEntry=true;Tap(PC,EKeys::Two);Step=1;Elapsed=0;
+            bSecondMissionEntry=true;Tap(PC,EKeys::Two);Step=7;Elapsed=0;
         }
         if(!Test->GetError().IsEmpty()) { Fail(Test->GetError()); return; }
     }
@@ -799,28 +797,40 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         Tap(PC, EKeys::M);
         Step = 4;
     }
-    else if (Step == 4 && Map == TEXT("StageSelect") && Elapsed > 3)
+    else if (Step == 4 && Map == TEXT("MissionSelect") && Elapsed > 3)
     {
         if (bCampaignRun)
         {
             TArray<int32> Expected = ThunderCampaignPrefix(CampaignTarget); Expected.Add(CampaignTarget); if (CampaignTarget == 4) Expected.Add(7);
             if (!ThunderHasExactRewards(Expedition, Expected)) { Fail(TEXT("Campaign leg finished without exactly its actual cumulative reward set")); return; }
             UE_LOG(LogTemp, Display, TEXT("CAMPAIGN LEG COMPLETE: actual target%d saved total%d captureframe%d in the same slot %s."), CampaignTarget, Expedition->GetEarnedRewardCount(), Recording->GetCapturedFrameCount(), *Expedition->GetSaveSlotName());
-            if (CampaignIndex < 5) { ++CampaignIndex; bSecondMissionEntry = false; Tap(PC, EKeys::Two); Step = 1; return; }
+            if (CampaignIndex < 5)
+            {
+                ++CampaignIndex; bSecondMissionEntry=false;
+                const FKey Keys[]={EKeys::One,EKeys::Two,EKeys::Three,EKeys::Four,EKeys::Five,EKeys::Six};
+                Tap(PC,Keys[CampaignTargets[CampaignIndex]-1]);Step=7;Elapsed=0;return;
+            }
         }
         bSecondMissionEntry = true;
         Tap(PC, EKeys::Two);
-        Step = 1;
+        Step = 7; Elapsed=0;
     }
-    else if (Step == 8 && Map == TEXT("StageSelect") && Elapsed > 3)
+    else if (Step == 8 && Map == TEXT("MissionSelect") && Elapsed > 1)
     {
-        Tap(PC, EKeys::One);
-        Step = 5;
+        FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/CourseComplete.png"),false,false);
+        Step=9;Elapsed=0;
     }
-    else if (Step == 5 && Map == TEXT("WindseedGarden") && Player && Elapsed > 1)
+    else if (Step == 9 && Map == TEXT("MissionSelect") && Elapsed > 1)
     {
-        Step = 6;
-        UE_LOG(LogTemp, Display, TEXT("SELECTION TEST PASS: selected mission, R, new World entry with mission 2, invalid numbers and Garden entry passed."));
+        auto* Capture=GetGameInstance()->GetSubsystem<UPlayseedRecordingSubsystem>();
+        const int32 Frames=Capture->FinishRecording();
+        if(Capture->HasCaptureError() || Frames<150) { Fail(TEXT("Course capture failed or is too short"));return; }
+        Step=6;
+        const FString Message=TEXT("Single course entry, actual movement/jump/camera, R, invalid numbers, new World mission2 and return to mission selection passed. Garden removed.");
+        const FString Report=FString::Printf(TEXT("PASS\n%s\nSelectionJumps: 1\nCaptureFrames: %d\nUTC: %s\n"),*Message,Frames,*FDateTime::UtcNow().ToIso8601());
+        FFileHelper::SaveStringToFile(Report,*(FPaths::ProjectSavedDir()/TEXT("Validation/Result.txt")));
+        UE_LOG(LogTemp,Display,TEXT("COURSE TEST PASS: %s"),*Message);
+        FPlatformMisc::RequestExitWithStatus(false,0);
     }
 }
 
