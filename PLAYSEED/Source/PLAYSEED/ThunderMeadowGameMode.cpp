@@ -63,8 +63,10 @@ void AThunderMeadowHUD::DrawHUD()
             // 自分が旗に着いた時刻で表示を止め、相手を待つ時間を記録に加えません。
             const float ClockTime=Race->HasPlayerReachedFlag()?Race->GetPlayerTime():Race->GetElapsed();
             const int32 Tenths=FMath::FloorToInt(ClockTime*10);
-            UI.Text(TEXT("タイム"),212,183,8,FLinearColor::White,false,true,true);
-            UI.Text(FString::Printf(TEXT("%d:%02d.%d"),Tenths/600,(Tenths/10)%60,Tenths%10),245,181,11,Number,false,true);
+            const FLinearColor TimeColors[]={FLinearColor(1,.1f,.7f),FLinearColor(.65f,1,.1f),FLinearColor(.1f,1,.25f),FLinearColor(1,.8f,.05f)};
+            for(int32 Index=0;Index<4;++Index)UI.Text(FString::Chr(TEXT("TIME")[Index]),174+Index*12,35,14,TimeColors[Index],false,true);
+            const FString TimeText=FString::FromInt(Tenths/600)+FString::Chr(39)+FString::Printf(TEXT("%02d"),(Tenths/10)%60)+FString::Chr(34)+FString::FromInt(Tenths%10);
+            UI.Text(TimeText,225,33,16,Number,false,true);
             if(Race->GetRaceState()!=ECloudflagRaceState::Running)
                 UI.Text(Race->GetStateLabel(),160,161,7,FLinearColor::White,true,true,true);
         }

@@ -4,6 +4,7 @@
 #include "PlayseedInteractionTarget.h"
 #include "ThunderCloudflagRace.generated.h"
 class UStaticMeshComponent;
+class UBoxComponent;
 class APlayseedLantern;
 
 UENUM()
@@ -33,6 +34,8 @@ public:
     APlayseedLantern* GetReward() const { return Reward.Get(); }
     const TCHAR* GetStateLabel() const;
 private:
+    // 見た目だけの相手でも、取得ポーズのカメラが体を通らないようにします。
+    UPROPERTY() TObjectPtr<UBoxComponent> CameraBlocker;
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Parts;
     TArray<FLinearColor> Colors;
     TArray<FVector> Route;

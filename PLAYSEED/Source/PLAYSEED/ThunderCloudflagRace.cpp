@@ -7,6 +7,7 @@
 #include "ThunderWarpPair.h"
 #include "WindseedCharacter.h"
 #include "Components/SceneComponent.h"
+#include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
@@ -29,6 +30,13 @@ AThunderCloudflagRace::AThunderCloudflagRace()
     bReferenceRace=AReferenceBattlefieldTerrain::IsReferenceCourse();
     if(bReferenceRace)
     {
+        CameraBlocker=CreateDefaultSubobject<UBoxComponent>(TEXT("ReferenceRivalCameraBlocker"));
+        CameraBlocker->SetupAttachment(RootComponent);CameraBlocker->SetRelativeLocation(FVector(0,0,140));
+        CameraBlocker->SetBoxExtent(FVector(110,100,150));
+        CameraBlocker->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+        CameraBlocker->SetCollisionResponseToAllChannels(ECR_Ignore);
+        CameraBlocker->SetCollisionResponseToChannel(ECC_Camera,ECR_Block);
+        CameraBlocker->SetGenerateOverlapEvents(false);
         static ConstructorHelpers::FObjectFinder<UStaticMesh> Cylinder(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
         const FLinearColor Yellow(.95f,.66f,.07f),Green(.07f,.46f,.08f),White(.92f,.92f,.8f),Orange(.9f,.26f,.025f);
         Part(TEXT("ShellRim"),Sphere.Object,FVector(-25,0,139),FVector(.7f,1.45f,1.65f),White);

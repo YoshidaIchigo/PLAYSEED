@@ -370,6 +370,12 @@ void UReferencePaintingTestSubsystem::UpdateStarCapture(float DeltaSeconds,AWind
                 {
                     if(bCameraTest&&Model->IsBodyHiddenForCamera()){Finish(false,TEXT("Star pose stayed hidden after the camera moved out"));return;}
                     if(!Cast<ACameraActor>(PC->GetViewTarget())){Finish(false,TEXT("Star camera did not become the actual view target"));return;}
+                    if(bReferenceRaceTest)
+                    {
+                        FCollisionQueryParams Query(SCENE_QUERY_STAT(RaceStarPoseVisibility),true,Hero);FHitResult Obstacle;
+                        if(GetWorld()->LineTraceSingleByChannel(Obstacle,PC->GetViewTarget()->GetActorLocation(),Hero->GetActorLocation()+FVector(0,0,60),ECC_Camera,Query))
+                        {Finish(false,TEXT("Race rival or terrain blocked the real star-pose camera"));return;}
+                    }
                     FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderStarPose.png"),false,false);bPoseShot=true;
                 }
             }

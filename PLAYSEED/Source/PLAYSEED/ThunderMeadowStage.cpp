@@ -544,7 +544,7 @@ void AThunderMeadowStage::BuildCloudflagRace()
     if (GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->GetSelectedMissionNumber() != 2) return;
     if(AReferenceBattlefieldTerrain::IsReferenceCourse())
     {
-        CloudflagRace=GetWorld()->SpawnActor<AThunderCloudflagRace>(FVector(-4004,-5221,0),FRotator::ZeroRotator);
+        CloudflagRace=GetWorld()->SpawnActor<AThunderCloudflagRace>(FVector(-4004,-5221,0),FRotator(0,-90,0));
         TArray<FVector> Route;
         for(const auto& Point:ReferenceRivalRoute)Route.Add(FVector(Point.X,Point.Y,Point.Z));
         CloudflagRace->Configure(Route);
