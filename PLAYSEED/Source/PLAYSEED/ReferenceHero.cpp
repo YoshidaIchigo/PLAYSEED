@@ -45,25 +45,27 @@ AReferenceHero::AReferenceHero()
         Part(Visual,Cube.Object,FVector(-27,Side*20,16),FVector(5,11,34),Blue);
         Part(Visual,Sphere.Object,FVector(32,Side*20,11),FVector(6,9,9),FLinearColor(1,.76f,.025f));
     }
-    Part(Visual,Sphere.Object,FVector(-20,0,49),FVector(40,60,49),Hair);
-    Part(Visual,Sphere.Object,FVector(2,0,43),FVector(58,63,58),Skin);
-    Part(Visual,Sphere.Object,FVector(34,0,44),FVector(29,30,27),Skin);
-    Part(Visual,Sphere.Object,FVector(33,0,32),FVector(12,54,13),Black);
-    Part(Visual,Sphere.Object,FVector(32,0,25),FVector(5,20,6.5f),Black);
+    Head=CreateDefaultSubobject<USceneComponent>(TEXT("ReferenceHead"));Head->SetupAttachment(Visual);Head->SetRelativeLocation(FVector(0,0,40));
+    auto HeadPart=[&](UStaticMesh* ShapeAsset,FVector Position,FVector Size,FLinearColor Color){return Part(Head,ShapeAsset,Position-FVector(0,0,40),Size,Color);};
+    HeadPart(Sphere.Object,FVector(-20,0,49),FVector(40,60,49),Hair);
+    HeadPart(Sphere.Object,FVector(2,0,43),FVector(58,63,58),Skin);
+    HeadPart(Sphere.Object,FVector(34,0,44),FVector(29,30,27),Skin);
+    HeadPart(Sphere.Object,FVector(33,0,32),FVector(12,54,13),Black);
+    HeadPart(Sphere.Object,FVector(32,0,25),FVector(5,20,6.5f),Black);
     for(int32 Side:{-1,1})
     {
-        Part(Visual,Sphere.Object,FVector(0,Side*34,46),FVector(22,15,30),Skin);
-        Part(Visual,Sphere.Object,FVector(28,Side*13,54),FVector(12,18,25),White);
-        Part(Visual,Sphere.Object,FVector(34,Side*13,54),FVector(3.5f,9,16),FLinearColor(.025f,.24f,.85f));
-        Part(Visual,Sphere.Object,FVector(36,Side*13,54),FVector(2,4.5f,11),Black);
-        Part(Visual,Sphere.Object,FVector(28,Side*14,65),FVector(9,22,5.5f),Black);
-        for(int32 I=0;I<3;++I)Part(Visual,Sphere.Object,FVector(36,Side*(6+I*7),28+I%2),FVector(10,14,11),Black);
+        HeadPart(Sphere.Object,FVector(0,Side*34,46),FVector(22,15,30),Skin);
+        HeadPart(Sphere.Object,FVector(28,Side*13,54),FVector(12,18,25),White);
+        HeadPart(Sphere.Object,FVector(34,Side*13,54),FVector(3.5f,9,16),FLinearColor(.025f,.24f,.85f));
+        HeadPart(Sphere.Object,FVector(36,Side*13,54),FVector(2,4.5f,11),Black);
+        HeadPart(Sphere.Object,FVector(28,Side*14,65),FVector(9,22,5.5f),Black);
+        for(int32 I=0;I<3;++I)HeadPart(Sphere.Object,FVector(36,Side*(6+I*7),28+I%2),FVector(10,14,11),Black);
     }
-    Part(Visual,Sphere.Object,FVector(-1,0,72),FVector(69,72,28),Red);
-    Part(Visual,Sphere.Object,FVector(30,0,66),FVector(58,70,8),Red);
-    Part(Visual,Sphere.Object,FVector(30,0,76),FVector(4,30,20),White);
-    auto* Letter=CreateDefaultSubobject<UTextRenderComponent>(TEXT("ReferenceCapLetter"));Letter->SetupAttachment(Visual);
-    Letter->SetText(FText::FromString(TEXT("M")));Letter->SetRelativeLocation(FVector(33,0,76));Letter->SetWorldSize(17);
+    HeadPart(Sphere.Object,FVector(-1,0,72),FVector(69,72,28),Red);
+    HeadPart(Sphere.Object,FVector(30,0,66),FVector(58,70,8),Red);
+    HeadPart(Sphere.Object,FVector(30,0,76),FVector(4,30,20),White);
+    auto* Letter=CreateDefaultSubobject<UTextRenderComponent>(TEXT("ReferenceCapLetter"));Letter->SetupAttachment(Head);
+    Letter->SetText(FText::FromString(TEXT("M")));Letter->SetRelativeLocation(FVector(33,0,36));Letter->SetWorldSize(17);
     Letter->SetHorizontalAlignment(EHTA_Center);Letter->SetVerticalAlignment(EVRTA_TextCenter);Letter->SetTextRenderColor(FColor(235,15,10));Letter->SetCastShadow(false);
     LeftArm=CreateDefaultSubobject<USceneComponent>(TEXT("ReferenceLeftArm"));LeftArm->SetupAttachment(Visual);LeftArm->SetRelativeLocation(FVector(-1,-37,9));
     RightArm=CreateDefaultSubobject<USceneComponent>(TEXT("ReferenceRightArm"));RightArm->SetupAttachment(Visual);RightArm->SetRelativeLocation(FVector(-1,37,9));
@@ -82,7 +84,7 @@ AReferenceHero::AReferenceHero()
     for(int32 Side:{-1,1})
     {
         VictoryFingers.Add(Part(RightArm,Sphere.Object,FVector(4,Side*5,-62),FVector(6,6,28),White));
-        for(int32 I=0;I<4;++I)CapFeathers.Add(Part(Visual,Sphere.Object,FVector(-5,Side*(40+I*8),74+I*5),FVector(16,9,48+I*4),White));
+        for(int32 I=0;I<4;++I)CapFeathers.Add(Part(Head,Sphere.Object,FVector(-5,Side*(40+I*8),34+I*5),FVector(16,9,48+I*4),White));
     }
     Shadow=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ReferenceShadow"));Shadow->SetupAttachment(GetRootComponent());Shadow->SetStaticMesh(Plane.Object);
     Shadow->SetAbsolute(true,true,true);Shadow->SetCollisionEnabled(ECollisionEnabled::NoCollision);Shadow->SetCastShadow(false);
@@ -118,11 +120,15 @@ void AReferenceHero::Tick(float DeltaSeconds)
         if(GetCombat()->GetComboStage()==2)RightArmPose=FRotator(-95,0,0);
         if(GetCombat()->GetComboStage()==3)RightLegPose=FRotator(-85,0,0);
     }
+    const bool bFlying=GetFlight()->IsFlying()&&!bStarPose;
+    if(bFlying){LeftArmPose=FRotator(-8,0,-70);RightArmPose=FRotator(-8,0,70);LeftLegPose=RightLegPose=FRotator::ZeroRotator;}
     if(bStarPose){LeftArmPose=FRotator(-15,0,20);RightArmPose=FRotator(-160,0,-20);LeftLegPose=FRotator(-12,0,0);RightLegPose=FRotator::ZeroRotator;}
     LeftArm->SetRelativeRotation(LeftArmPose);RightArm->SetRelativeRotation(RightArmPose);LeftLeg->SetRelativeRotation(LeftLegPose);RightLeg->SetRelativeRotation(RightLegPose);
     Visual->SetRelativeScale3D((bPounding||bLandingPose)?FVector(1.15f,1.15f,.7f):FVector::OneVector);
     Visual->SetRelativeLocation(FVector(0,0,bLandingPose?-24:bStarPose?0:FMath::Sin(Time*12)*FMath::Min(Speed/180,3.f)));
-    Visual->SetRelativeRotation(bClimbing?FRotator(-12,0,0):FRotator::ZeroRotator);
+    // 頭から足への軸を実際の飛行方向へ向け、頭は前を向かせたままにします。
+    Visual->SetRelativeRotation(bFlying?FRotator(GetFlight()->GetFlightPitch()-90,0,0):bClimbing?FRotator(-12,0,0):FRotator::ZeroRotator);
+    Head->SetRelativeRotation(bFlying?FRotator(90,0,0):FRotator::ZeroRotator);
     for(UStaticMeshComponent* Finger:VictoryFingers)Finger->SetVisibility(bStarPose);
     for(UStaticMeshComponent* Feather:CapFeathers)Feather->SetVisibility(GetFlight()->HasPower());
     // 足元へ影だけを投影します。読み取った床の位置でプレイヤーを動かすことはありません。

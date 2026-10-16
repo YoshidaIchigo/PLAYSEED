@@ -6,6 +6,7 @@
 
 class APlayseedLantern;
 class UStaticMesh;
+class UProceduralMeshComponent;
 
 // 山頂の番人。持つ・投げる物理は既存の Carryable に任せ、背後判定と勝敗だけを追加します。
 UCLASS()
@@ -35,8 +36,11 @@ private:
     bool CanStandAt(FVector Position);
     void ReturnToArena();
     void PaintBody();
+    void UpdateReferenceShadow();
     void BeginRecovery(bool bOffArena);
     UStaticMeshComponent* AddPart(UStaticMesh* Mesh, FVector Position, FVector Scale, FLinearColor Color);
+    UPROPERTY() TObjectPtr<UProceduralMeshComponent> Moustache;
+    UPROPERTY() TObjectPtr<UStaticMeshComponent> ReferenceShadow;
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Parts;
     TArray<FLinearColor> PartColors;
     TWeakObjectPtr<APlayseedLantern> Reward;

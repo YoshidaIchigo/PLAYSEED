@@ -6,6 +6,9 @@
 #include "ReferenceWalker.h"
 #include "ReferenceChainWalk.h"
 #include "ReferenceSummitWalk.h"
+#include "ReferenceBossHeartWalk.h"
+#include "ReferenceBoulderField.h"
+#include "ThunderRollingBoulder.h"
 #include "ReferenceRaceRoute.h"
 #include "ReferenceCannonWalk.h"
 #include "ReferenceRedWalk.h"
@@ -68,7 +71,8 @@ void UReferencePaintingTestSubsystem::Initialize(FSubsystemCollectionBase& Colle
     bCameraTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderCameraTest"));
     bSaveFailureTest=bCameraTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderSaveFailureTest"));
     bSelectionTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderSelectionTest"));
-    bReferenceBossTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceBossTest"));
+    bBossOwnedReplay=FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceBossOwnedTest"));
+    bReferenceBossTest=bBossOwnedReplay||FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceBossTest"));
     bReferenceRaceTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceRaceTest"));
     bReferenceCannonTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceCannonTest"));
     bReferenceRedTest=bHundredTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceRedTest"));
@@ -78,7 +82,7 @@ void UReferencePaintingTestSubsystem::Initialize(FSubsystemCollectionBase& Colle
     BeforeRewardCount=(bHundredTest||bAllStarReadTest)?6:bSequentialChainTest?5:bReferenceSkyTest?4:bReferenceRedTest?3:bReferenceCannonTest?2:bReferenceRaceTest?1:0;AfterRewardCount=BeforeRewardCount+1;
     // 獲得済みの実セーブを消さずに再プレイし、同じスターで数が増えないことも検証します。
     if(bWingOwnedReplay)BeforeRewardCount=AfterRewardCount=5;
-    if(bSurfaceTest||bBombTest||bWalkerTest||bWorldTest||bWaterCannonTest||bBoulderTest||bRainTest)BeforeRewardCount=AfterRewardCount=7;
+    if(bBossOwnedReplay||bSurfaceTest||bBombTest||bWalkerTest||bWorldTest||bWaterCannonTest||bBoulderTest||bRainTest)BeforeRewardCount=AfterRewardCount=7;
     bStarTest=bSequentialChainTest||bReferenceSkyTest||bReferenceRedTest||bReferenceCannonTest||bReferenceRaceTest||bReferenceBossTest||bSelectionTest||bSaveFailureTest||bFadeTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest"));
     bReadMode=bAllStarReadTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderStarReadTest"));
     bChainTest=bStarTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderChainTest"));
@@ -108,7 +112,7 @@ void UReferencePaintingTestSubsystem::Finish(bool bPassed,const FString& Message
     if(bHundredTest&&bPassed&&(!bHundredMountainGold||!bHundredHighGold||!bHundredSkyComplete))bPassed=false;
     bFinished=true;auto* Recording=GetGameInstance()->GetSubsystem<UPlayseedRecordingSubsystem>();const int32 Frames=Recording->FinishRecording();
     bPassed=bPassed&&!Recording->HasCaptureError()&&Frames>=150;
-    const FString Details=(bSurfaceTest&&bPassed?TEXT("Original calmer grass, gray cave, fine clouds/ocean/remote hills and wood-grain surface assets; reference gold/red coins use own unlit palette. Actual ordinary cap-box pickup, G/mouse/LMB cannon, mouse/W/S flight through five real centres, owned blue star5 NEW0/count7 unchanged, pose/white fades/painting return and all-six-main-stars selection. No injected coins, power, position or progress."):bBombTest&&bPassed?TEXT("Twelve reference small bombs including one stationary actor on actual floors. Ordinary approach lit a five-second fuse and real chase. Normal E held/threw one; actual physics landing caused an explosion and one real gold pickup. After normal R, holding another until its real fuse expired dropped it and caused exactly two damage and physical knockback, with one real gold. R restored all twelve and removed own drops; M returned to painting with legitimate earned7 unchanged. No injected hero or enemy position, health, coins or progress."):bWalkerTest&&bPassed?TEXT("Eleven reference walkers at two single/three triplet source positions. Ordinary approach caused one real contact damage and knockback, R restored all eleven. Ordinary LMB defeated one and collected its one actual gold; normal Space jump stomped another and collected its one actual gold. Second R restored health/entrance/score0, alive enemies and removed own drops. M returned to painting with legitimate earned7 unchanged. No injected hero/enemy position, health or progress."):bWorldTest&&bPassed?TEXT("Reference double grill physically blocked normal walking, actual floor switch opened both halves once, ordinary crossing and R closed/rearmed it. Ordinary walking triggered both directions of both actual warp pairs with stable arrivals and physical exit/reentry; actual damaged health recovered through rotating-heart contact/spins. M/painting/mission6 physical reentry and final painting-front earned7 preserved. No injected hero position, velocity, health or progress."):bWaterCannonTest&&bPassed?TEXT("Actual first-mission field water cannon visible without firing; M/painting/mission6 physical reentry, ordinary mountain walk and real gap jump, active mountain cannon aimed and fired at least two intangible shots with unchanged observation health, R cleared its shot and returned to entrance, M returned to painting with legitimate earned7 unchanged. No injected hero position, velocity, health or progress."):bRainTest&&bPassed?TEXT("Three reference rain spawners at original positions/ranges: ordinary walking into a real falling drop caused one damage and physical knockback, normal R restored health and cleared all three, ordinary movement left the next real shadow before the actual burst with no extra hit, second R cleared all rain and M returned to painting with actual earned7 unchanged. No injected position, velocity, health or progress."):bBoulderTest&&bPassed?TEXT("Reference metal balls: two source mountain paths and three actual-floor pit loops; normal walking into a moving pit ball and actual mountain ball caused real damage/knockback, R restored hero and all five mechanisms twice, M returned to painting with legitimate earned1..7 unchanged. No injected hero position, velocity, health or progress."):bAllStarReadTest&&bPassed?TEXT("Separate process loaded the same actual save with earned stars1..7, walked/jumped into the painting, and displayed all six main stars earned with total7, without awarding progress."):bSequentialChainTest&&bPassed?TEXT("Actual sequential star6 visit after legitimate earned1..5: ordinary post3 ground pounds, released Chomp breaks gate, real star6 new save total6, pose/white fades/painting return and earned1..6 menu."):bHundredTest&&bPassed?TEXT("Actual hundred-star visit after legitimate earned1..6: real36 field golds, all eight reds, both mountain gold lines, island cap and ordinary second cannon launch, actual sky golds reaching100, one threshold100 star7, actual new save total7, pose/white fades/painting return and all main stars earned. No injected coins, position, velocity, power or progress."):bGroundCoinTest&&bPassed?TEXT("Actual36 field golds: normal wooden box punch and three pickups, source ground line5 and ring8, four posts with actual3circles under200/30 seconds and five pickups each, one generation per post. Real R restored score0/static coins/posts/box and removed only own drops, then M returned to painting. No progress awarded or injected. Mountain/island10 golds are placed but their actual pickup follows in the hundred-star visit."):bWingOwnedReplay&&bPassed?TEXT("Owned star5 full replay: legitimate saved wing unlock, ordinary cap-box head bump and actual pickup, normal G/mouse/LMB cannon, mouse/W/S flight through five actual centre coins, one fixed blue owned star5, NEW0 and earned count unchanged5, visible pose, white fades, painting return and next6 menu. No save copy/reset/injection."):Message)+(bSaveFailureTest&&bPassed?TEXT(" Actual SaveGameToSlot failure from own empty QA directory, rollback0 and visible star, physical exit, nonrecursive removal of own empty obstacle, real recontact saved6 once and returned to painting."):TEXT(""));
+    const FString Details=(bBossOwnedReplay&&bPassed?TEXT("Reference boss own black body/highlight, gold hands/shoes, blue elbows, broad white triangular moustache and actual-floor shadow. Ordinary mountain route, three real rear E pickups/physics E throws/summit landings, blue owned star1 NEW0/count7 unchanged, visible pose/white fades/painting return/all-six-main-stars selection. No injected position, throws, health or progress."):bSurfaceTest&&bPassed?TEXT("Original calmer grass, gray cave, fine clouds/ocean/remote hills and wood-grain surface assets; reference gold/red coins use own unlit palette. Actual ordinary cap-box pickup, G/mouse/LMB cannon, mouse/W/S flight through five real centres, owned blue star5 NEW0/count7 unchanged, pose/white fades/painting return and all-six-main-stars selection. No injected coins, power, position or progress."):bBombTest&&bPassed?TEXT("Twelve reference small bombs including one stationary actor on actual floors. Ordinary approach lit a five-second fuse and real chase. Normal E held/threw one; actual physics landing caused an explosion and one real gold pickup. After normal R, holding another until its real fuse expired dropped it and caused exactly two damage and physical knockback, with one real gold. R restored all twelve and removed own drops; M returned to painting with legitimate earned7 unchanged. No injected hero or enemy position, health, coins or progress."):bWalkerTest&&bPassed?TEXT("Eleven reference walkers at two single/three triplet source positions. Ordinary approach caused one real contact damage and knockback, R restored all eleven. Ordinary LMB defeated one and collected its one actual gold; normal Space jump stomped another and collected its one actual gold. Second R restored health/entrance/score0, alive enemies and removed own drops. M returned to painting with legitimate earned7 unchanged. No injected hero/enemy position, health or progress."):bWorldTest&&bPassed?TEXT("Reference double grill physically blocked normal walking, actual floor switch opened both halves once, ordinary crossing and R closed/rearmed it. Ordinary walking triggered both directions of both actual warp pairs with stable arrivals and physical exit/reentry; actual damaged health recovered through rotating-heart contact/spins. M/painting/mission6 physical reentry and final painting-front earned7 preserved. No injected hero position, velocity, health or progress."):bWaterCannonTest&&bPassed?TEXT("Actual first-mission field water cannon visible without firing; M/painting/mission6 physical reentry, ordinary mountain walk and real gap jump, active mountain cannon aimed and fired at least two intangible shots with unchanged observation health, R cleared its shot and returned to entrance, M returned to painting with legitimate earned7 unchanged. No injected hero position, velocity, health or progress."):bRainTest&&bPassed?TEXT("Three reference rain spawners at original positions/ranges: ordinary walking into a real falling drop caused one damage and physical knockback, normal R restored health and cleared all three, ordinary movement left the next real shadow before the actual burst with no extra hit, second R cleared all rain and M returned to painting with actual earned7 unchanged. No injected position, velocity, health or progress."):bBoulderTest&&bPassed?TEXT("Reference metal balls: two source mountain paths and three actual-floor pit loops; normal walking into a moving pit ball and actual mountain ball caused real damage/knockback, R restored hero and all five mechanisms twice, M returned to painting with legitimate earned1..7 unchanged. No injected hero position, velocity, health or progress."):bAllStarReadTest&&bPassed?TEXT("Separate process loaded the same actual save with earned stars1..7, walked/jumped into the painting, and displayed all six main stars earned with total7, without awarding progress."):bSequentialChainTest&&bPassed?TEXT("Actual sequential star6 visit after legitimate earned1..5: ordinary post3 ground pounds, released Chomp breaks gate, real star6 new save total6, pose/white fades/painting return and earned1..6 menu."):bHundredTest&&bPassed?TEXT("Actual hundred-star visit after legitimate earned1..6: real36 field golds, all eight reds, both mountain gold lines, island cap and ordinary second cannon launch, actual sky golds reaching100, one threshold100 star7, actual new save total7, pose/white fades/painting return and all main stars earned. No injected coins, position, velocity, power or progress."):bGroundCoinTest&&bPassed?TEXT("Actual36 field golds: normal wooden box punch and three pickups, source ground line5 and ring8, four posts with actual3circles under200/30 seconds and five pickups each, one generation per post. Real R restored score0/static coins/posts/box and removed only own drops, then M returned to painting. No progress awarded or injected. Mountain/island10 golds are placed but their actual pickup follows in the hundred-star visit."):bWingOwnedReplay&&bPassed?TEXT("Owned star5 full replay: legitimate saved wing unlock, ordinary cap-box head bump and actual pickup, normal G/mouse/LMB cannon, mouse/W/S flight through five actual centre coins, one fixed blue owned star5, NEW0 and earned count unchanged5, visible pose, white fades, painting return and next6 menu. No save copy/reset/injection."):Message)+(bSaveFailureTest&&bPassed?TEXT(" Actual SaveGameToSlot failure from own empty QA directory, rollback0 and visible star, physical exit, nonrecursive removal of own empty obstacle, real recontact saved6 once and returned to painting."):TEXT(""));
     const FString Result=FString::Printf(TEXT("%s\n%s\nCaptureFrames: %d\nUTC: %s\n"),bPassed?TEXT("PASS"):TEXT("FAIL"),*Details,Frames,*FDateTime::UtcNow().ToIso8601());
     FFileHelper::SaveStringToFile(Result,*(FPaths::ProjectSavedDir()/TEXT("Validation/Result.txt")),FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
     UE_LOG(LogTemp,Display,TEXT("PAINTING TEST %s"),*Result);FPlatformMisc::RequestExit(false);
@@ -227,7 +231,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
                 if(!Menu||Menu->GetVisibleMissionCount()!=3||!Menu->IsMissionSelectable(1)||!Menu->IsMissionSelectable(2)||!Menu->IsMissionSelectable(3)||Menu->IsMissionSelectable(4))
                 {Finish(false,TEXT("Earned1/2 did not reveal exactly the next mission3"));return;}
             }
-            if(bReferenceBossTest)
+            if(bReferenceBossTest&&AfterRewardCount<7)
             {
                 auto* Menu=Cast<AThunderMissionSelectionGameMode>(GetWorld()->GetAuthGameMode());
                 if(!Menu||Menu->GetVisibleMissionCount()!=2||!Menu->IsMissionSelectable(1)||!Menu->IsMissionSelectable(2)||Menu->IsMissionSelectable(3))
@@ -464,7 +468,7 @@ void UReferencePaintingTestSubsystem::UpdateStarCapture(float DeltaSeconds,AWind
     {
         if(Flow->IsCelebrating())
         {
-            if(!ObservedStar.IsValid()||ObservedStar->GetSuccessfulCollections()!=(bWingOwnedReplay?0:1)||!ObservedStar->IsCollected())
+            if(!ObservedStar.IsValid()||ObservedStar->GetSuccessfulCollections()!=(BeforeRewardCount==AfterRewardCount?0:1)||!ObservedStar->IsCollected())
             {Finish(false,TEXT("Star collection duplicated or real actor was not collected"));return;}
             for(FKey Key:{EKeys::R,EKeys::M,EKeys::SpaceBar,EKeys::LeftControl,EKeys::Enter,EKeys::LeftMouseButton})Tap(PC,Key);
             if(Flow->HasStartedStarPose())
@@ -572,9 +576,70 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBoss(float DeltaSeconds,AWi
     auto* Stage=Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(GetWorld(),AThunderMeadowStage::StaticClass()));
     auto* Boss=Stage?Stage->GetStormkeeper():nullptr;
     if(!Hero||!Boss||Hero->RecoveryCount!=0||Boss->GetOffArenaReturns()!=0)
-    {Finish(false,TEXT("Reference boss/player disappeared, route recovered or a throw left summit"));return;}
+    {Finish(false,FString::Printf(TEXT("Reference boss route failed: point%d recovery%d health%d offArena%d hero%s"),BossWaypoint,Hero?Hero->RecoveryCount:-1,Hero?Hero->GetVitality()->GetHealth():-1,Boss?Boss->GetOffArenaReturns():-1,Hero?*Hero->GetActorLocation().ToString():TEXT("missing")));return;}
     auto* Movement=Hero->GetCharacterMovement();
     if(JumpHold>0){JumpHold-=DeltaSeconds;if(JumpHold<=0)PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Released,0));}
+    if((Phase==40||Phase==46||Phase==48)&&UpdateReferenceRouteCombat(DeltaSeconds,Hero,PC)){Elapsed-=DeltaSeconds;return;}
+    auto WalkHeart=[&](FVector Target)
+    {
+        const FVector D=Target-Hero->GetActorLocation(),Desired=(D.GetSafeNormal2D()*D.Size2D()*4.5f).GetClampedToMaxSize2D(470),Correction=Desired-FVector(Hero->GetVelocity().X,Hero->GetVelocity().Y,0);
+        if(D.Size2D()>8)Hero->AddMovementInput(Correction.GetSafeNormal2D(),FMath::Clamp(Correction.Size2D()/150,0.f,1.f));else if(Movement->IsMovingOnGround())Movement->StopMovementImmediately();
+        PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(),FRotator(-18,D.Rotation().Yaw,0),DeltaSeconds,5));
+        if(Movement->IsMovingOnGround()&&JumpHold<=0&&D.Size2D()<350&&Target.Z>Hero->GetActorLocation().Z-82+38)
+        {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;}
+    };
+    if(Phase==40||Phase==46||Phase==48)
+    {
+        if(BossAvoidRemaining<=0&&Movement->IsMovingOnGround())
+        {
+            auto* Field=Stage->GetReferenceBoulderField();auto* Terrain=Cast<AReferenceBattlefieldTerrain>(UGameplayStatics::GetActorOfClass(GetWorld(),AReferenceBattlefieldTerrain::StaticClass()));
+            if(Field&&Terrain)for(int32 Index=0;Index<FMath::Min(2,Field->GetBalls().Num());++Index)
+            {
+                AThunderRollingBoulder* Ball=Field->GetBalls()[Index]; // 山道の2体を避けます。くぼ地の周回を追いかけません。
+                const FVector D=Ball->GetActorLocation()-Hero->GetActorLocation();const float Feet=Hero->GetActorLocation().Z-82;
+                if(Ball->IsWaiting()||D.Size2D()>800||FMath::Abs(Ball->GetActorLocation().Z-Feet-100)>350)continue;
+                const FVector Side=FVector(D.Y,-D.X,0).GetSafeNormal();float Best=99999;FVector Choice=FVector::ZeroVector;
+                for(float Distance:{150.f,100.f})for(float Sign:{-1.f,1.f})
+                {
+                    const FVector Start=Hero->GetActorLocation()-FVector(0,0,82);FVector Floor;
+                    if(!Terrain->FindFloor(Start+Side*Sign*Distance,Floor)||FMath::Abs(Floor.Z-Feet)>70)continue;
+                    // 点だけに床があっても、途中や着地の外周が崖なら横へ避けません。
+                    bool bSafe=true;
+                    for(int32 Step=1;Step<=5&&bSafe;++Step)for(int32 Edge=0;Edge<8;++Edge)
+                    {
+                        const float Angle=Edge*(2*PI/8);const FVector Probe=FMath::Lerp(Start,Floor,Step/5.f)+FVector(FMath::Cos(Angle)*70,FMath::Sin(Angle)*70,0);
+                        FVector Support;if(!Terrain->FindFloor(Probe,Support)||FMath::Abs(Support.Z-Probe.Z)>70){bSafe=false;break;}
+                    }
+                    const float Cost=FMath::Abs(Floor.Z-Feet)+(150-Distance);
+                    if(bSafe&&Cost<Best){Best=Cost;Choice=Floor;}
+                }
+                if(Best<99999){BossAvoidTarget=Choice;BossAvoidRemaining=1.2f;bBossAvoidJumped=false;BossLegElapsed=0;UE_LOG(LogTemp,Display,TEXT("BOSS QA: ordinary side-step/jump from real ball at%s tofloor%s health%d"),*Ball->GetActorLocation().ToString(),*Choice.ToString(),Hero->GetVitality()->GetHealth());break;}
+            }
+        }
+        if(BossAvoidRemaining>0)
+        {
+            BossAvoidRemaining-=DeltaSeconds;WalkHeart(BossAvoidTarget);
+            if(!bBossAvoidJumped&&Movement->IsMovingOnGround()&&JumpHold<=0){PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;bBossAvoidJumped=true;}return;
+        }
+    }
+    if(Phase==46||Phase==48)
+    {
+        const int32 Count=UE_ARRAY_COUNT(ReferenceBossHeartWalk);
+        if((Phase==46&&BossHeartWaypoint>=Count)||(Phase==48&&BossHeartWaypoint<0))
+        {if(Movement->IsMovingOnGround())Movement->StopMovementImmediately();Phase=Phase==46?47:40;Elapsed=0;BossLegElapsed=0;return;}
+        const auto& P=ReferenceBossHeartWalk[BossHeartWaypoint];const FVector Target(P.X,P.Y,P.Z);BossLegElapsed+=DeltaSeconds;
+        if(BossLegElapsed>22){Finish(false,TEXT("Ordinary walking to/from actual rotating heart was blocked"));return;}
+        const float Floor=Movement->IsMovingOnGround()?Movement->CurrentFloor.HitResult.ImpactPoint.Z:Hero->GetActorLocation().Z-82;
+        if(FVector::Dist2D(Target,Hero->GetActorLocation())<30&&FMath::Abs(Floor-Target.Z)<80){BossHeartWaypoint+=Phase==46?1:-1;BossLegElapsed=0;return;}
+        WalkHeart(Target);return;
+    }
+    if(Phase==47)
+    {
+        WalkHeart(FVector(3603,7070,3580)); // 3659cmはハートの中心で、実際の足元は約3580cmです。
+        if(Hero->GetVitality()->GetHealth()==8)
+        {if(Elapsed<.5f)return;FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderBossHeart.png"),false,false);BossHeartWaypoint=UE_ARRAY_COUNT(ReferenceBossHeartWalk)-1;Phase=48;Elapsed=0;BossLegElapsed=0;return;}
+        if(Elapsed>22)Finish(false,TEXT("Actual rotating-heart contact did not restore real health"));return;
+    }
     if(Phase==40)
     {
         if(BossWaypoint>=UE_ARRAY_COUNT(ReferenceSummitWalk))
@@ -586,7 +651,10 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBoss(float DeltaSeconds,AWi
         const auto& Point=ReferenceSummitWalk[BossWaypoint];const FVector Target(Point.X,Point.Y,Point.Z),Delta=Target-Hero->GetActorLocation();BossLegElapsed+=DeltaSeconds;
         if(BossLegElapsed>18){Finish(false,FString::Printf(TEXT("Reference boss walk blocked %d hero%s target%s"),BossWaypoint,*Hero->GetActorLocation().ToString(),*Target.ToString()));return;}
         if(Delta.Size2D()<25&&FMath::Abs(Hero->GetActorLocation().Z-82-Target.Z)<80)
-        {UE_LOG(LogTemp,Display,TEXT("BOSS WALK %d"),BossWaypoint);++BossWaypoint;BossLegElapsed=0;bBossRouteJump=false;return;}
+        {
+            UE_LOG(LogTemp,Display,TEXT("BOSS WALK %d health%d"),BossWaypoint,Hero->GetVitality()->GetHealth());++BossWaypoint;BossLegElapsed=0;bBossRouteJump=false;
+            if(BossWaypoint==177&&!bBossHeartUsed&&Hero->GetVitality()->GetHealth()<8){bBossHeartUsed=true;BossHeartWaypoint=0;Phase=46;Elapsed=0;}return;
+        }
         PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(),FRotator(-18,Delta.Rotation().Yaw,0),DeltaSeconds,4));
         if(Movement->IsFalling())
         {
