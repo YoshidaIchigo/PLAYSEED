@@ -137,15 +137,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         if (bCampaignRun && (Expedition->GetEarnedRewardCount() != 0 || Expedition->IsLauncherUnlocked() || Expedition->IsFlightUnlocked() || UGameplayStatics::DoesSaveGameExist(Expedition->GetSaveSlotName(), 0))) { Fail(TEXT("All7 campaign must start with a genuinely fresh isolated save")); return; }
         if(bPresentationTest && !bPresentationMenuChecked)
         {
-            auto* Menu=Cast<AThunderMissionSelectionGameMode>(CurrentMode);
-            if(!Menu || Menu->GetHighlightedMission()!=1 || Expedition->GetEarnedRewardCount()!=0) { Fail(TEXT("Presentation test requires fresh menu and real zero rewards"));return; }
-            Tap(PC,EKeys::Right);Tap(PC,EKeys::Right);
-            if(Menu->GetHighlightedMission()!=3 || Expedition->GetSelectedMissionNumber()!=1) { Fail(TEXT("Right navigation awarded or committed an unconfirmed mission"));return; }
-            Tap(PC,EKeys::Left);if(Menu->GetHighlightedMission()!=2){Fail(TEXT("Left star navigation failed"));return;}
-            for(int32 I=0;I<4;++I)Tap(PC,EKeys::Right);
-            if(Menu->GetHighlightedMission()!=6){Fail(TEXT("Star6 highlight failed"));return;}
-            FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderStarMenu.png"),false,false);
-            bPresentationMenuChecked=true;Step=46;Elapsed=0;return;
+            PresentationNavigationStep=0;Step=46;Elapsed=0;return;
         }
         Tap(PC, bRaceTest ? EKeys::Two : bBossTest ? EKeys::One : bSkyCacheTest ? EKeys::Three : bScarletTest ? EKeys::Four : bChimeTest ? EKeys::Five : EKeys::Six);
         Step = 7; Elapsed = 0;
@@ -277,7 +269,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         if(bPresentationTest && !bPresentationControlsChecked)
         {
             auto* Mode=Cast<AThunderMeadowGameMode>(CurrentMode);Tap(PC,EKeys::F1);
-            if(!Mode || !Mode->ShouldShowControls()){Fail(TEXT("F1 controls did not open"));return;}
+            if(!Mode){Fail(TEXT("Presentation game mode missing"));return;}
             Step=47;Elapsed=0;return;
         }
         const bool bIslandTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderIslandTest"));
@@ -656,20 +648,30 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         if (!BoxTest->GetError().IsEmpty()) { Fail(BoxTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
     }
-    else if(Step==46 && Map==TEXT("MissionSelect") && Elapsed>1)
+    else if(Step==46 && Map==TEXT("MissionSelect") && Elapsed>.2f)
     {
         auto* Menu=Cast<AThunderMissionSelectionGameMode>(CurrentMode);
-        if(!Menu || Menu->GetHighlightedMission()!=6 || Expedition->GetSelectedMissionNumber()!=1){Fail(TEXT("Star highlight changed before confirm"));return;}
-        Tap(PC,EKeys::Enter);Step=7;Elapsed=0;
+        const int32 Expected[]={1,2,3,2,3,4,5,6,6};
+        if(!Menu || Menu->GetHighlightedMission()!=Expected[PresentationNavigationStep] || Expedition->GetSelectedMissionNumber()!=1 || Expedition->GetEarnedRewardCount()!=0)
+        {Fail(FString::Printf(TEXT("Real menu input step%d did not retain expected highlight%d and unchanged progress"),PresentationNavigationStep,Expected[PresentationNavigationStep]));return;}
+        // InputKeyは次のPlayerInput処理で実行されるため、次のフレームで結果を確かめます。
+        if(PresentationNavigationStep==8){bPresentationMenuChecked=true;Tap(PC,EKeys::Enter);Step=7;Elapsed=0;}
+        else
+        {
+            if(PresentationNavigationStep==7)FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderStarMenu.png"),false,false);
+            else Tap(PC,PresentationNavigationStep==2?EKeys::Left:EKeys::Right);
+            ++PresentationNavigationStep;Elapsed=0;
+        }
     }
     else if(Step==47 && Player && Elapsed>.6f)
     {
-        FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderControls.png"),false,false);
-        Step=48;Elapsed=0;
+        if(!Cast<AThunderMeadowGameMode>(CurrentMode)->ShouldShowControls()){Fail(TEXT("F1 controls did not open"));return;}
+        FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderControls.png"),false,false);Step=48;Elapsed=0;
     }
-    else if(Step==48 && Player && Elapsed>.2f)
+    else if(Step==48 && Player && Elapsed>.2f){Tap(PC,EKeys::F1);Step=49;Elapsed=0;}
+    else if(Step==49 && Player && Elapsed>.2f)
     {
-        Tap(PC,EKeys::F1);if(Cast<AThunderMeadowGameMode>(CurrentMode)->ShouldShowControls()){Fail(TEXT("F1 controls did not close"));return;}
+        if(Cast<AThunderMeadowGameMode>(CurrentMode)->ShouldShowControls()){Fail(TEXT("F1 controls did not close"));return;}
         bPresentationControlsChecked=true;Step=3;Elapsed=1.1f;
     }
     else if (Step == 45)

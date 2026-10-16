@@ -20,6 +20,7 @@ private:
     void Fail(const FString& Message);
     void RunProgressTestOnce();
     bool bPresentationMenuChecked=false,bPresentationControlsChecked=false;
+    int32 PresentationNavigationStep=0;
     int32 CampaignIndex = 0;
     int32 Step = 0;
     float Elapsed = 0;
