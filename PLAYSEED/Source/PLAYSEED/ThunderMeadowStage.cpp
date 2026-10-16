@@ -466,6 +466,7 @@ void AThunderMeadowStage::BuildLighting()
         Exposure->Settings.bOverride_ToneCurveAmount=true;Exposure->Settings.ToneCurveAmount=0;
         Exposure->Settings.bOverride_ExpandGamut=true;Exposure->Settings.ExpandGamut=0;
         Exposure->Settings.bOverride_BlueCorrection=true;Exposure->Settings.BlueCorrection=0;
+        Exposure->Settings.bOverride_AutoExposureBias=true;Exposure->Settings.AutoExposureBias=-1;
     }
 }
 

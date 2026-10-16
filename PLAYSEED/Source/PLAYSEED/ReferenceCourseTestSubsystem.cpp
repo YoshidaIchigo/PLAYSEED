@@ -95,7 +95,7 @@ void UReferenceCourseTestSubsystem::Tick(float DeltaSeconds)
         Player->AddMovementInput(Delta.GetSafeNormal2D(),FMath::Clamp(Delta.Size2D()/140,.25f,1.f));
         // 目標足場が高く近い時だけ通常Jumpを使います。加速・座標・速度を直接設定しません。
         const float Feet=Player->GetActorLocation().Z-82;
-        if(Movement->IsMovingOnGround() && JumpTime<=0 && Delta.Size2D()<260 && Target.Z>Feet+70){Player->Jump();JumpTime=.14f;}
+        if(Movement->IsMovingOnGround() && JumpTime<=0 && Delta.Size2D()<450 && Target.Z>Feet+70){Player->Jump();JumpTime=.14f;}
         return;
     }
     if(Phase==3 && Elapsed>2){Tap(PC,EKeys::R);Phase=4;Elapsed=0;return;}
