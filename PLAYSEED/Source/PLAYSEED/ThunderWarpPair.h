@@ -16,6 +16,7 @@ public:
     AThunderWarpPair();
     void Configure(FVector LowerFloor, FVector UpperFloor, float LowerExitYaw, float UpperExitYaw);
     virtual void Tick(float DeltaSeconds) override;
+    void ConfigureReferenceTrigger() { TriggerRadius=85; }
     void ResetWarps();
     FVector GetCaveFloor(int32 Index) const { return Floors[FMath::Clamp(Index, 0, 1)]; }
     int32 GetWarpCount() const { return WarpCount; }
@@ -25,6 +26,7 @@ private:
     FVector Floors[2] = {FVector::ZeroVector, FVector::ZeroVector};
     float ExitYaws[2] = {0, 0};
     float Cooldown = 0;
+    float TriggerRadius = 75;
     int32 WarpCount = 0;
     bool bConfigured = false;
     bool bNeedsExit = false;

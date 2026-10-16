@@ -32,6 +32,8 @@ public:
     virtual void Landed(const FHitResult& Hit) override;
     virtual void Jump() override;
     void ReturnToTrail();
+    // 仕掛けの瞬間移動後、カメラが古い場所から追いかけないようにします。
+    void SnapCameraAfterTeleport();
     // 新しいステージを始めるときに GameMode が設定します。設定後の落下復帰も同じ位置を使います。
     void SetTrailStartLocation(const FVector& Location) { TrailStartLocation = Location; }
     void SetSprinting(bool bEnabled);
