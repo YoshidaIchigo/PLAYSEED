@@ -27,7 +27,7 @@ public:
     bool IsDeparted() const { return State == EState::Departed; }
     bool IsRecovering() const { return State == EState::Recover; }
     FVector GetAnchor() const { return Anchor; }
-    FVector GetHomeLocation() const { return Anchor + FVector(150, 0, 100); }
+    FVector GetHomeLocation() const { return Anchor + FVector(bReference?400:150, 0, BodyHeight); }
     bool IsWindingUp() const { return State == EState::Windup; }
     bool IsLunging() const { return State == EState::Lunge; }
     bool IsPatrolling() const { return State == EState::Patrol; }
@@ -47,6 +47,9 @@ private:
     UPROPERTY() TObjectPtr<UStaticMeshComponent> Warning;
     UPROPERTY() TObjectPtr<UStaticMeshComponent> AnchorPlate;
     UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> BodyTint;
+    UPROPERTY() TObjectPtr<UStaticMeshComponent> Shadow;
+    bool bReference=false;
+    float LeashRadius=300,BodyHeight=100;
     FVector Anchor = FVector::ZeroVector;
     FVector LockedTarget = FVector::ZeroVector;
     FVector LungeDirection = FVector::ForwardVector;

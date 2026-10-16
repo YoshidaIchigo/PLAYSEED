@@ -1,5 +1,6 @@
 #include "PlayseedLantern.h"
 #include "ThunderExpeditionSubsystem.h"
+#include "ReferenceBattlefieldTerrain.h"
 #include "WindseedCharacter.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -35,7 +36,7 @@ APlayseedLantern::APlayseedLantern()
 void APlayseedLantern::BeginPlay()
 {
     Super::BeginPlay();
-    if (auto* Palette = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Windseed/M_Palette.M_Palette")))
+    if (auto* Palette = LoadObject<UMaterialInterface>(nullptr,AReferenceBattlefieldTerrain::IsReferenceCourse()?TEXT("/Game/Battlefield/M_Actor.M_Actor"):TEXT("/Game/Windseed/M_Palette.M_Palette")))
         for (int32 Index = 0; Index < Parts.Num(); ++Index)
         {
             auto* Tint = UMaterialInstanceDynamic::Create(Palette, this); Tint->SetVectorParameterValue(TEXT("Tint"), Colors[Index]); for(int32 Slot=0;Slot<Parts[Index]->GetNumMaterials();++Slot)Parts[Index]->SetMaterial(Slot,Tint);
