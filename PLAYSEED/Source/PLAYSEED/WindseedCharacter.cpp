@@ -194,6 +194,12 @@ void AWindseedCharacter::ReturnToTrail()
     // TeleportPhysics は復帰用の瞬間移動です。通常の探索やジャンプでは使いません。
     // 座標を Character 内へ固定しないことで、別のステージでも同じ移動コードを再利用できます。
     SetActorLocation(TrailStartLocation, false, nullptr, ETeleportType::TeleportPhysics);
+    // 瞬間的な復帰では、カメラが古い場所から長距離を追いかけないようにします。
+    // 通常移動の滑らかな追従は残し、SpringArmの前フレーム位置だけを新しい原点へ合わせます。
+    const FVector CameraOrigin=CameraBoom->GetComponentLocation()+CameraBoom->TargetOffset;
+    CameraBoom->PreviousDesiredLoc=CameraOrigin;
+    CameraBoom->PreviousArmOrigin=CameraOrigin;
+    CameraBoom->PreviousDesiredRot=CameraBoom->GetTargetRotation();
     SetSprinting(false);
     Vitality->Restore();
     ++RecoveryCount;

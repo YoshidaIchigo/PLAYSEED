@@ -118,7 +118,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
     }
     if(bFadeTest&&Phase>0)ObserveFade(PC);
     if(bFinished)return;
-    if(Phase>=130&&Phase<=135){UpdateReferenceBoulders(DeltaSeconds,Hero,PC);return;}
+    if(Phase>=130&&Phase<=137){UpdateReferenceBoulders(DeltaSeconds,Hero,PC);return;}
     if(bHundredTest&&Phase>=120){UpdateReferenceHundred(DeltaSeconds,Hero,PC);return;}
     if(bHundredTest&&(Phase==98||Phase==99)){UpdateHundredFlight(DeltaSeconds,Hero,PC);return;}
     if(bGroundCoinTest&&Phase>=110){UpdateReferenceGround(DeltaSeconds,Hero,PC);return;}

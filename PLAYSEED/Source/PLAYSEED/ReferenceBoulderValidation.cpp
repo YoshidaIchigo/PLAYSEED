@@ -97,7 +97,15 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBoulders(float DeltaSeconds
         {Finish(false,TEXT("Real R did not restore hero vitality and course entrance"));return;}
         for(AThunderRollingBoulder* Ball:Field->GetBalls())if(Ball->IsWaiting()||Ball->GetTravelledDistance()>150)
         {Finish(false,TEXT("Real R did not reset all five reference balls"));return;}
-        if(bPit){Phase=133;BoulderWaypoint=0;BoulderLegElapsed=0;Elapsed=0;return;}
+        Phase=bPit?136:137;Elapsed=0;return;
+    }
+    if(Phase==136||Phase==137)
+    {
+        // 実Rの次の描画も待ち、入口とカメラを映してから再出発・帰還します。
+        if(Elapsed<.35f)return;
+        if(Health->GetHealth()!=8||Hero->RecoveryCount!=(Phase==136?1:2)||FVector::Dist2D(Hero->GetActorLocation(),FVector(-6558,-6464,0))>40)
+        {Finish(false,TEXT("R recovery did not remain at the course entrance with full health"));return;}
+        if(Phase==136){Phase=133;BoulderWaypoint=0;BoulderLegElapsed=0;Elapsed=0;return;}
         bBoulderResetVerified=true;FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderBoulderFieldReset.png"),false,false);Tap(PC,EKeys::M);Phase=9;Elapsed=0;return;
     }
 }
