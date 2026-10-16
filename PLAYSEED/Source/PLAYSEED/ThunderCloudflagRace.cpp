@@ -148,7 +148,7 @@ void AThunderCloudflagRace::Tick(float DeltaSeconds)
         UE_LOG(LogTemp, Display, TEXT("RACE: Brisk reached flag in %.2f seconds."), Elapsed);
     }
     if(bReferenceRace)
-        for(auto* Part:Parts)
+        for(UStaticMeshComponent* Part:Parts)
             if(Part->GetName().StartsWith(TEXT("OrangeBoot")))
             {
                 FVector Position=Part->GetRelativeLocation();
