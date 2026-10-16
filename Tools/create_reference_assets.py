@@ -28,6 +28,9 @@ for name in ['Grass','GrassEdge','Dirt','Stone','Wood','Cave','Fence','Rock','Sh
     assert texture,texture_path
     texture.set_editor_property('filter',unreal.TextureFilter.TF_NEAREST)
     texture.set_editor_property('mip_gen_settings',unreal.TextureMipGenSettings.TMGS_NO_MIPMAPS)
+    # 青い空をImporterが法線画像と誤認しないよう、用途を明示します。
+    texture.set_editor_property('compression_settings',unreal.TextureCompressionSettings.TC_DEFAULT)
+    texture.set_editor_property('srgb',True)
     unreal.EditorAssetLibrary.save_loaded_asset(texture)
     asset_path='/Game/Battlefield/M_'+name
     if unreal.EditorAssetLibrary.does_asset_exist(asset_path):continue
