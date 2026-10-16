@@ -463,6 +463,7 @@ void AThunderMeadowStage::BuildLighting()
     Exposure->Settings.AutoExposureApplyPhysicalCameraExposure = false;
     if(AReferenceBattlefieldTerrain::IsReferenceCourse())
     {
+        Exposure->Settings.bOverride_MotionBlurAmount=true;Exposure->Settings.MotionBlurAmount=0;
         Exposure->Settings.bOverride_ToneCurveAmount=true;Exposure->Settings.ToneCurveAmount=0;
         Exposure->Settings.bOverride_ExpandGamut=true;Exposure->Settings.ExpandGamut=0;
         Exposure->Settings.bOverride_BlueCorrection=true;Exposure->Settings.BlueCorrection=0;
