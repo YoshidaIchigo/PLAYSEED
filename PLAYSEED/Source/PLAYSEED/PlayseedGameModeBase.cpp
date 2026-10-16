@@ -43,7 +43,7 @@ bool APlayseedGameModeBase::HasPassedSelectionTest() const
 
 void APlayseedGameModeBase::ReturnToStageSelection()
 {
-    if (UGameplayStatics::GetCurrentLevelName(this, true) != TEXT("MissionSelect"))
+    if (CanLeaveStage() && UGameplayStatics::GetCurrentLevelName(this, true) != TEXT("MissionSelect"))
         UGameplayStatics::OpenLevel(this, FName(TEXT("/Game/ThunderMeadow/MissionSelect")));
 }
 

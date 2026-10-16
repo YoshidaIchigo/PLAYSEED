@@ -1,0 +1,6 @@
+{
+  "normal_before": "ABSENT",
+  "slot": "Validation_PR49_Painting_B",
+  "normal_after": "ABSENT",
+  "game_exit": 0
+}
