@@ -19,7 +19,7 @@ public:
     void Configure(AThunderBoundSentinel* InSentinel, AThunderPrisonGate* InGate);
     void ResetPost();
     int32 GetPoundCount() const { return PoundCount; }
-    float GetTopHeight() const { return FMath::Max(0, 120 - PoundCount * 40); }
+    float GetTopHeight() const { return FMath::Max(0,bReference?225-PoundCount*65:120-PoundCount*40); }
 private:
     void HandlePound(FVector ImpactPoint);
     void RefreshShape();
@@ -29,4 +29,5 @@ private:
     TWeakObjectPtr<AThunderBoundSentinel> Sentinel;
     TWeakObjectPtr<AThunderPrisonGate> Gate;
     int32 PoundCount = 0;
+    bool bReference=false;
 };

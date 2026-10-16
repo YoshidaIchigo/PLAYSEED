@@ -4,6 +4,7 @@
 #include "Tickable.h"
 #include "ReferencePaintingTestSubsystem.generated.h"
 class APlayerController;
+class AWindseedCharacter;
 UCLASS()
 class PLAYSEED_API UReferencePaintingTestSubsystem : public UGameInstanceSubsystem,public FTickableGameObject
 {
@@ -17,8 +18,12 @@ public:
 private:
     void Tap(APlayerController* PC,FKey Key);
     void Finish(bool bPassed,const FString& Message);
+    void UpdateChain(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     float Elapsed=0,JumpHold=0;
     int32 Phase=0;
     bool bEnabled=false,bFinished=false,bJumped=false,bCapturedDive=false;
     bool bDropTest=false,bSawDrop=false,bCapturedLanding=false,bSawJump=false;
+    bool bChainTest=false,bChainPoundCycle=false,bChainPoundTriggered=false,bChainGateVerified=false;
+    int32 ChainWaypoint=0,ChainPounds=0;
+    float ChainLegElapsed=0,ChainPoundElapsed=0;
 };

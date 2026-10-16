@@ -1,6 +1,7 @@
 #include "ThunderBindingPost.h"
 #include "ThunderBoundSentinel.h"
 #include "ThunderPrisonGate.h"
+#include "ReferenceBattlefieldTerrain.h"
 #include "PlayseedActionComponent.h"
 #include "WindseedCharacter.h"
 #include "Components/SceneComponent.h"
@@ -11,6 +12,7 @@
 #include "UObject/ConstructorHelpers.h"
 AThunderBindingPost::AThunderBindingPost()
 {
+    bReference=AReferenceBattlefieldTerrain::IsReferenceCourse();
     PrimaryActorTick.bCanEverTick = true; RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("BindingRoot"));
     Post = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BindingStump")); Post->SetupAttachment(RootComponent);
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cylinder(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
@@ -19,14 +21,14 @@ AThunderBindingPost::AThunderBindingPost()
 }
 void AThunderBindingPost::BeginPlay()
 {
-    Super::BeginPlay(); if (auto* Palette = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Windseed/M_Palette.M_Palette"))) { Tint = UMaterialInstanceDynamic::Create(Palette, this); Post->SetMaterial(0, Tint); } RefreshShape();
+    Super::BeginPlay(); if (auto* Palette = LoadObject<UMaterialInterface>(nullptr, bReference?TEXT("/Game/Battlefield/M_Actor.M_Actor"):TEXT("/Game/Windseed/M_Palette.M_Palette"))) { Tint = UMaterialInstanceDynamic::Create(Palette, this); Post->SetMaterial(0, Tint); } RefreshShape();
 }
 void AThunderBindingPost::Configure(AThunderBoundSentinel* InSentinel, AThunderPrisonGate* InGate) { Sentinel = InSentinel; Gate = InGate; ResetPost(); }
 void AThunderBindingPost::RefreshShape()
 {
     const float Height = GetTopHeight(); Post->SetRelativeLocation(FVector(0, 0, Height * .5f)); Post->SetRelativeScale3D(FVector(1.6f, 1.6f, FMath::Max(Height, 1.f) / 100));
     Post->SetVisibility(PoundCount < 3); Post->SetCollisionEnabled(PoundCount < 3 ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
-    if (Tint) Tint->SetVectorParameterValue(TEXT("Tint"), FLinearColor(.7f - PoundCount * .12f, .42f + PoundCount * .1f, .16f));
+    if (Tint) Tint->SetVectorParameterValue(TEXT("Tint"),bReference?FLinearColor(.42f,.22f,.08f):FLinearColor(.7f - PoundCount * .12f, .42f + PoundCount * .1f, .16f));
 }
 void AThunderBindingPost::ResetPost() { PoundCount = 0; RefreshShape(); }
 void AThunderBindingPost::HandlePound(FVector ImpactPoint)

@@ -485,6 +485,7 @@ void AThunderMeadowStage::BeginPlay()
     if(AReferenceBattlefieldTerrain::IsReferenceCourse())
     {
         GetWorld()->SpawnActor<AReferenceBattlefieldTerrain>();
+        BuildReferenceChain();
         BuildLighting();
         return;
     }
@@ -537,6 +538,20 @@ void AThunderMeadowStage::BuildCloudflagRace()
     AddShape(Cylinder, FVector(2240, 2140, 2160), FVector(14, 14, 320), FLinearColor(.85f, .55f, .18f));
     AddShape(Cube, FVector(2330, 2140, 2260), FVector(180, 10, 100), FLinearColor(.05f, .65f, .55f));
     AddSign(FVector(2380, 2350, 2000), TEXT("THE CLOUDFLAG\nReach the crown, then wait for Brisk"));
+}
+
+void AThunderMeadowStage::BuildReferenceChain()
+{
+    // 参照の(X,Y,Z)をUEの(X,-Z,Y)へ変換した配置です。地形と同じcm単位で置きます。
+    const FVector PostFloor(260,-1920,735);
+    const FTransform GateTransform(FRotator(0,56,0),FVector(1456,-446,968));
+    PrisonGate=GetWorld()->SpawnActorDeferred<AThunderPrisonGate>(AThunderPrisonGate::StaticClass(),GateTransform);
+    PrisonGate->ConfigureReferenceReward(FVector(1550,-300,1200));
+    UGameplayStatics::FinishSpawningActor(PrisonGate,GateTransform);
+    BoundSentinel=GetWorld()->SpawnActor<AThunderBoundSentinel>(PostFloor+FVector(400,0,228),FRotator::ZeroRotator);
+    BoundSentinel->Configure(PostFloor);PrisonGate->Configure(BoundSentinel);
+    BindingPost=GetWorld()->SpawnActor<AThunderBindingPost>(PostFloor,FRotator::ZeroRotator);
+    BindingPost->Configure(BoundSentinel,PrisonGate);
 }
 
 void AThunderMeadowStage::Tick(float DeltaSeconds)

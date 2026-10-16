@@ -121,6 +121,7 @@ private:
     void BuildScarletTrail();
     void BuildSkyChimes();
     void BuildBoundSentinel();
+    void BuildReferenceChain();
     void AddRamp(FVector Start, FVector End, float Width);
     void BuildLighting();
 
