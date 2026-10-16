@@ -52,10 +52,12 @@ void UReferencePaintingTestSubsystem::UpdateReferenceSky(float DeltaSeconds,AWin
         {
             if(Progress->IsFlightUnlocked()&&Switch->IsActivated())
             {if(Elapsed<.7f){PC->SetControlRotation(FRotator(-25,-90,0));return;}bWingHubChecked=true;FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderWingSwitch.png"),false,false);Phase=92;Elapsed=0;return;}
-            const FVector Target(-600,-750,0);Walk(Target);
+            // まっすぐ進むと固いボタンに当たるため、横を通ってジャンプ開始地点へ回り込みます。
+            static const FVector Approach[]={FVector(-900,0,0),FVector(-900,-750,0),FVector(-600,-750,0)};
+            const FVector Target=Approach[FMath::Min(WingWaypoint,2)];Walk(Target);
             if(FVector::Dist2D(Hero->GetActorLocation(),Target)<25&&Move->IsMovingOnGround())
-            {Move->StopMovementImmediately();Phase=91;Elapsed=0;return;}
-            if(Elapsed>10)Finish(false,TEXT("Ordinary hub walking did not reach the side of the red switch"));return;
+            {Move->StopMovementImmediately();Elapsed=0;if(++WingWaypoint==3)Phase=91;return;}
+            if(Elapsed>10)Finish(false,FString::Printf(TEXT("Ordinary hub walking did not reach the side of the red switch: point%d hero%s"),WingWaypoint,*Hero->GetActorLocation().ToString()));return;
         }
         if(Phase==91)
         {
