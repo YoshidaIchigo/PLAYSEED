@@ -15,6 +15,7 @@
 #include "InputKeyEventArgs.h"
 #include "InputCoreTypes.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/GameInstance.h"
 #include "Misc/Paths.h"
 #include "UnrealClient.h"
 
@@ -70,7 +71,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceRed(float DeltaSeconds,AWin
     }
     if(Phase==71)
     {
-        auto* Platform=Stage->GetReferenceCheckers()[0];const FVector Top=Platform->GetSurfaceTop();
+        AReferenceCheckerPlatform* Platform=Stage->GetReferenceCheckers()[0];const FVector Top=Platform->GetSurfaceTop();
         if(Hero->GetMovementBaseObject()==Platform->GetSurface())
         {
             if(!bRedPlatformRidden){UE_LOG(LogTemp,Display,TEXT("RED ELEVATOR: actual CharacterMovement base contact at%s"),*Hero->GetActorLocation().ToString());FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderRedPlatformRide.png"),false,false);}
