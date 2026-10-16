@@ -54,13 +54,41 @@ void AThunderMeadowHUD::DrawHUD()
         UI.Rect(153,119,14,1,FLinearColor::Black);UI.Rect(159,113,1,14,FLinearColor::Black);
         UI.Rect(155,120,10,1,FLinearColor::White);UI.Rect(160,115,1,10,FLinearColor::White);
     }
+    if(AReferenceBattlefieldTerrain::IsReferenceCourse())
+    {
+        auto* Stage=Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(GetWorld(),AThunderMeadowStage::StaticClass()));
+        auto* Race=Stage?Stage->GetCloudflagRace():nullptr;
+        if(Race&&Race->GetRaceState()!=ECloudflagRaceState::Idle)
+        {
+            const int32 Tenths=FMath::FloorToInt(Race->GetElapsed()*10);
+            UI.Text(TEXT("タイム"),212,183,8,FLinearColor::White,false,true,true);
+            UI.Text(FString::Printf(TEXT("%d:%02d.%d"),Tenths/600,(Tenths/10)%60,Tenths%10),245,181,11,Number,false,true);
+            if(Race->GetRaceState()!=ECloudflagRaceState::Running)
+                UI.Text(Race->GetStateLabel(),160,161,7,FLinearColor::White,true,true,true);
+        }
+    }
     if(!Player->GetInteraction()->GetMessage().IsEmpty())
     {
         UI.Rect(44,77,232,64,FLinearColor(0,0,0,.75f));
+        if(AReferenceBattlefieldTerrain::IsReferenceCourse())
+        {
+            // 日本語は空白で単語を分けないため、改行と26文字幅で読みやすく折り返します。
+            FString Line;float Y=84;
+            for(TCHAR Character:Player->GetInteraction()->GetMessage())
+            {
+                if(Character==TEXT('\n')||Line.Len()>=26)
+                {UI.Text(Line,52,Y,8,FLinearColor::White,false,false,true);Line.Reset();Y+=12;}
+                if(Character!=TEXT('\n'))Line.AppendChar(Character);
+            }
+            UI.Text(Line,52,Y,8,FLinearColor::White,false,false,true);
+        }
+        else
+        {
         TArray<FString> Words;Player->GetInteraction()->GetMessage().ParseIntoArray(Words,TEXT(" "),true);
         FString Line;float Y=84;
         for(const FString& Word:Words){if(Line.Len()+Word.Len()>38){UI.Text(Line,52,Y,8,FLinearColor::White,false,false);Line.Reset();Y+=12;}Line+=Word+TEXT(" ");}
         UI.Text(Line,52,Y,8,FLinearColor::White,false,false);
+        }
     }
     if(Mode->ShouldShowControls())
     {

@@ -46,6 +46,7 @@ private:
     float Elapsed = 0;
     float PlayerFinishTime = -1;
     float RivalFinishTime = -1;
+    bool bReferenceRace = false;
     bool bRivalFinished = false;
     bool bUsedWarp = false;
 };

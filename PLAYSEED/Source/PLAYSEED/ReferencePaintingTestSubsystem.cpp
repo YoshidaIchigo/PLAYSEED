@@ -5,6 +5,8 @@
 #include "ReferenceHero.h"
 #include "ReferenceChainWalk.h"
 #include "ReferenceSummitWalk.h"
+#include "ReferenceRaceRoute.h"
+#include "ThunderCloudflagRace.h"
 #include "ReferenceBattlefieldTerrain.h"
 #include "ThunderStormkeeper.h"
 #include "PlayseedCarryComponent.h"
@@ -39,8 +41,10 @@ void UReferencePaintingTestSubsystem::Initialize(FSubsystemCollectionBase& Colle
     bSaveFailureTest=bCameraTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderSaveFailureTest"));
     bSelectionTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderSelectionTest"));
     bReferenceBossTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceBossTest"));
-    ExpectedReward=bReferenceBossTest?1:6;
-    bStarTest=bReferenceBossTest||bSelectionTest||bSaveFailureTest||bFadeTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest"));
+    bReferenceRaceTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceRaceTest"));
+    ExpectedReward=bReferenceBossTest?1:bReferenceRaceTest?2:6;
+    BeforeRewardCount=bReferenceRaceTest?1:0;AfterRewardCount=BeforeRewardCount+1;
+    bStarTest=bReferenceRaceTest||bReferenceBossTest||bSelectionTest||bSaveFailureTest||bFadeTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest"));
     bReadMode=FParse::Param(FCommandLine::Get(),TEXT("ThunderStarReadTest"));
     bChainTest=bStarTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderChainTest"));
     bDropTest=bChainTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderDropTest"));
@@ -51,6 +55,7 @@ void UReferencePaintingTestSubsystem::Tap(APlayerController* PC,FKey Key)
 {PC->InputKey(FInputKeyEventArgs::CreateSimulated(Key,IE_Pressed,1));PC->InputKey(FInputKeyEventArgs::CreateSimulated(Key,IE_Released,0));}
 void UReferencePaintingTestSubsystem::Finish(bool bPassed,const FString& Message)
 {
+    if(bReferenceRaceTest&&bPassed&&!bRaceSprintSeen)bPassed=false;
     if(bSelectionTest&&bPassed&&(!bSelectionInitialVerified||!bSelectionEarnedVerified))bPassed=false;
     if(bCameraTest&&bPassed&&(!bSawCameraHidden||!bSawCameraRestored))bPassed=false;
     if(bSaveFailureTest&&bPassed&&(!bSaveObstacleCreated||!bSaveFailureObserved||!bSaveObstacleRemoved))bPassed=false;
@@ -79,13 +84,15 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
     }
     if(bFadeTest&&Phase>0)ObserveFade(PC);
     if(bFinished)return;
+    if(bReferenceRaceTest&&Phase>=50){UpdateReferenceRace(DeltaSeconds,Hero,PC);return;}
     if(bReferenceBossTest&&Phase>=40){UpdateReferenceBoss(DeltaSeconds,Hero,PC);return;}
     if(bChainTest&&Phase>=20){UpdateChain(DeltaSeconds,Hero,PC);return;}
     if(Phase==0)
     {
         if(Map!=TEXT("Entrance")||!Hero||!Mode||Elapsed<1)return;
-        if(!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_"))||Progress->GetEarnedRewardCount()!=(bReadMode?1:0)||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0)!=bReadMode||(bReadMode&&!Progress->HasEarnedReward(ExpectedReward)))
+        if(!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_"))||Progress->GetEarnedRewardCount()!=(bReadMode?AfterRewardCount:BeforeRewardCount)||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0)!=(bReadMode||BeforeRewardCount>0)||(bReadMode&&!Progress->HasEarnedReward(ExpectedReward)))
         {Finish(false,TEXT("Painting QA requires a fresh isolated save"));return;}
+        if(bReferenceRaceTest&&!Progress->HasEarnedReward(1)){Finish(false,TEXT("Race requires the previously actually earned star1 save"));return;}
         if(!GetGameInstance()->GetSubsystem<UPlayseedRecordingSubsystem>()->StartRecording(TEXT("Validation/CoursePlaythrough.avi"))){Finish(false,TEXT("Painting recording failed"));return;}
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderPaintingRoom.png"),false,false);
         Phase=1;Elapsed=0;return;
@@ -122,8 +129,14 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
     {
         if(bReadMode)
         {
-            if(Map!=TEXT("MissionSelect")||Progress->GetEarnedRewardCount()!=1||!Progress->HasEarnedReward(ExpectedReward)||!UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
+            if(Map!=TEXT("MissionSelect")||Progress->GetEarnedRewardCount()!=AfterRewardCount||!Progress->HasEarnedReward(ExpectedReward)||!UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
             {Finish(false,TEXT("Earned star6 did not persist through painting entry"));return;}
+            if(bReferenceRaceTest)
+            {
+                auto* Menu=Cast<AThunderMissionSelectionGameMode>(GetWorld()->GetAuthGameMode());
+                if(!Menu||Menu->GetVisibleMissionCount()!=3||!Menu->IsMissionSelectable(1)||!Menu->IsMissionSelectable(2)||!Menu->IsMissionSelectable(3)||Menu->IsMissionSelectable(4))
+                {Finish(false,TEXT("Earned1/2 did not reveal exactly the next mission3"));return;}
+            }
             if(bReferenceBossTest)
             {
                 auto* Menu=Cast<AThunderMissionSelectionGameMode>(GetWorld()->GetAuthGameMode());
@@ -140,7 +153,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
             if(Elapsed>10){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderStarSelection.png"),false,false);Phase=4;Elapsed=0;}
             return;
         }
-        if(Map!=TEXT("MissionSelect")||Progress->GetEarnedRewardCount()!=0||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
+        if(Map!=TEXT("MissionSelect")||Progress->GetEarnedRewardCount()!=BeforeRewardCount||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0)!=(BeforeRewardCount>0))
         {Finish(false,TEXT("Painting entry changed progress or travelled twice"));return;}
         if(bSelectionTest&&Elapsed>1.1f)
         {
@@ -157,7 +170,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
                 if(!bSelectionInitialShot){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderSelectionInitial.png"),false,false);bSelectionInitialShot=true;}
             }
             else FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderPaintingSelection.png"),false,false);
-            Tap(PC,EKeys::One);Phase=6;Elapsed=0;return;
+            Tap(PC,bReferenceRaceTest?EKeys::Two:EKeys::One);Phase=6;Elapsed=0;return;
         }
         if(Elapsed>10)
         {
@@ -167,7 +180,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
         return;
     }
     if(Phase==4&&Elapsed>1){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/CourseComplete.png"),false,false);Phase=5;Elapsed=0;return;}
-    if(Phase==5&&Elapsed>1)Finish(!bStarTest||(bMReentryChecked&&bPoseObserved&&bPoseShot),bReadMode?(bReferenceBossTest?TEXT("Actual M return and painting reentry, ordinary mountain route, three E rear pickups and real physical summit throws, actual fixed-position star1 save, pose/fades/painting return and earned1 menu persistence."):bStarTest?TEXT("Actual M return and painting reentry, second physical drop, reference post3 and gate collision, actual star6 save, pose/camera/held star, transition input spam and duplicate guard, automatic painting return, earned6 menu display persisted."):TEXT("Separate process loaded the actual star6 save, walked and jumped into the painting, and displayed earned6/count1 in selection without awarding progress.")):TEXT("Normal walking and Space jump into painting, ripple/dive/fade to star selection; R/M/Space/Ctrl/Enter spam blocked during transition; fresh progress remains zero and unsaved."));
+    if(Phase==5&&Elapsed>1)Finish(!bStarTest||(bMReentryChecked&&bPoseObserved&&bPoseShot),bReadMode?(bReferenceRaceTest?TEXT("Loaded previously actually earned star1, normal G race start, real sprint/walk/jump summit arrival before rival, waited for rival, G win dialogue, actual fixed-position star2 save, pose/fades/painting return and earned1/2 next3 menu."):bReferenceBossTest?TEXT("Actual M return and painting reentry, ordinary mountain route, three E rear pickups and real physical summit throws, actual fixed-position star1 save, pose/fades/painting return and earned1 menu persistence."):bStarTest?TEXT("Actual M return and painting reentry, second physical drop, reference post3 and gate collision, actual star6 save, pose/camera/held star, transition input spam and duplicate guard, automatic painting return, earned6 menu display persisted."):TEXT("Separate process loaded the actual star6 save, walked and jumped into the painting, and displayed earned6/count1 in selection without awarding progress.")):TEXT("Normal walking and Space jump into painting, ripple/dive/fade to star selection; R/M/Space/Ctrl/Enter spam blocked during transition; fresh progress remains zero and unsaved."));
     if(Phase==6)
     {
         if(Map!=TEXT("ThunderMeadow")||!Hero)return;
@@ -196,7 +209,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
     }
     if(Phase==8)
     {
-        if(!Hero||Map!=TEXT("ThunderMeadow")||Progress->GetEarnedRewardCount()!=0||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
+        if(!Hero||Map!=TEXT("ThunderMeadow")||Progress->GetEarnedRewardCount()!=BeforeRewardCount||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0)!=(BeforeRewardCount>0))
         {Finish(false,TEXT("Drop sequence changed map or progress unexpectedly"));return;}
         if(JumpHold>0){JumpHold-=DeltaSeconds;if(JumpHold<=0)PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Released,0));}
         if(Hero->GetCharacterMovement()->IsFalling()&&Hero->GetActorLocation().Z>210)bSawJump=true;
@@ -205,6 +218,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
             if(!bSawJump||!Hero->GetCharacterMovement()->IsMovingOnGround()){Finish(false,TEXT("Ordinary jump was not available after drop landing"));return;}
             if(bStarTest&&VerifiedDropVisits==1){Tap(PC,EKeys::M);Phase=13;Elapsed=0;return;}
             if(bStarTest&&VerifiedDropVisits>=2)bMReentryChecked=true;
+            if(bReferenceRaceTest){Phase=50;Elapsed=0;RaceWaypoint=0;RaceLegElapsed=0;return;}
             if(bReferenceBossTest){Phase=40;Elapsed=0;BossWaypoint=0;BossLegElapsed=0;return;}
             if(bChainTest){Phase=20;Elapsed=0;ChainWaypoint=0;ChainLegElapsed=0;return;}
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/CourseComplete.png"),false,false);Phase=9;Elapsed=0;
@@ -215,7 +229,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
     if(Phase==10&&Elapsed>1)
     {
         if(Flow->IsFading())return;
-        if(Map!=TEXT("Entrance")||!Hero||Flow->GetState()!=EReferenceTravelState::AtPainting||FVector::Dist2D(Hero->GetActorLocation(),FVector(-600,0,0))>40||Progress->GetEarnedRewardCount()!=0||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
+        if(Map!=TEXT("Entrance")||!Hero||Flow->GetState()!=EReferenceTravelState::AtPainting||FVector::Dist2D(Hero->GetActorLocation(),FVector(-600,0,0))>40||Progress->GetEarnedRewardCount()!=BeforeRewardCount||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0)!=(BeforeRewardCount>0))
         {Finish(false,TEXT("M did not return to the painting front with unchanged progress"));return;}
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderPaintingReturn.png"),false,false);Phase=11;Elapsed=0;return;
     }
@@ -337,7 +351,7 @@ void UReferencePaintingTestSubsystem::UpdateStarCapture(float DeltaSeconds,AWind
     if(Flow->IsFading()&&!Flow->IsCelebrating())return;
     if(bSaveFailureTest&&(!bSaveFailureObserved||!bSaveObstacleRemoved||!Progress->GetProgressProblem().IsEmpty()||IFileManager::Get().DirectoryExists(*SaveObstaclePath)))
     {Finish(false,TEXT("Save retry did not clear the error or remove only the own obstacle"));return;}
-    if(!Hero||Progress->GetEarnedRewardCount()!=1||!Progress->HasEarnedReward(ExpectedReward)||!UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
+    if(!Hero||Progress->GetEarnedRewardCount()!=AfterRewardCount||!Progress->HasEarnedReward(ExpectedReward)||!UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
     {Finish(false,TEXT("Real star6 was not saved before the capture animation"));return;}
     if(Phase==26)
     {
@@ -387,7 +401,7 @@ bool UReferencePaintingTestSubsystem::PrepareSaveFailure()
 void UReferencePaintingTestSubsystem::UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC)
 {
     auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
-    if(!Hero||Hero->RecoveryCount!=0||!ObservedStar.IsValid()||ObservedStar->IsCollected()||ObservedStar->IsHidden()||ObservedStar->GetSuccessfulCollections()!=0||Flow->GetState()!=EReferenceTravelState::InCourse||Progress->GetEarnedRewardCount()!=0||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0)||!bSaveFailureObserved||!bSaveObstacleCreated||bSaveObstacleRemoved)
+    if(!Hero||Hero->RecoveryCount!=0||!ObservedStar.IsValid()||ObservedStar->IsCollected()||ObservedStar->IsHidden()||ObservedStar->GetSuccessfulCollections()!=0||Flow->GetState()!=EReferenceTravelState::InCourse||Progress->GetEarnedRewardCount()!=BeforeRewardCount||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0)!=(BeforeRewardCount>0)||!bSaveFailureObserved||!bSaveObstacleCreated||bSaveObstacleRemoved)
     {Finish(false,TEXT("Failed-save state changed before physical exit and retry"));return;}
     auto* Movement=Hero->GetCharacterMovement();
     if(Movement->IsMovingOnGround()&&FVector::Dist2D(Hero->GetActorLocation(),ObservedStar->GetActorLocation())>250)
@@ -557,5 +571,95 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBoss(float DeltaSeconds,AWi
         if(Delta.Size2D()<220&&Movement->IsMovingOnGround()&&JumpHold<=0)
         {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;}
         if(Elapsed>20)Finish(false,TEXT("Ordinary walk/jump did not touch actual star1"));
+    }
+}
+
+void UReferencePaintingTestSubsystem::UpdateReferenceRace(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC)
+{
+    auto* Stage=Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(GetWorld(),AThunderMeadowStage::StaticClass()));
+    auto* Race=Stage?Stage->GetCloudflagRace():nullptr;
+    if(!Hero||!Race||Hero->RecoveryCount!=0){Finish(false,TEXT("Reference race disappeared or player recovered"));return;}
+    if(Race->GetRaceState()==ECloudflagRaceState::Lost||Race->GetRaceState()==ECloudflagRaceState::Disqualified)
+    {Finish(false,FString::Printf(TEXT("Actual race was lost/disqualified: player%.2f rival%.2f"),Race->GetPlayerTime(),Race->GetRivalTime()));return;}
+    auto* Movement=Hero->GetCharacterMovement();
+    if(JumpHold>0){JumpHold-=DeltaSeconds;if(JumpHold<=0)PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Released,0));}
+    if(Phase==50||Phase==52)
+    {
+        const auto* Points=Phase==50?ReferenceRaceApproach:ReferenceRaceToSummit;
+        const int32 Count=Phase==50?UE_ARRAY_COUNT(ReferenceRaceApproach):UE_ARRAY_COUNT(ReferenceRaceToSummit);
+        if(Phase==52&&Movement->MaxWalkSpeed>600)bRaceSprintSeen=true;
+        if(RaceWaypoint>=Count)
+        {
+            if(!Movement->IsMovingOnGround())return;
+            Movement->StopMovementImmediately();
+            if(Phase==50)
+            {FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderRaceStart.png"),false,false);Phase=51;}
+            else
+            {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::LeftShift,IE_Released,0));FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderRaceFlag.png"),false,false);Phase=53;}
+            Elapsed=0;return;
+        }
+        const auto& Point=Points[RaceWaypoint];const FVector Target(Point.X,Point.Y,Point.Z),Delta=Target-Hero->GetActorLocation();RaceLegElapsed+=DeltaSeconds;
+        if(RaceLegElapsed>18){Finish(false,FString::Printf(TEXT("Reference race walk blocked phase%d point%d hero%s target%s"),Phase,RaceWaypoint,*Hero->GetActorLocation().ToString(),*Target.ToString()));return;}
+        if(Delta.Size2D()<25&&FMath::Abs(Hero->GetActorLocation().Z-82-Target.Z)<80)
+        {UE_LOG(LogTemp,Display,TEXT("RACE WALK phase%d point%d"),Phase,RaceWaypoint);++RaceWaypoint;RaceLegElapsed=0;bRaceRouteJump=false;return;}
+        PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(),FRotator(-18,Delta.Rotation().Yaw,0),DeltaSeconds,4));
+        if(Movement->IsFalling())
+        {
+            const FVector Desired=(Delta.GetSafeNormal2D()*Delta.Size2D()*4.5f).GetClampedToMaxSize2D(470),Correction=Desired-FVector(Hero->GetVelocity().X,Hero->GetVelocity().Y,0);
+            Hero->AddMovementInput(Correction.GetSafeNormal2D(),FMath::Clamp(Correction.Size2D()/150,0.f,1.f));
+        }
+        else Hero->AddMovementInput(Delta.GetSafeNormal2D(),FMath::Clamp(Delta.Size2D()/140,.25f,1.f));
+        if(Point.bJump&&!bRaceRouteJump&&Movement->IsMovingOnGround())
+        {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;bRaceRouteJump=true;}
+        if(Movement->IsMovingOnGround()&&JumpHold<=0&&Delta.Size2D()<450&&Target.Z>Hero->GetActorLocation().Z-12)
+        {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;}
+        return;
+    }
+    if(Phase==51)
+    {
+        PC->SetControlRotation(FRotator(-12,(Race->GetActorLocation()-Hero->GetActorLocation()).Rotation().Yaw,0));
+        if(!bRaceStartSent&&Elapsed>.5f){Tap(PC,EKeys::G);bRaceStartSent=true;}
+        if(Race->GetRaceState()==ECloudflagRaceState::Running)
+        {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::LeftShift,IE_Pressed,1));Phase=52;Elapsed=0;RaceWaypoint=0;RaceLegElapsed=0;return;}
+        if(Elapsed>3)Finish(false,TEXT("Normal G dialogue did not start the reference race"));return;
+    }
+    if(Phase==53)
+    {
+        if(Elapsed>1&&!Race->HasPlayerReachedFlag()){Finish(false,TEXT("Ordinary summit route did not actually reach the race flag"));return;}
+        PC->SetControlRotation(FRotator(-15,180,0));
+        if(Race->GetRaceState()==ECloudflagRaceState::Won)
+        {
+            if(!Race->HasRivalFinished()||Race->GetPlayerTime()<0||Race->GetPlayerTime()>=Race->GetRivalTime())
+            {Finish(false,TEXT("Race declared won without both actual arrival times"));return;}
+            Phase=54;Elapsed=0;return;
+        }
+        if(Elapsed>300)Finish(false,TEXT("Rival did not finish the real reference route"));return;
+    }
+    if(Phase==54)
+    {
+        PC->SetControlRotation(FRotator(-12,(Race->GetActorLocation()-Hero->GetActorLocation()).Rotation().Yaw,0));
+        if(Race->GetReward())
+        {
+            if(Race->GetReward()->GetRewardNumber()!=2||FVector::Dist(Race->GetReward()->GetRestLocation(),FVector(3030,4600,4500))>1)
+            {Finish(false,TEXT("Win dialogue did not spawn star2 at the fixed reference position"));return;}
+            FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderRaceWin.png"),false,false);Phase=55;Elapsed=0;return;
+        }
+        const FVector Delta=Race->GetActorLocation()+FVector(-170,0,82)-Hero->GetActorLocation();
+        if(Delta.Size2D()>18)Hero->AddMovementInput(Delta.GetSafeNormal2D(),FMath::Clamp(Delta.Size2D()/120,.2f,1.f));
+        else if(Movement->IsMovingOnGround())
+        {Movement->StopMovementImmediately();if(!bRaceClaimSent){Tap(PC,EKeys::G);bRaceClaimSent=true;}}
+        if(Elapsed>12)Finish(false,TEXT("Normal walk and G after the rival finished did not produce star2"));return;
+    }
+    if(Phase==55)
+    {
+        auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
+        if(Flow->IsCelebrating()){ObservedStar=Race->GetReward();Phase=26;Elapsed=0;return;}
+        const FVector Delta=Race->GetReward()->GetRestLocation()-Hero->GetActorLocation();
+        PC->SetControlRotation(FRotator(-14,Delta.Rotation().Yaw,0));
+        if(Delta.Size2D()>15)Hero->AddMovementInput(Delta.GetSafeNormal2D(),FMath::Clamp(Delta.Size2D()/120,.2f,1.f));
+        else if(Movement->IsMovingOnGround())Movement->StopMovementImmediately();
+        if(Delta.Size2D()<220&&Movement->IsMovingOnGround()&&JumpHold<=0)
+        {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;}
+        if(Elapsed>15)Finish(false,TEXT("Ordinary walk/jump did not touch actual star2"));
     }
 }
