@@ -19,7 +19,10 @@ public:
     AThunderMissionSelectionGameMode();
     virtual void StartPlay() override;
     int32 GetHighlightedMission() const { return HighlightedMission; }
+    int32 GetVisibleMissionCount() const;
+    bool IsMissionSelectable(int32 Number) const;
 private:
+    int32 GetFirstUnfinishedMission() const;
     void EnterMission(int32 Number);
     void Confirm() { EnterMission(HighlightedMission); }
     void Left() { Navigate(-1); }

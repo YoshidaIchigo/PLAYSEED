@@ -49,13 +49,13 @@ void FBattlefieldUI::Text(const FString& Value,float X,float Y,float Size,FLinea
     if(bOutline)Item.EnableShadow(FLinearColor::Black,FVector2D(1,1)*Scale);
     Canvas->DrawItem(Item);
 }
-void FBattlefieldUI::Star(FVector2D P,float Radius,FLinearColor Color,bool bEyes) const
+void FBattlefieldUI::Star(FVector2D P,float Radius,FLinearColor Color,bool bEyes,float WidthScale) const
 {
     // 外側5点と内側5点を交互に並べ、中心から10枚の三角形で星を塗ります。
     TArray<FVector2D> Points;
-    for(int32 I=0;I<10;++I){const float A=-PI*.5f+I*PI/5,R=Radius*(I%2==0?1.f:.46f);Points.Add(P+FVector2D(FMath::Cos(A),FMath::Sin(A))*R);}
+    for(int32 I=0;I<10;++I){const float A=-PI*.5f+I*PI/5,R=Radius*(I%2==0?1.f:.46f);Points.Add(P+FVector2D(FMath::Cos(A)*WidthScale,FMath::Sin(A))*R);}
     for(int32 I=0;I<10;++I)Triangle(P,Points[I],Points[(I+1)%10],Color);
-    if(bEyes){Rect(P.X-Radius*.21f,P.Y-Radius*.18f,Radius*.12f,Radius*.35f,FLinearColor::Black);Rect(P.X+Radius*.1f,P.Y-Radius*.18f,Radius*.12f,Radius*.35f,FLinearColor::Black);}
+    if(bEyes){Rect(P.X-Radius*.21f*WidthScale,P.Y-Radius*.18f,Radius*.12f*WidthScale,Radius*.35f,FLinearColor::Black);Rect(P.X+Radius*.1f*WidthScale,P.Y-Radius*.18f,Radius*.12f*WidthScale,Radius*.35f,FLinearColor::Black);}
 }
 void FBattlefieldUI::Coin(FVector2D P,float Radius) const
 {

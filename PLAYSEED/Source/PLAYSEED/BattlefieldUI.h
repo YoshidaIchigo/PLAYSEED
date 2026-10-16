@@ -12,7 +12,7 @@ public:
     void Triangle(FVector2D A,FVector2D B,FVector2D C,FLinearColor Color) const;
     void Ellipse(FVector2D P,FVector2D Radius,FLinearColor Color) const;
     void Text(const FString& Value,float X,float Y,float Size,FLinearColor Color=FLinearColor::White,bool bCenter=false,bool bOutline=true,bool bJapanese=false) const;
-    void Star(FVector2D P,float Radius,FLinearColor Color,bool bEyes=true) const;
+    void Star(FVector2D P,float Radius,FLinearColor Color,bool bEyes=true,float WidthScale=1.f) const;
     void Coin(FVector2D P,float Radius=8) const;
     void Face(FVector2D P) const;
     void Power(FVector2D P,int32 Health) const;

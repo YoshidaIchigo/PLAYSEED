@@ -33,7 +33,8 @@ void UReferencePaintingTestSubsystem::Initialize(FSubsystemCollectionBase& Colle
     bFadeTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderFadeTest"));
     bCameraTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderCameraTest"));
     bSaveFailureTest=bCameraTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderSaveFailureTest"));
-    bStarTest=bSaveFailureTest||bFadeTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest"));
+    bSelectionTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderSelectionTest"));
+    bStarTest=bSelectionTest||bSaveFailureTest||bFadeTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest"));
     bReadMode=FParse::Param(FCommandLine::Get(),TEXT("ThunderStarReadTest"));
     bChainTest=bStarTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderChainTest"));
     bDropTest=bChainTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderDropTest"));
@@ -44,6 +45,7 @@ void UReferencePaintingTestSubsystem::Tap(APlayerController* PC,FKey Key)
 {PC->InputKey(FInputKeyEventArgs::CreateSimulated(Key,IE_Pressed,1));PC->InputKey(FInputKeyEventArgs::CreateSimulated(Key,IE_Released,0));}
 void UReferencePaintingTestSubsystem::Finish(bool bPassed,const FString& Message)
 {
+    if(bSelectionTest&&bPassed&&(!bSelectionInitialVerified||!bSelectionEarnedVerified))bPassed=false;
     if(bCameraTest&&bPassed&&(!bSawCameraHidden||!bSawCameraRestored))bPassed=false;
     if(bSaveFailureTest&&bPassed&&(!bSaveObstacleCreated||!bSaveFailureObserved||!bSaveObstacleRemoved))bPassed=false;
     if(bFadeTest&&bPassed&&(ObservedFadeOut.Num()!=7||ObservedFadeCovered.Num()!=7||ObservedFadeIn.Num()!=7||GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>()->GetCompletedFades()!=7)){bPassed=false;UE_LOG(LogTemp,Error,TEXT("FADE QA incomplete sequences: out%d covered%d in%d"),ObservedFadeOut.Num(),ObservedFadeCovered.Num(),ObservedFadeIn.Num());}
@@ -115,14 +117,33 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
         {
             if(Map!=TEXT("MissionSelect")||Progress->GetEarnedRewardCount()!=1||!Progress->HasEarnedReward(6)||!UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
             {Finish(false,TEXT("Earned star6 did not persist through painting entry"));return;}
+            if(bSelectionTest)
+            {
+                auto* Menu=Cast<AThunderMissionSelectionGameMode>(GetWorld()->GetAuthGameMode());
+                if(!Menu||Menu->GetVisibleMissionCount()!=6||!Menu->IsMissionSelectable(1)||!Menu->IsMissionSelectable(6)||Menu->IsMissionSelectable(2))
+                {Finish(false,TEXT("Earned6-first UI did not show6 and allow only earned6/next1"));return;}
+                bSelectionEarnedVerified=true;
+            }
             if(Elapsed>10){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderStarSelection.png"),false,false);Phase=4;Elapsed=0;}
             return;
         }
         if(Map!=TEXT("MissionSelect")||Progress->GetEarnedRewardCount()!=0||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
         {Finish(false,TEXT("Painting entry changed progress or travelled twice"));return;}
+        if(bSelectionTest&&Elapsed>1.1f)
+        {
+            auto* Menu=Cast<AThunderMissionSelectionGameMode>(GetWorld()->GetAuthGameMode());
+            if(!Menu||Menu->GetVisibleMissionCount()!=1||Menu->GetHighlightedMission()!=1||!Menu->IsMissionSelectable(1)||Menu->IsMissionSelectable(2)||Progress->GetSelectedMissionNumber()!=1)
+            {Finish(false,TEXT("Fresh selection UI did not keep only mission1 after invalid number/navigation inputs"));return;}
+            if(Elapsed<1.8f)for(FKey Key:{EKeys::Two,EKeys::Right,EKeys::Left})Tap(PC,Key);
+            if(Elapsed>1.7f)bSelectionInitialVerified=true;
+        }
         if(bDropTest&&Elapsed>2)
         {
-            FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderPaintingSelection.png"),false,false);
+            if(bSelectionTest)
+            {
+                if(!bSelectionInitialShot){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderSelectionInitial.png"),false,false);bSelectionInitialShot=true;}
+            }
+            else FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderPaintingSelection.png"),false,false);
             Tap(PC,EKeys::One);Phase=6;Elapsed=0;return;
         }
         if(Elapsed>10)
