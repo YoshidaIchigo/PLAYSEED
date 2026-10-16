@@ -1,5 +1,6 @@
 #include "ThunderLauncher.h"
 #include "ThunderExpeditionSubsystem.h"
+#include "ReferenceBattlefieldTerrain.h"
 #include "PlayseedInteractionComponent.h"
 #include "PlayseedLaunchComponent.h"
 #include "WindseedCharacter.h"
@@ -24,6 +25,17 @@ AThunderLauncher::AThunderLauncher()
         Shape->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         Parts.Add(Shape); Colors.Add(Color); return Shape;
     };
+    bReferenceLauncher=AReferenceBattlefieldTerrain::IsReferenceCourse();
+    if(bReferenceLauncher)
+    {
+        Part(TEXT("StoneSocket"),Cylinder.Object,FVector(0,0,10),FVector(2.4f,2.4f,.3f),FLinearColor(.42f,.44f,.46f));
+        Part(TEXT("DarkPit"),Cylinder.Object,FVector(0,0,28),FVector(1.9f,1.9f,.04f),FLinearColor(.015f,.018f,.025f));
+        ClosedLid=Part(TEXT("ClosedStoneLid"),Cylinder.Object,FVector(0,0,33),FVector(1.92f,1.92f,.08f),FLinearColor(.5f,.52f,.54f));
+        Barrel=Part(TEXT("BlueCannonBarrel"),Cylinder.Object,FVector(0,0,100),FVector(.8f,.8f,2),FLinearColor(.025f,.12f,.72f));
+        auto* Muzzle=Part(TEXT("DarkMuzzle"),Cylinder.Object,FVector::ZeroVector,FVector(.8f,.8f,.025f),FLinearColor(.008f,.01f,.02f));
+        Muzzle->SetupAttachment(Barrel);Muzzle->SetRelativeLocation(FVector(0,0,52));
+        return;
+    }
     Part(TEXT("Foundation"), Cylinder.Object, FVector(0, 0, 15), FVector(2, 2, .3f), FLinearColor(.06f, .18f, .24f));
     Barrel = Part(TEXT("CopperStem"), Cylinder.Object, FVector(0, 0, 100), FVector(.55f, .55f, 1.5f), FLinearColor(.85f, .45f, .1f));
     for (int32 Index = 0; Index < 8; ++Index)
@@ -36,7 +48,7 @@ AThunderLauncher::AThunderLauncher()
 void AThunderLauncher::BeginPlay()
 {
     Super::BeginPlay();
-    if (auto* Palette = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Windseed/M_Palette.M_Palette")))
+    if (auto* Palette = LoadObject<UMaterialInterface>(nullptr,bReferenceLauncher?TEXT("/Game/Battlefield/M_Actor.M_Actor"):TEXT("/Game/Windseed/M_Palette.M_Palette")))
         for (int32 Index = 0; Index < Parts.Num(); ++Index)
         {
             auto* Tint = UMaterialInstanceDynamic::Create(Palette, this);
@@ -47,6 +59,11 @@ void AThunderLauncher::BeginPlay()
 void AThunderLauncher::RefreshOpenState()
 {
     bOpen = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->IsLauncherUnlocked();
+    if(bReferenceLauncher)
+    {
+        Barrel->SetHiddenInGame(!bOpen,true);if(ClosedLid)ClosedLid->SetHiddenInGame(bOpen);
+        SetAimPose(70,GetDefaultAimYaw());return;
+    }
     Barrel->SetRelativeRotation(FRotator(bOpen ? 20 : 90, bOpen ? GetDefaultAimYaw() : 0, 0));
 }
 void AThunderLauncher::Tick(float DeltaSeconds)
@@ -54,11 +71,15 @@ void AThunderLauncher::Tick(float DeltaSeconds)
     Super::Tick(DeltaSeconds);
     if (bOpen != GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->IsLauncherUnlocked()) RefreshOpenState();
 }
+void AThunderLauncher::ConfigureAimYaw(float Yaw)
+{
+    DefaultAimYaw=FRotator::NormalizeAxis(Yaw);if(bOpen)SetAimPose(70,DefaultAimYaw);
+}
 void AThunderLauncher::SetAimPose(float Pitch, float WorldYaw) { Barrel->SetRelativeRotation(FRotator(90 - Pitch, WorldYaw - GetActorRotation().Yaw, 0)); }
 void AThunderLauncher::Interact(AWindseedCharacter* Player)
 {
     if (!Player) return;
     if (Player->GetLaunch()->IsAiming()) { Player->GetLaunch()->CancelAim(); return; }
-    if (!bOpen) { Player->GetInteraction()->ShowMessage(TEXT("The Skybloom is folded. Ask Aeri nearby to open it.")); return; }
+    if (!bOpen) { Player->GetInteraction()->ShowMessage(bReferenceLauncher?TEXT("大砲のふたは閉まっているよ。\n近くの赤いボムへGで話しかけよう。"):TEXT("The Skybloom is folded. Ask Aeri nearby to open it.")); return; }
     Player->GetLaunch()->TryBeginAim(this);
 }

@@ -19,6 +19,7 @@ public:
 private:
     void Tap(APlayerController* PC,FKey Key);
     void Finish(bool bPassed,const FString& Message);
+    void UpdateReferenceCannon(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceRace(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceBoss(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateChain(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
@@ -27,6 +28,9 @@ private:
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     bool bReferenceBossTest=false,bBossRouteJump=false,bBossCoaxed=false,bBossThrowObserved=false;
+    bool bReferenceCannonTest=false,bGuideSent=false,bGuideConfirmed=false,bAimSent=false,bCannonAimShot=false,bCannonSawFlight=false,bCannonAimHidden=false;
+    int32 CannonWaypoint=0;
+    float CannonLegElapsed=0,CannonAimStable=0,CannonGoalYaw=0,CannonGoalPitch=0;
     bool bReferenceRaceTest=false,bRaceStartSent=false,bRaceClaimSent=false,bRaceRouteJump=false,bRaceSprintSeen=false;
     int32 BeforeRewardCount=0,AfterRewardCount=1,RaceWaypoint=0;
     float RaceLegElapsed=0;
