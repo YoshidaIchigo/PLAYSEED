@@ -1,4 +1,6 @@
 #include "ReferenceWalker.h"
+#include "ReferenceTravelSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -47,6 +49,14 @@ void AReferenceWalker::ResetEnemy()
 }
 void AReferenceWalker::Tick(float DeltaSeconds)
 {
+    if(auto* Flow=GetGameInstance()?GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>():nullptr)
+        if(Flow->IsCelebrating()||Flow->IsFading())
+        {
+            // 取得と白フェード中は追跡・接触を止め、近い敵がポーズへ重ならないようにします。
+            auto* Hero=UGameplayStatics::GetPlayerPawn(this,0);
+            const float Distance=Hero?FVector::Dist(Hero->GetActorLocation(),GetActorLocation()):5000;
+            SetActorHiddenInGame(Distance<700||Distance>4000);return;
+        }
     Super::Tick(DeltaSeconds);
     if(IsDefeated()){WalkerVisual->SetRelativeScale3D(FVector(1.2f,1.2f,.22f));return;}
     if(auto* Hero=UGameplayStatics::GetPlayerPawn(this,0))SetActorHiddenInGame(FVector::Dist(Hero->GetActorLocation(),GetActorLocation())>4000);

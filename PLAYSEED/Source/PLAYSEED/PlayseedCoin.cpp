@@ -1,4 +1,5 @@
 #include "PlayseedCoin.h"
+#include "ReferenceBattlefieldTerrain.h"
 #include "ThunderMeadowGameMode.h"
 #include "ThunderCoinLedger.h"
 #include "WindseedCharacter.h"
@@ -57,10 +58,12 @@ int32 APlayseedCoin::ValueOf(EPlayseedCoinKind Kind)
 
 void APlayseedCoin::UpdateTint()
 {
-    if (auto* Palette = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Windseed/M_Palette.M_Palette")))
+    const bool bReference=AReferenceBattlefieldTerrain::IsReferenceCourse();
+    // 現行コースは自作の色パレットを使い、照明による緑やピンクへの偏りを避けます。
+    if (auto* Palette = LoadObject<UMaterialInterface>(nullptr,bReference?TEXT("/Game/Battlefield/M_Actor.M_Actor"):TEXT("/Game/Windseed/M_Palette.M_Palette")))
     {
         auto* Tint = UMaterialInstanceDynamic::Create(Palette, this);
-        const FLinearColor Color = CoinKind == EPlayseedCoinKind::Scarlet ? FLinearColor(1, .12f, .2f) :
+        const FLinearColor Color = bReference?(CoinKind==EPlayseedCoinKind::Scarlet?FLinearColor(.85f,.005f,.005f):CoinKind==EPlayseedCoinKind::Azure?FLinearColor(.015f,.18f,1):FLinearColor(1,.55f,.005f)):CoinKind == EPlayseedCoinKind::Scarlet ? FLinearColor(1, .12f, .2f) :
             CoinKind == EPlayseedCoinKind::Azure ? FLinearColor(.08f, .4f, 1) : FLinearColor(1, .7f, .06f);
         Tint->SetVectorParameterValue(TEXT("Tint"), Color);
         Disc->SetMaterial(0, Tint);

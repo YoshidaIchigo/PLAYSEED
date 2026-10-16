@@ -38,6 +38,8 @@ private:
     void ObserveFade(APlayerController* PC);
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
+    bool bSurfaceTest=false,bWingApproachReady=true;
+    FVector WingApproachPoint=FVector::ZeroVector;
     bool bBombTest=false,bBombChaseChecked=false,bBombThrowChecked=false,bBombFuseChecked=false,bBombResetChecked=false,bBombHeldPhoto=false;
     int32 BombWaypoint=0;
     float BombLegElapsed=0,BombInputClock=0;
