@@ -42,14 +42,18 @@ void UReferencePaintingTestSubsystem::UpdateReferenceWorld(float DeltaSeconds,AW
         if(Move->IsMovingOnGround()&&JumpHold<=0&&D.Size2D()<400&&Target.Z>Hero->GetActorLocation().Z-82+38)
         {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;}
     };
-    auto Near=[&](FVector Target){return FVector::Dist2D(Hero->GetActorLocation(),Target)<25&&FMath::Abs(Hero->GetActorLocation().Z-82-Target.Z)<(Move->IsMovingOnGround()?160:80);};
+    auto Near=[&](FVector Target){return FVector::Dist2D(Hero->GetActorLocation(),Target)<40&&FMath::Abs(Hero->GetActorLocation().Z-82-Target.Z)<(Move->IsMovingOnGround()?160:80);};
     auto Route=[&](const FReferenceWalkPoint* Points,int32 Count,bool bReverse=false)
     {
         if(WorldWaypoint>=Count){if(Move->IsMovingOnGround())Move->StopMovementImmediately();return true;}
         const auto& P=Points[bReverse?Count-1-WorldWaypoint:WorldWaypoint];const FVector Target(P.X,P.Y,P.Z);WorldLegElapsed+=DeltaSeconds;
         if(WorldLegElapsed>22){Finish(false,FString::Printf(TEXT("World ordinary walk blocked phase%d point%d hero%s target%s floor%s"),Phase,WorldWaypoint,*Hero->GetActorLocation().ToString(),*Target.ToString(),*Move->CurrentFloor.HitResult.ImpactPoint.ToString()));return false;}
         if(Near(Target)){if(WorldWaypoint%10==0)UE_LOG(LogTemp,Display,TEXT("WORLD WALK phase%d point%d hero%s"),Phase,WorldWaypoint,*Hero->GetActorLocation().ToString());++WorldWaypoint;WorldLegElapsed=0;return false;}
-        Walk(Target,P.bJump);return false;
+        Walk(Target,P.bJump);
+        // 洞窟の入口など、実カプセルが小段差で止まったら普通のSpaceで越えます。
+        if(WorldLegElapsed>1&&Move->IsMovingOnGround()&&Hero->GetVelocity().Size2D()<40&&FVector::Dist2D(Hero->GetActorLocation(),Target)<300&&JumpHold<=0)
+        {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;}
+        return false;
     };
     auto Begin=[&](int32 Next){Phase=Next;Elapsed=0;WorldWaypoint=0;WorldLegElapsed=0;};
     auto Hold=[&](FVector Subject){if(Move->IsMovingOnGround())Move->StopMovementImmediately();PC->SetControlRotation(FRotator(-15,(Subject-Hero->GetActorLocation()).Rotation().Yaw+20,0));};
@@ -131,12 +135,19 @@ void UReferencePaintingTestSubsystem::UpdateReferenceWorld(float DeltaSeconds,AW
     {
         Hold(World->GetHeartLocation());
         if(Health->GetHealth()==8&&World->GetHeartHeals()>0&&WorldHealthBaseline<8)
-        {bWorldHeartChecked=true;Photo(TEXT("ThunderWorldHeartHealed.png"));Begin(177);return;}
+        {bWorldHeartChecked=true;if(!PlanExit(Hero->GetActorLocation()-FVector(0,0,82))){Finish(false,TEXT("No clear ordinary step away from the real recovery heart"));return;}Begin(179);return;}
         if(Elapsed>18)Finish(false,FString::Printf(TEXT("Actual heart contact did not heal real damage baseline%d health%d heals%d hero%s heart%s"),WorldHealthBaseline,Health->GetHealth(),World->GetHeartHeals(),*Hero->GetActorLocation().ToString(),*World->GetHeartLocation().ToString()));return;
     }
     if(Phase==177)
     {
         if(Pairs[0]->GetWarpCount()==2){Begin(178);return;}
         if(Route(ReferenceWorldHeartWalk,UE_ARRAY_COUNT(ReferenceWorldHeartWalk),true))Walk(Pairs[0]->GetCaveFloor(1));return;
+    }
+    if(Phase==179)
+    {
+        Walk(WorldExitTarget);
+        if(Near(WorldExitTarget)&&Move->IsMovingOnGround())
+        {Hold(World->GetHeartLocation());if(Elapsed>1.2f){Photo(TEXT("ThunderWorldHeartHealed.png"));Begin(177);return;}}
+        if(Elapsed>8)Finish(false,TEXT("Ordinary step away could not show the real rotating heart"));
     }
 }
