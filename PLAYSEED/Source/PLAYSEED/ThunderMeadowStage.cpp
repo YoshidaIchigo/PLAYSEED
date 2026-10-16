@@ -1,3 +1,4 @@
+#include "ReferenceBattlefieldTerrain.h"
 #include "ThunderMeadowStage.h"
 #include "ThunderMovingPlatform.h"
 #include "ThunderTiltingBridge.h"
@@ -443,6 +444,8 @@ void AThunderMeadowStage::BuildLighting()
 {
     auto* SkyDome = AddShape(Sphere, FVector::ZeroVector, FVector(40000), FLinearColor::White);
     SkyDome->SetMaterial(0, SkyMaterial);
+    if(AReferenceBattlefieldTerrain::IsReferenceCourse())
+        if(auto* ReferenceSky=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Battlefield/M_Sky.M_Sky")))SkyDome->SetMaterial(0,ReferenceSky);
     SkyDome->SetCastShadow(false);
     // 光源は World が所有し、レベル退出時に地形と一緒に破棄されます。
     auto* Sun = GetWorld()->SpawnActor<ADirectionalLight>(FVector(0, 0, 1500), FRotator(-50, -30, 0));
@@ -458,6 +461,12 @@ void AThunderMeadowStage::BuildLighting()
     Exposure->Settings.AutoExposureMethod = AEM_Manual;
     Exposure->Settings.bOverride_AutoExposureApplyPhysicalCameraExposure = true;
     Exposure->Settings.AutoExposureApplyPhysicalCameraExposure = false;
+    if(AReferenceBattlefieldTerrain::IsReferenceCourse())
+    {
+        Exposure->Settings.bOverride_ToneCurveAmount=true;Exposure->Settings.ToneCurveAmount=0;
+        Exposure->Settings.bOverride_ExpandGamut=true;Exposure->Settings.ExpandGamut=0;
+        Exposure->Settings.bOverride_BlueCorrection=true;Exposure->Settings.BlueCorrection=0;
+    }
 }
 
 void AThunderMeadowStage::BuildStormkeeper()
@@ -471,6 +480,13 @@ void AThunderMeadowStage::BuildStormkeeper()
 void AThunderMeadowStage::BeginPlay()
 {
     Super::BeginPlay();
+    // 新地形は検証用の明示オプションから段階的に統合します。
+    if(AReferenceBattlefieldTerrain::IsReferenceCourse())
+    {
+        GetWorld()->SpawnActor<AReferenceBattlefieldTerrain>();
+        BuildLighting();
+        return;
+    }
     BuildMeadow();
     BuildWoodenBridge();
     BuildMovingPlatform();

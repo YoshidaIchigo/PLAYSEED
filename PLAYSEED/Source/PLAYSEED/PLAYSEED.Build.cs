@@ -10,7 +10,7 @@ public class PLAYSEED : ModuleRules
 
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput" });
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "AVIWriter", "RHI", "RenderCore", "Slate", "SlateCore" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "AVIWriter", "RHI", "RenderCore", "Slate", "SlateCore", "ProceduralMeshComponent" });
 
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
