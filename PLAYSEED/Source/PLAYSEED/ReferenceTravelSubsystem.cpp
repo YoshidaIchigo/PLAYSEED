@@ -14,6 +14,7 @@
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/PlayerInput.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/PackageName.h"
 
@@ -105,6 +106,8 @@ void UReferenceTravelSubsystem::UpdateFade(float DeltaSeconds)
     FadePhase=EReferenceFadePhase::None;++CompletedFades;
     if(auto* PC=FadeLockedController.Get())
     {
+        // 明転直前の確定キーを次の場面へ持ち越さないよう、状態と未処理イベントを両方消します。
+        if(PC->PlayerInput){PC->PlayerInput->FlushPressedKeys();PC->PlayerInput->DiscardPlayerInput();}
         PC->SetIgnoreMoveInput(false);PC->SetIgnoreLookInput(false);
         if(State==EReferenceTravelState::AtPainting)if(auto* Hero=Cast<AWindseedCharacter>(PC->GetPawn()))Hero->EnableInput(PC);
     }
