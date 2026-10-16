@@ -237,6 +237,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         { Fail(TEXT("The new stage has mixed actors or a wrong start")); return; }
         InputStart = Player->GetActorLocation();
         PC->SetControlRotation(FRotator(-18, 0, 0));
+        Key(PC, EKeys::LeftShift, true);
         Key(PC, EKeys::W, true);
         Key(PC, EKeys::SpaceBar, true);
         Step = 2;
@@ -244,6 +245,8 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     }
     else if (Step == 2 && Elapsed > .4f && Player)
     {
+        Key(PC, EKeys::LeftShift, false);
+        PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::MouseX, IE_Axis, 12));
         Key(PC, EKeys::W, false);
         Key(PC, EKeys::SpaceBar, false);
         if (Player->GetActorLocation().X < InputStart.X + 70 || Player->GetActorLocation().Z < InputStart.Z + 40)
@@ -254,7 +257,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     }
     else if (Step == 3 && Elapsed > 1 && Player)
     {
-        if (FVector::Dist2D(Player->GetActorLocation(), FVector(-600, -600, 100)) > 5 || Player->RecoveryCount != 1
+        if (FVector::Dist2D(Player->GetActorLocation(), FVector(-600, -600, 100)) > 5 || Player->RecoveryCount != 1 || FMath::Abs(PC->GetControlRotation().Yaw)<1
             || Expedition->GetSelectedMissionNumber() != (bBossTest ? 1 : bRaceTest ? 2 : bSkyCacheTest ? 3 : bScarletTest ? 4 : bChimeTest ? 5 : 6))
         { Fail(TEXT("Restart in the new stage failed")); return; }
         const bool bIslandTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderIslandTest"));
