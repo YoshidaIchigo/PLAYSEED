@@ -1,19 +1,8 @@
 #pragma once
-
 #include "CoreMinimal.h"
 #include "PlayseedGameModeBase.h"
-#include "GameFramework/HUD.h"
 #include "StageSelectionGameMode.generated.h"
-
-// HUD は画面表示、GameMode は入場ルールを担当します。選択画面に操作キャラクターは不要です。
-UCLASS()
-class PLAYSEED_API AStageSelectionHUD : public AHUD
-{
-    GENERATED_BODY()
-public:
-    virtual void DrawHUD() override;
-};
-
+// 古い起動リンクを壊さない入口です。ステージ選択UIは持たず、コースの目的選択へ進みます。
 UCLASS()
 class PLAYSEED_API AStageSelectionGameMode : public APlayseedGameModeBase
 {
@@ -21,8 +10,4 @@ class PLAYSEED_API AStageSelectionGameMode : public APlayseedGameModeBase
 public:
     AStageSelectionGameMode();
     virtual void StartPlay() override;
-private:
-    void EnterWindseedGarden();
-    void EnterThunderMeadow();
-    bool bTravelRequested = false;
 };

@@ -29,7 +29,7 @@ if not match or not (project_dir / "Content" / (match[1][6:] + ".umap")).is_file
 for material in ("M_Palette", "M_Sky"):
     if not (project_dir / f"Content/Windseed/{material}.uasset").is_file():
         errors.append(f"Original material is missing: {material}")
-for name in ("create_garden_assets.py", "check_repository.py"):
+for name in ("create_shared_assets.py", "check_repository.py"):
     compile((root / "Tools" / name).read_text(encoding="utf-8"), name, "exec")
 if errors:
     print("\n".join(errors), file=sys.stderr)

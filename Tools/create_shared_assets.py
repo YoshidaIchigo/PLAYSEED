@@ -1,7 +1,7 @@
-"""Generate PLAYSEED's original palette material and empty native-gameplay map.
+"""Generate PLAYSEED's shared palette and sky materials.
 
 Run with UnrealEditor-Cmd, -run=pythonscript -script=<this file>.
-No downloaded assets are required. Existing assets are preserved.
+No downloaded assets are required. Existing assets are preserved. No course map is generated.
 """
 import unreal
 
@@ -31,11 +31,5 @@ if not unreal.EditorAssetLibrary.does_asset_exist(sky_path):
     unreal.MaterialEditingLibrary.recompile_material(sky)
     unreal.EditorAssetLibrary.save_loaded_asset(sky)
 
-map_path = "/Game/Windseed/WindseedGarden"
-if not unreal.EditorAssetLibrary.does_asset_exist(map_path):
-    levels = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
-    if not levels.new_level(map_path):
-        raise RuntimeError("Could not create WindseedGarden map")
-    unreal.EditorLoadingAndSavingUtils.save_dirty_packages(True, True)
 
-unreal.log("WINDSEED ASSETS: palette and map are ready")
+unreal.log("PLAYSEED SHARED ASSETS: palette and sky are ready")

@@ -1,13 +1,7 @@
 # PLAYSEED
-AIが頑張ってゲームを作って、PRの運用まで自動化してみるリポジトリ
 
-吉田がやったこと
-最初のリポジトリとUnreal Engineのプロジェクトの準備
-AIの応援
-dotを使っている
+Unreal Engine 5.8.1の3Dアクションプロジェクトです。現在は指定されたボムへいのせんじょうの参照構成に合わせて更新しています。
 
-## Windseed Garden
+`PLAYSEED/PLAYSEED.uproject`を開いてPlayを押すと、コースのミッション選択から始まります。1〜6で入場、プレイ中はMでミッション選択へ戻ります。Windseed Gardenの専用マップとステージは削除しました。共通のプレイヤー、移動、保存、素材は継続して使います。
 
-オリジナルの3D探索ステージです。Unreal Engine 5.8.1でプロジェクトを開き、Playで遊べます。
-
-[操作とビルド手順](PLAYING.md) / [実ゲーム動画と検証記録](Docs/Validation.md)
+操作と保存先は[PLAYING.md](PLAYING.md)を参照してください。履歴の動画は各PR時点の結果です。

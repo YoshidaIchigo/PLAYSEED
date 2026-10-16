@@ -4,7 +4,6 @@ import unreal
 levels = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
 editor = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
 stages = (
-    ("/Game/Windseed/WindseedGarden", "/Script/PLAYSEED.WindseedGameMode"),
     ("/Game/Playseed/StageSelect", "/Script/PLAYSEED.StageSelectionGameMode"),
     ("/Game/ThunderMeadow/ThunderMeadow", "/Script/PLAYSEED.ThunderMeadowGameMode"),
     ("/Game/ThunderMeadow/MissionSelect", "/Script/PLAYSEED.ThunderMissionSelectionGameMode"),

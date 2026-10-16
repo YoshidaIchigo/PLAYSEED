@@ -1,0 +1,13 @@
+Actual earned all7 save before/after SHA256: 41AA55C7B783F8F53B85306D29BC38003F71200C8DB8EDB546E2957DBEDB1D56
+{
+  "normal_after": "ABSENT",
+  "game_exit": 0,
+  "normal_before": "ABSENT",
+  "slot": "Validation_PR45_Entry_A"
+}
+{
+  "normal_before": "ABSENT",
+  "normal_after": "ABSENT",
+  "slot": "Validation_PR42_Campaign_A",
+  "game_exit": 0
+}
