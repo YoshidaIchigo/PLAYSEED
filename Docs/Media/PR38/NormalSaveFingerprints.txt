@@ -1,0 +1,12 @@
+{
+  "game_exit": 0,
+  "slot": "Validation_PR38_Scarlet_D",
+  "normal_before": "ABSENT",
+  "normal_after": "ABSENT"
+}
+{
+  "normal_before": "ABSENT",
+  "game_exit": 0,
+  "slot": "Validation_PR38_Scarlet_D",
+  "normal_after": "ABSENT"
+}

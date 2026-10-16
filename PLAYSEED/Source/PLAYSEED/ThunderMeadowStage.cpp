@@ -21,6 +21,7 @@
 #include "ThunderStormkeeper.h"
 #include "ThunderCloudflagRace.h"
 #include "ThunderSkyCache.h"
+#include "ThunderScarletTrail.h"
 #include "ThunderExpeditionSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Camera/PlayerCameraManager.h"
@@ -242,6 +243,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (Stormkeeper) Stormkeeper->ResetToSpawn();
     if (CloudflagRace) CloudflagRace->ResetRace();
     if (SkyCache) SkyCache->ResetBox();
+    if (ScarletTrail) ScarletTrail->ResetTrail();
 }
 
 void AThunderMeadowStage::BuildWarpCaves()
@@ -482,6 +484,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildCloudflagRace();
     BuildSkyIsland();
     BuildSkyCache();
+    BuildScarletTrail();
     BuildLighting();
 }
 
@@ -517,4 +520,18 @@ void AThunderMeadowStage::BuildSkyCache()
     SkyCache = GetWorld()->SpawnActor<AThunderSkyCache>(SkyIslandTop + FVector(200, 150, 0), FRotator::ZeroRotator);
     SkyCache->ConfigureBox(TEXT("SkyLanternCache"));
     AddSign(SkyIslandTop + FVector(200, 330, 0), TEXT("THE SKYSEED CACHE\nStrike the copper box - claim its lantern"));
+}
+
+void AThunderMeadowStage::BuildScarletTrail()
+{
+    // どの目的で入場しても探索できます。各地点はPLAYSEED独自の配置です。
+    const FVector Court(1200, -1300, 0);
+    // 山道の赤は道幅の内側の縁へ置き、既存の中央の金コイン周回と重ねません。
+    const FVector MountainRed = MountainFootPath[3] + (MountainFootPath[3] - FVector(2200, 2100, 0)).GetSafeNormal2D() * 140 + FVector(0, 0, 62);
+    ScarletTrail = GetWorld()->SpawnActor<AThunderScarletTrail>(Court, FRotator::ZeroRotator);
+    ScarletTrail->Configure({FVector(-1800, -500, 712), FVector(-700, 1800, 362), FVector(-1850, -1200, 312),
+        FVector(1250, 800, 282), FVector(0, -2100, 242), MountainRed,
+        SkyIslandTop + FVector(-300, -150, 62), Court + FVector(-350, -100, 62)});
+    AddShape(Cylinder, Court + FVector(0, 200, 3), FVector(220, 220, 6), FLinearColor(.7f, .15f, .25f));
+    AddSign(Court + FVector(0, 250, 0), TEXT("THE BINDING COURT\nFind eight scarlet trail coins\nA lantern returns to this circle"));
 }
