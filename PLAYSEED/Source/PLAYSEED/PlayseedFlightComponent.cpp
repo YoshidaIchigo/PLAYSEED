@@ -46,7 +46,8 @@ void UPlayseedFlightComponent::RefreshWings()
     for (int32 Index = 0; Index < Wings.Num(); ++Index)
     {
         const float Side = Index ? 1 : -1;
-        Wings[Index]->SetVisibility(HasPower());
+        // 人型では帽子の羽を描くため、旧式の背中の羽は表示しません。
+        Wings[Index]->SetVisibility(HasPower() && !GetOwner()->ActorHasTag(TEXT("ReferenceHero")));
         Wings[Index]->SetRelativeRotation(FRotator(0, Side * 20, bFlying ? Side * FMath::Sin(GetWorld()->GetTimeSeconds() * 9) * 18 : Side * 45));
     }
 }

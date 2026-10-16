@@ -1,5 +1,6 @@
 #include "ThunderMeadowGameMode.h"
 #include "ReferenceBattlefieldTerrain.h"
+#include "ReferenceHero.h"
 #include "BattlefieldUI.h"
 #include "ThunderCoinLedger.h"
 #include "ThunderLivesComponent.h"
@@ -65,7 +66,7 @@ AThunderMeadowGameMode::AThunderMeadowGameMode()
 {
     Lives = CreateDefaultSubobject<UThunderLivesComponent>(TEXT("VisitLives"));
     CoinLedger = CreateDefaultSubobject<UThunderCoinLedger>(TEXT("VisitCoinLedger"));
-    DefaultPawnClass = AWindseedCharacter::StaticClass();
+    DefaultPawnClass = AReferenceBattlefieldTerrain::IsReferenceCourse() ? AReferenceHero::StaticClass() : AWindseedCharacter::StaticClass();
     HUDClass = AThunderMeadowHUD::StaticClass();
 }
 
