@@ -41,9 +41,9 @@ void AThunderSkyChimes::Configure(const TArray<FVector>& Centres, FVector Reward
         {
             const float Angle = Bead * 2 * PI / 24;
             const FVector Position = Centres[Index] + FVector(0, FMath::Cos(Angle) * 280, FMath::Sin(Angle) * 280);
-            auto* Bead = NewObject<UStaticMeshComponent>(this); Bead->SetupAttachment(RootComponent); Bead->SetStaticMesh(BeadMesh);
-            Bead->SetMobility(EComponentMobility::Movable); Bead->SetRelativeLocation(GetActorTransform().InverseTransformPosition(Position)); Bead->SetRelativeScale3D(FVector(.18f));
-            Bead->SetCollisionEnabled(ECollisionEnabled::NoCollision); if (Tint) Bead->SetMaterial(0, Tint); Bead->RegisterComponent(); Beads.Add(Bead);
+            auto* BeadPart = NewObject<UStaticMeshComponent>(this); BeadPart->SetupAttachment(RootComponent); BeadPart->SetStaticMesh(BeadMesh);
+            BeadPart->SetMobility(EComponentMobility::Movable); BeadPart->SetRelativeLocation(GetActorTransform().InverseTransformPosition(Position)); BeadPart->SetRelativeScale3D(FVector(.18f));
+            BeadPart->SetCollisionEnabled(ECollisionEnabled::NoCollision); if (Tint) BeadPart->SetMaterial(0, Tint); BeadPart->RegisterComponent(); Beads.Add(BeadPart);
         }
     }
 }
