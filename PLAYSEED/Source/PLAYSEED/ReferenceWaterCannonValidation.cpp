@@ -65,7 +65,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceWaterCannons(float DeltaSec
     {
         if(Move->IsMovingOnGround())Move->StopMovementImmediately();
         // 高い砲口を体力表示の後ろへ隠さず、通常のカメラで少し横と上から見ます。
-        PC->SetControlRotation(FRotator(bFieldWaterCannonChecked?5:-8,(Cannon->GetActorLocation()+FVector(0,0,200)-Hero->GetActorLocation()).Rotation().Yaw+(bFieldWaterCannonChecked?18:0),0));
+        PC->SetControlRotation(FRotator(bFieldWaterCannonChecked?5:-8,(Cannon->GetActorLocation()+FVector(0,0,200)-Hero->GetActorLocation()).Rotation().Yaw+(bFieldWaterCannonChecked?60:0),0));
         if(!Cannon->IsBaseVisible()||Health->GetHealth()!=WaterCannonHealthBaseline)
         {Finish(false,TEXT("Water cannon disappeared nearby or observation changed actual health"));return;}
         if(Phase==151)
@@ -76,7 +76,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceWaterCannons(float DeltaSec
             return;
         }
         // 発射済み回数は読取専用です。弾を生成したり主人公の体力を設定したりしません。
-        if(Cannon->IsShotActive()&&Cannon->GetShotCount()>WaterCannonShotBaseline&&FVector::Dist(Cannon->GetShotPosition(),Cannon->GetActorLocation())>650&&!bWaterCannonShotPhoto)
+        if(Cannon->IsShotActive()&&Cannon->GetShotCount()>WaterCannonShotBaseline&&FVector::Dist(Cannon->GetShotPosition(),Cannon->GetActorLocation())>1000&&!bWaterCannonShotPhoto)
         {bWaterCannonShotPhoto=true;FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderWaterCannonFire.png"),false,false);}
         if(Phase==153&&Cannon->GetShotCount()>=WaterCannonShotBaseline+2&&bWaterCannonShotPhoto)
         {bWaterCannonShotsChecked=true;FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderWaterCannonAim.png"),false,false);Phase=154;Elapsed=0;return;}
