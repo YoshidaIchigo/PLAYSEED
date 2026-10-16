@@ -54,11 +54,11 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBoulders(float DeltaSeconds
             Finish(false,FString::Printf(TEXT("Unintended boulder-route damage phase%d point%d health%d hero%s hits%d/%d/%d/%d/%d"),Phase,BoulderWaypoint,Health->GetHealth(),*Hero->GetActorLocation().ToString(),Field->GetBalls()[0]->GetConfirmedHits(),Field->GetBalls()[1]->GetConfirmedHits(),Field->GetBalls()[2]->GetConfirmedHits(),Field->GetBalls()[3]->GetConfirmedHits(),Field->GetBalls()[4]->GetConfirmedHits()));return;
         }
         if(BoulderWaypoint>=Count)
-        {if(!Move->IsMovingOnGround())return;Move->StopMovementImmediately();Phase=bPit?131:134;Elapsed=0;return;}
+        {if(!Move->IsMovingOnGround())return;Move->StopMovementImmediately();if(!bPit)BoulderRoadHitIndex=1;Phase=bPit?131:134;Elapsed=0;return;}
         const auto& Point=Points[BoulderWaypoint];const FVector Target(Point.X,Point.Y,Point.Z),Delta=Target-Hero->GetActorLocation();BoulderLegElapsed+=DeltaSeconds;
         if(BoulderLegElapsed>22){Finish(false,FString::Printf(TEXT("Boulder walk blocked phase%d point%d hero%s target%s floor%s"),Phase,BoulderWaypoint,*Hero->GetActorLocation().ToString(),*Target.ToString(),*Move->CurrentFloor.HitResult.ImpactPoint.ToString()));return;}
         if(Delta.Size2D()<25&&FMath::Abs(Hero->GetActorLocation().Z-82-Target.Z)<(Move->IsMovingOnGround()?160:80))
-        {++BoulderWaypoint;BoulderLegElapsed=0;return;}
+        {if(BoulderWaypoint%10==0)UE_LOG(LogTemp,Display,TEXT("BOULDER WALK phase%d point%d actual%s health%d"),Phase,BoulderWaypoint,*Hero->GetActorLocation().ToString(),Health->GetHealth());++BoulderWaypoint;BoulderLegElapsed=0;return;}
         Walk(Target);return;
     }
     if(Phase==131||Phase==134)

@@ -52,7 +52,8 @@ void AThunderRollingBoulder::ConfigureReferencePath(const TArray<FVector>& FootP
     if(auto* Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Battlefield/M_Actor.M_Actor")))
     {
         auto Paint=[&](UStaticMeshComponent* Part,FLinearColor Color){auto* Tint=UMaterialInstanceDynamic::Create(Material,this);Tint->SetVectorParameterValue(TEXT("Tint"),Color);Part->SetMaterial(0,Tint);};
-        Paint(Stone,FLinearColor(.075f,.085f,.1f));Paint(Vein,FLinearColor(.65f,.7f,.8f));
+        // Tintは線形色です。sRGB表示でも灰色にならない暗い値を使います。
+        Paint(Stone,FLinearColor(.004f,.006f,.009f));Paint(Vein,FLinearColor(.65f,.7f,.8f));
     }
     ConfigurePath(FootPath);
 }
