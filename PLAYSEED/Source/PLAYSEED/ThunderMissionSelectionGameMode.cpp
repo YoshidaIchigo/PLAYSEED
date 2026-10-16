@@ -12,7 +12,7 @@ namespace
 {
 void DrawCourseBadge(const FBattlefieldUI& UI)
 {
-    const FVector2D Center(160,162);
+    const FVector2D Center(160,157);
     UI.Ellipse(Center+FVector2D(2,2),FVector2D(32,32),FLinearColor(0,0,0,.2f));
     UI.Ellipse(Center,FVector2D(32,32),FLinearColor(.12f,.055f,.01f));
     UI.Ellipse(Center,FVector2D(30.5,30.5),FLinearColor(.75f,.45f,.08f));
@@ -26,8 +26,8 @@ void DrawCourseBadge(const FBattlefieldUI& UI)
         UI.Triangle(Inside(Point+FVector2D(-9,-7)),Inside(Point+FVector2D(11,-2)),Inside(Point+FVector2D(-3,10)),FLinearColor(Shade,Shade*.52f,Shade*.17f));
     }
     const FString Course=TEXT("COURSE");
-    for(int32 I=0;I<Course.Len();++I)UI.Text(Course.Mid(I,1),139+I*7,135+FMath::Abs(I-2.5f)*2,9,FLinearColor(1,.83f,.05f),true);
-    UI.Text(TEXT("1"),160,156,22,FLinearColor(1,.28f,.015f),true);
+    for(int32 I=0;I<Course.Len();++I)UI.Text(Course.Mid(I,1),137+I*9,126+FMath::Abs(I-2.5f)*4,11,FLinearColor(1,.83f,.05f),true);
+    UI.Text(TEXT("1"),160,153,18,FLinearColor(1,.28f,.015f),true);
 }
 }
 void AThunderMissionSelectionHUD::DrawHUD()
@@ -42,12 +42,12 @@ void AThunderMissionSelectionHUD::DrawHUD()
     {
         const float X=160-(Visible-1)*17+(N-1)*34;const bool bSelected=N==Selected,bEarned=Progress->HasEarnedReward(N);
         const float Turn=FMath::Cos(GetWorld()->GetTimeSeconds()*2*PI/1.066667f),Width=bSelected?FMath::Max(.12f,FMath::Abs(Turn)):1;
-        UI.Text(FString::FromInt(N),X,31,8,FLinearColor::Black,true,false);
-        UI.Star(FVector2D(X,57),bSelected?16:12.3f,bEarned?FLinearColor(1,.8f,.015f):FLinearColor(.2f,.18f,.45f,.85f),bEarned&&(!bSelected||Turn>.15f),Width);
+        UI.Text(FString::FromInt(N),X,36,8,FLinearColor::Black,true,false);
+        UI.Star(FVector2D(X,64),bSelected?18:13.8f,bEarned?FLinearColor(1,.8f,.015f):FLinearColor(.2f,.18f,.45f,.85f),bEarned&&(!bSelected||Turn>.15f),Width);
     }
-    UI.Text(UThunderExpeditionSubsystem::GetMissionTitle(Selected),158,75,8,FLinearColor::Black,true,false,true);
+    UI.Text(UThunderExpeditionSubsystem::GetMissionTitle(Selected),158,77,7,FLinearColor::Black,true,false,true);
     DrawCourseBadge(UI);
-    UI.Text(TEXT("ボムへいの せんじょう"),160,201,10,FLinearColor::Black,true,false,true);
+    UI.Text(TEXT("ボムへいの せんじょう"),160,191,7.5f,FLinearColor::Black,true,false,true);
     UI.Text(TEXT("← → えらぶ   Enter / A けってい"),160,228,6,FLinearColor(.3f,.3f,.3f),true,false,true);
     if(Progress->HasEarnedReward(7))UI.Star(FVector2D(265,127),7,FLinearColor(1,.78f,.02f));
     if(!Progress->GetProgressProblem().IsEmpty())UI.Text(Progress->GetProgressProblem(),160,226,6,FLinearColor(.8f,.05f,.025f),true,true,true);
