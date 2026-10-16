@@ -50,11 +50,12 @@ void AReferenceWalker::ResetEnemy()
 void AReferenceWalker::Tick(float DeltaSeconds)
 {
     if(auto* Flow=GetGameInstance()?GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>():nullptr)
-        if(Flow->IsCelebrating())
+        if(Flow->IsCelebrating()||Flow->IsFading())
         {
-            // スター取得中は追跡と接触を止め、近い敵が主人公のポーズへ重ならないようにします。
+            // 取得と白フェード中は追跡・接触を止め、近い敵がポーズへ重ならないようにします。
             auto* Hero=UGameplayStatics::GetPlayerPawn(this,0);
-            SetActorHiddenInGame(Hero&&FVector::Dist(Hero->GetActorLocation(),GetActorLocation())<700);return;
+            const float Distance=Hero?FVector::Dist(Hero->GetActorLocation(),GetActorLocation()):5000;
+            SetActorHiddenInGame(Distance<700||Distance>4000);return;
         }
     Super::Tick(DeltaSeconds);
     if(IsDefeated()){WalkerVisual->SetRelativeScale3D(FVector(1.2f,1.2f,.22f));return;}
