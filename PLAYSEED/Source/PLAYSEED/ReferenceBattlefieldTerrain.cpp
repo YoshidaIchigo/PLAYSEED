@@ -34,7 +34,7 @@ void AReferenceBattlefieldTerrain::BeginPlay()
     using namespace ReferenceBattlefieldData;
     TArray<FVector> Vertices,Normals;TArray<int32> Indices;TArray<FVector2D> UV;
     TArray<FLinearColor> Colors;TArray<FProcMeshTangent> Tangents;
-    const TCHAR* Names[]={TEXT("Grass"),TEXT("GrassEdge"),TEXT("Dirt"),TEXT("Stone"),TEXT("Wood"),TEXT("Cave"),TEXT("Fence"),TEXT("Rock"),TEXT("Shadow")};
+    const TCHAR* Names[]={TEXT("Grass"),TEXT("GrassEdge"),TEXT("Dirt"),TEXT("Stone"),TEXT("Wood"),TEXT("Cave"),TEXT("Fence"),TEXT("Rock"),TEXT("Shadow"),TEXT("WireFence")};
     for(int32 Section=0;Section<UE_ARRAY_COUNT(Sections);++Section)
     {
         const auto& Data=Sections[Section];Vertices.Reset();Normals.Reset();Indices.Reset();UV.Reset();Colors.Reset();Tangents.Reset();
@@ -42,7 +42,7 @@ void AReferenceBattlefieldTerrain::BeginPlay()
         {
             const auto& V=RenderVertices[Data.First+I];const FVector Normal=FVector(V.NX,V.NY,V.NZ).GetSafeNormal();Vertices.Add(FVector(V.X,V.Y,V.Z));UV.Add(FVector2D(V.U,V.V));Normals.Add(Normal);Indices.Add(I);
             // N64風の面の明暗を頂点色に固定し、UEの自動露出で草が白くなるのを避けます。
-            const float Light=Data.Material==6 || Data.Material==8 ? 1.f : .48f+.52f*FMath::Max(0.f,FVector::DotProduct(Normal,FVector(-.4,-.3,.86).GetSafeNormal()));
+            const float Light=Data.Material==6 || Data.Material==8 || Data.Material==9 ? 1.f : .48f+.52f*FMath::Max(0.f,FVector::DotProduct(Normal,FVector(-.4,-.3,.86).GetSafeNormal()));
             Colors.Add(FLinearColor(Light,Light,Light,1));
         }
         Surface->CreateMeshSection_LinearColor(Section,Vertices,Indices,Normals,UV,Colors,Tangents,false);

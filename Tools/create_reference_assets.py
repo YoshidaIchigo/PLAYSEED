@@ -18,16 +18,17 @@ def product(material,a,ap,b,bp,x,y):
     e=expression(material,unreal.MaterialExpressionMultiply,x,y)
     edit.connect_material_expressions(a,ap,e,'A');edit.connect_material_expressions(b,bp,e,'B');return e
 
-for name in ['Grass','GrassEdge','Dirt','Stone','Wood','Cave','Fence','Rock','Shadow','Sky']:
+for name in ['Grass','GrassEdge','Dirt','Stone','Wood','Cave','Fence','Rock','Shadow','Sky','WireFence']:
     texture_path='/Game/Battlefield/T_'+name
-    if not unreal.EditorAssetLibrary.does_asset_exist(texture_path):
+    if True:
         task=unreal.AssetImportTask();task.set_editor_property('filename',str(root/(name+'.tga')))
         task.set_editor_property('destination_path','/Game/Battlefield');task.set_editor_property('destination_name','T_'+name)
         task.set_editor_property('automated',True);task.set_editor_property('save',True)
+        task.set_editor_property('replace_existing',True)
         tools.import_asset_tasks([task])
     texture=unreal.load_asset(texture_path)
     assert texture,texture_path
-    texture.set_editor_property('filter',unreal.TextureFilter.TF_NEAREST)
+    texture.set_editor_property('filter',unreal.TextureFilter.TF_BILINEAR)
     texture.set_editor_property('mip_gen_settings',unreal.TextureMipGenSettings.TMGS_NO_MIPMAPS)
     # 青い空をImporterが法線画像と誤認しないよう、用途を明示します。
     texture.set_editor_property('compression_settings',unreal.TextureCompressionSettings.TC_DEFAULT)
@@ -45,7 +46,7 @@ for name in ['Grass','GrassEdge','Dirt','Stone','Wood','Cave','Fence','Rock','Sh
     vertex=expression(material,unreal.MaterialExpressionVertexColor,-500,180)
     color=sample if name=='Sky' else product(material,sample,'RGB',vertex,'RGB',-200,0)
     edit.connect_material_property(color,'RGB' if name=='Sky' else '',unreal.MaterialProperty.MP_EMISSIVE_COLOR)
-    if name in ('Fence','Shadow'):
+    if name in ('Fence','Shadow','WireFence'):
         material.set_editor_property('blend_mode',unreal.BlendMode.BLEND_MASKED)
         material.set_editor_property('opacity_mask_clip_value',.4)
         edit.connect_material_property(sample,'A',unreal.MaterialProperty.MP_OPACITY_MASK)
@@ -66,4 +67,4 @@ if True:
     ambient=expression(material,unreal.MaterialExpressionAdd,0,230);ambient.set_editor_property('const_b',.45);edit.connect_material_expressions(scaled,'',ambient,'A')
     color=product(material,tint,'',ambient,'',160,0);edit.connect_material_property(color,'',unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     edit.recompile_material(material);unreal.EditorAssetLibrary.save_loaded_asset(material)
-unreal.log('REFERENCE ASSETS PASS: ten generated patterns/materials and actor palette; no downloaded textures')
+unreal.log('REFERENCE ASSETS PASS: eleven generated patterns/materials and actor palette; no downloaded textures')
