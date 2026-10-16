@@ -54,7 +54,8 @@ bool UThunderHundredTestSubsystem::UpdateTest(AWindseedCharacter* Player, float 
     {
         const FVector Goal = Bonus->GetRewardLocation() - FVector(0, 0, 18), Offset = Goal - Player->GetActorLocation();
         Player->AddMovementInput(Offset.GetSafeNormal2D(), FMath::Clamp(Offset.Size2D() / 100, .2f, 1.f)); PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(), FRotator(-23, Offset.Rotation().Yaw, 0), DeltaSeconds, 3));
-        if (Progress->HasEarnedReward(7)) { Move->StopMovementImmediately(); Next(2); }
+        if (Move->IsMovingOnGround() && Offset.Z > 60 && Offset.Size2D() < 350) Player->Jump(); else if (Player->GetVelocity().Z < 0) Player->StopJumping();
+        if (Progress->HasEarnedReward(7)) { if (Move->IsMovingOnGround()) Move->StopMovementImmediately(); Next(2); }
     }
     else if (Phase == 2 && PhaseTime > .5f)
     {
