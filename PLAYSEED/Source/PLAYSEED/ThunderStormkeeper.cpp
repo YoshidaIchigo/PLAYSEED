@@ -95,16 +95,15 @@ FVector AThunderStormkeeper::GetCarryOffset() const
 }
 bool AThunderStormkeeper::CanStandAt(FVector Position) const
 {
-    FCollisionQueryParams Query(SCENE_QUERY_STAT(ReferenceBossFloor),true,this);
-    if (auto* Player=UGameplayStatics::GetPlayerPawn(this,0)) Query.AddIgnoredActor(Player);
+    auto* Terrain=Cast<AReferenceBattlefieldTerrain>(UGameplayStatics::GetActorOfClass(this,AReferenceBattlefieldTerrain::StaticClass()));
+    if(!Terrain)return false;
     // 球の中心だけでなく四方の足元を調べ、崖の先まで追い掛けないようにします。
     const FVector Samples[]={FVector::ZeroVector,FVector(210,0,0),FVector(-210,0,0),FVector(0,210,0),FVector(0,-210,0)};
     for(const auto& Offset:Samples)
     {
-        FHitResult Hit;
-        const FVector Point=Position+Offset;
-        if(!GetWorld()->LineTraceSingleByChannel(Hit,Point+FVector(0,0,100),Point-FVector(0,0,400),ECC_Visibility,Query)
-            ||Hit.ImpactNormal.Z<.9f||FMath::Abs(Hit.ImpactPoint.Z-ArenaFloor.Z)>25) return false;
+        FVector Floor;
+        // 地形自身の歩行面を使い、相手や持ち物を床として拾わないようにします。
+        if(!Terrain->FindFloor(Position+Offset-FVector(0,0,200),Floor)||FMath::Abs(Floor.Z-ArenaFloor.Z)>25)return false;
     }
     return true;
 }

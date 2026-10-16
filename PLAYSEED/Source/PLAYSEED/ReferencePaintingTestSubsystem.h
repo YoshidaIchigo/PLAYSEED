@@ -25,7 +25,7 @@ private:
     void ObserveFade(APlayerController* PC);
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
-    bool bReferenceBossTest=false,bBossRouteJump=false;
+    bool bReferenceBossTest=false,bBossRouteJump=false,bBossCoaxed=false;
     int32 ExpectedReward=6,BossWaypoint=0,BossThrows=0;
     float BossLegElapsed=0;
     FVector BossCarryStart=FVector::ZeroVector;

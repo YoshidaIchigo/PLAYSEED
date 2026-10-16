@@ -5,6 +5,7 @@
 #include "ReferenceHero.h"
 #include "ReferenceChainWalk.h"
 #include "ReferenceSummitWalk.h"
+#include "ReferenceBattlefieldTerrain.h"
 #include "ThunderStormkeeper.h"
 #include "PlayseedCarryComponent.h"
 #include "ThunderMeadowStage.h"
@@ -474,6 +475,18 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBoss(float DeltaSeconds,AWi
     {
         if(Elapsed>30){Finish(false,FString::Printf(TEXT("Rear E pickup timed out: hero%s boss%s valid%d"),*Hero->GetActorLocation().ToString(),*Boss->GetActorLocation().ToString(),Boss->GetValidThrows()));return;}
         if(Boss->IsRecovering()||Boss->IsInThrownFlight())return;
+        if(!bBossCoaxed)
+        {
+            // 外周で一周せず、通常歩行で内側へ誘ってから背後へ回ります。
+            if(Boss->GetActorLocation().X>=2000){bBossCoaxed=true;Elapsed=0;}
+            else
+            {
+                const FVector Delta=FVector(2400,5200,4293)-Hero->GetActorLocation();
+                if(Delta.Size2D()>18)Hero->AddMovementInput(Delta.GetSafeNormal2D(),FMath::Clamp(Delta.Size2D()/120,.2f,1.f));
+                else if(Movement->IsMovingOnGround())Movement->StopMovementImmediately();
+                return;
+            }
+        }
         if(Boss->IsHeldBy(Hero))
         {
             if(Hero->GetCarry()->GetHeldObject()!=Boss){Finish(false,TEXT("Boss bypassed normal carry component"));return;}
@@ -486,7 +499,11 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBoss(float DeltaSeconds,AWi
         if(Boss->CanBePickedUp(Hero)&&Rear<-.55f&&Movement->IsMovingOnGround())
         {Movement->StopMovementImmediately();Tap(PC,EKeys::E);return;}
         const FVector Tangent(-Radial.Y,Radial.X,0);
-        const FVector Desired=Tangent*430+Radial*FMath::Clamp((295-Distance)*4,-470.f,470.f);
+        FVector Desired=Tangent*430+Radial*FMath::Clamp((295-Distance)*4,-470.f,470.f);
+        auto* Terrain=Cast<AReferenceBattlefieldTerrain>(UGameplayStatics::GetActorOfClass(GetWorld(),AReferenceBattlefieldTerrain::StaticClass()));
+        FVector Floor;
+        if(!Terrain||!Terrain->FindFloor(Hero->GetActorLocation()+Desired.GetSafeNormal2D()*180-FVector(0,0,82),Floor)||FMath::Abs(Floor.Z-4293)>25)
+            Desired=-Tangent*430+Radial*FMath::Clamp((295-Distance)*4,-470.f,470.f);
         Hero->AddMovementInput(Desired.GetSafeNormal2D(),FMath::Clamp(Desired.Size2D()/470,.2f,1.f));return;
     }
     if(Phase==42)
