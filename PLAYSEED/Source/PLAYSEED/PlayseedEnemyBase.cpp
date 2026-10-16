@@ -81,8 +81,8 @@ void APlayseedEnemyBase::Tick(float DeltaSeconds)
     const FVector Position = Player->GetActorLocation();
     const float HalfHeight = Player->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
     const float Feet = Position.Z - HalfHeight;
-    const float Top = GetActorLocation().Z + 80;
-    const float Radius = 70 + Player->GetCapsuleComponent()->GetScaledCapsuleRadius();
+    const float Top = GetActorLocation().Z + GetStompHeight();
+    const float Radius = GetContactRadius() + Player->GetCapsuleComponent()->GetScaledCapsuleRadius();
     bool bStomp = false;
     if (bHasPreviousPosition && PreviousFeetZ >= Top && Feet <= Top && PreviousFeetZ - Feet > .01f && Player->GetCharacterMovement()->MovementMode != MOVE_Flying)
     {
@@ -93,7 +93,7 @@ void APlayseedEnemyBase::Tick(float DeltaSeconds)
     }
     if (bStomp) HandleStomp(Player);
     else if (!bStompGraceActive && FVector::Dist2D(Position, GetActorLocation()) < Radius && Feet < Top - 15 && Feet + HalfHeight * 2 > GetActorLocation().Z + 10)
-        Player->GetVitality()->TryTakeImpact(2, Position - GetActorLocation());
+        Player->GetVitality()->TryTakeImpact(GetContactDamage(), Position - GetActorLocation());
     PreviousPlayerPosition = Position;
     PreviousFeetZ = Feet;
     bHasPreviousPosition = true;

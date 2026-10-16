@@ -25,6 +25,7 @@
 #include "ReferenceRainSpawner.h"
 #include "ReferenceWaterCannon.h"
 #include "ReferenceWorldMechanisms.h"
+#include "ReferenceWalkerField.h"
 #include "ThunderFlightSwitch.h"
 #include "ThunderStormkeeper.h"
 #include "ThunderCloudflagRace.h"
@@ -272,6 +273,7 @@ void AThunderMeadowStage::ResetMechanisms()
     for(AReferenceRainSpawner* Rain:ReferenceRainSpawners)if(Rain)Rain->ResetRain();
     for(AReferenceWaterCannon* Cannon:ReferenceWaterCannons)if(Cannon)Cannon->ResetCannon();
     if(ReferenceWorldMechanisms)ReferenceWorldMechanisms->ResetMechanisms();
+    if(ReferenceWalkerField)ReferenceWalkerField->ResetWalkers();
     if (MountainRest) MountainRest->ResetRest();
 }
 
@@ -539,6 +541,7 @@ void AThunderMeadowStage::BeginPlay()
         if(GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->GetSelectedMissionNumber()==1)
         {auto* Field=GetWorld()->SpawnActor<AReferenceWaterCannon>(FVector(-5694,-5600,128),FRotator(0,45,0));Field->ConfigureCanFire(false);ReferenceWaterCannons.Add(Field);}
         ReferenceWorldMechanisms=GetWorld()->SpawnActor<AReferenceWorldMechanisms>(FVector(-2050,3069,0),FRotator(0,-65,0));
+        ReferenceWalkerField=GetWorld()->SpawnActor<AReferenceWalkerField>();
         BuildReferenceChain();
         BuildStormkeeper();
         BuildCloudflagRace();

@@ -24,6 +24,9 @@ public:
     int32 GetDropGenerationCount() const { return DropGenerationCount; }
     APlayseedCoin* GetDropCoin() const { return DropCoin.Get(); }
 protected:
+    virtual float GetGroundProbeHeight() const { return 80; }
+    virtual float GetDetectionRadius() const { return 650; }
+    virtual float GetChasingSpeed() const { return 180; }
     virtual void OnDefeated(AWindseedCharacter* Player) override;
 private:
     void MoveOnGround(FVector Goal, float Speed, float DeltaSeconds);
