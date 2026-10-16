@@ -58,8 +58,10 @@ void UReferencePaintingTestSubsystem::UpdateReferenceGround(float DeltaSeconds,A
         }
         const auto& Point=ReferenceGroundWalk[GroundWaypoint];const FVector Target(Point.X,Point.Y,Point.Z);
         GroundLegElapsed+=DeltaSeconds;
-        if(GroundLegElapsed>22){Finish(false,FString::Printf(TEXT("Ground route blocked point%d hero%s target%s"),GroundWaypoint,*Hero->GetActorLocation().ToString(),*Target.ToString()));return;}
-        if(FVector::Dist2D(Hero->GetActorLocation(),Target)<25&&FMath::Abs(Hero->GetActorLocation().Z-82-Target.Z)<80)
+        if(GroundLegElapsed>22){Finish(false,FString::Printf(TEXT("Ground route blocked point%d hero%s target%s grounded%d floor%s normal%s"),GroundWaypoint,*Hero->GetActorLocation().ToString(),*Target.ToString(),Move->IsMovingOnGround(),*Move->CurrentFloor.HitResult.ImpactPoint.ToString(),*Move->CurrentFloor.HitResult.ImpactNormal.ToString()));return;}
+        // 斜面ではCapsuleが中心点より高い隣接面に支えられます。実接地を条件に経由点だけの差を許容します。
+        const float HeightTolerance=Move->IsMovingOnGround()?160.f:80.f;
+        if(FVector::Dist2D(Hero->GetActorLocation(),Target)<25&&FMath::Abs(Hero->GetActorLocation().Z-82-Target.Z)<HeightTolerance)
         {
             if(Point.Event>=100&&!Field->GetCoins()[Point.Event-100]->IsCollected())
             {Walk(Field->GetCoins()[Point.Event-100]->GetActorLocation());return;}
