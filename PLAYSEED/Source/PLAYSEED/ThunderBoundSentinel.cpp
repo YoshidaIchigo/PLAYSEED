@@ -112,7 +112,7 @@ void AThunderBoundSentinel::UpdateTether()
         {Shadow->SetWorldLocation(Floor.ImpactPoint+Floor.ImpactNormal*1.5f);Shadow->SetWorldRotation(FRotationMatrix::MakeFromZ(Floor.ImpactNormal).Rotator());}
     }
     AnchorPlate->SetWorldLocation(Anchor + FVector(0, 0, 10)); AnchorPlate->SetWorldRotation(FRotator::ZeroRotator);
-    const FVector Start = Anchor + FVector(0, 0, 65), End = GetActorLocation() - GetActorForwardVector() * 70;
+    const FVector Start = Anchor + FVector(0, 0, 65), End = GetActorLocation() - GetActorForwardVector() * (bReference?175:70);
     for (int32 I = 0; I < Links.Num(); ++I) Links[I]->SetWorldLocation(FMath::Lerp(Start, End, (I + 1.f) / (Links.Num() + 1.f)));
 }
 void AThunderBoundSentinel::CheckContact(FVector Start, FVector End, AWindseedCharacter* Player)
