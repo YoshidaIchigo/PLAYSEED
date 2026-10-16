@@ -2,6 +2,9 @@
 #include "Engine/Canvas.h"
 #include "CanvasItem.h"
 #include "Fonts/SlateFontInfo.h"
+#include "Engine/Font.h"
+#include "Fonts/CompositeFont.h"
+#include "UObject/StrongObjectPtr.h"
 #include "Misc/Paths.h"
 FBattlefieldUI::FBattlefieldUI(UCanvas* InCanvas):Canvas(InCanvas)
 {
@@ -25,8 +28,16 @@ void FBattlefieldUI::Ellipse(FVector2D P,FVector2D Radius,FLinearColor Color) co
 }
 void FBattlefieldUI::Text(const FString& Value,float X,float Y,float Size,FLinearColor Color,bool bCenter,bool bOutline,bool bJapanese) const
 {
-    const FString Font=FPaths::EngineContentDir()/(bJapanese?TEXT("Slate/Fonts/DroidSansFallback.ttf"):TEXT("Slate/Fonts/Roboto-BlackItalic.ttf"));
-    FCanvasTextItem Item(Screen(X,Y),FText::FromString(Value),FSlateFontInfo(Font,FMath::Max(6,FMath::RoundToInt(Size*Scale))),Color);
+    // CanvasはUFontの実体を必要とします。強参照で2書体を共有し、Worldの切替でもGCから守ります。
+    static TStrongObjectPtr<UFont> LatinFont,JapaneseFont;
+    auto& Font=bJapanese?JapaneseFont:LatinFont;
+    if(!Font.IsValid())
+    {
+        Font.Reset(NewObject<UFont>());Font->FontCacheType=EFontCacheType::Runtime;
+        const FString Path=FPaths::EngineContentDir()/(bJapanese?TEXT("Slate/Fonts/DroidSansFallback.ttf"):TEXT("Slate/Fonts/Roboto-BlackItalic.ttf"));
+        Font->GetMutableInternalCompositeFont()=FCompositeFont(TEXT("Regular"),Path,EFontHinting::Default,EFontLoadingPolicy::LazyLoad);
+    }
+    FCanvasTextItem Item(Screen(X,Y),FText::FromString(Value),FSlateFontInfo(Font.Get(),FMath::Max(6,FMath::RoundToInt(Size*Scale)),TEXT("Regular")),Color);
     Item.bCentreX=bCenter;Item.bOutlined=bOutline;Item.OutlineColor=FLinearColor::Black;
     if(bOutline)Item.EnableShadow(FLinearColor::Black,FVector2D(1,1)*Scale);
     Canvas->DrawItem(Item);
