@@ -17,7 +17,7 @@ public:
     int32 GetSuccessfulCollections() const { return Collections; }
 private:
     void TryCollect(AWindseedCharacter* Player);
-    UFUNCTION() void HandleOverlap(UPrimitiveComponent*,AActor*,UPrimitiveComponent*,int32,bool,const FHitResult&);
+    UFUNCTION() void HandleOverlap(UPrimitiveComponent* OverlappedComponent,AActor* OtherActor,UPrimitiveComponent* OtherComponent,int32 OtherBodyIndex,bool bFromSweep,const FHitResult& SweepResult);
     UPROPERTY() TObjectPtr<USphereComponent> Trigger;
     UPROPERTY() TObjectPtr<UStaticMeshComponent> Seed;
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Leaves;
