@@ -1,0 +1,4 @@
+PASS
+Three reference rain spawners at original positions/ranges: ordinary walking into a real falling drop caused one damage and physical knockback, normal R restored health and cleared all three, ordinary movement left the next real shadow before the actual burst with no extra hit, second R cleared all rain and M returned to painting with actual earned7 unchanged. No injected position, velocity, health or progress.
+CaptureFrames: 2406
+UTC: 2026-10-16T17:32:44.360Z
