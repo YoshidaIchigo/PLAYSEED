@@ -579,6 +579,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBoss(float DeltaSeconds,AWi
     {Finish(false,FString::Printf(TEXT("Reference boss route failed: point%d recovery%d health%d offArena%d hero%s"),BossWaypoint,Hero?Hero->RecoveryCount:-1,Hero?Hero->GetVitality()->GetHealth():-1,Boss?Boss->GetOffArenaReturns():-1,Hero?*Hero->GetActorLocation().ToString():TEXT("missing")));return;}
     auto* Movement=Hero->GetCharacterMovement();
     if(JumpHold>0){JumpHold-=DeltaSeconds;if(JumpHold<=0)PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Released,0));}
+    if((Phase==40||Phase==46||Phase==48)&&UpdateReferenceRouteCombat(DeltaSeconds,Hero,PC)){Elapsed-=DeltaSeconds;return;}
     auto WalkHeart=[&](FVector Target)
     {
         const FVector D=Target-Hero->GetActorLocation(),Desired=(D.GetSafeNormal2D()*D.Size2D()*4.5f).GetClampedToMaxSize2D(470),Correction=Desired-FVector(Hero->GetVelocity().X,Hero->GetVelocity().Y,0);

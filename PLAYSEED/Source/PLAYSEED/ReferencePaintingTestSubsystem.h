@@ -6,6 +6,7 @@
 class APlayerController;
 class AWindseedCharacter;
 class APlayseedLantern;
+class AReferenceWalker;
 UCLASS()
 class PLAYSEED_API UReferencePaintingTestSubsystem : public UGameInstanceSubsystem,public FTickableGameObject
 {
@@ -33,6 +34,7 @@ private:
     void UpdateReferenceCannon(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceRace(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceBoss(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
+    bool UpdateReferenceRouteCombat(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateChain(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateStarCapture(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void ObserveFade(APlayerController* PC);
@@ -42,6 +44,8 @@ private:
     int32 BossHeartWaypoint=0;
     float BossAvoidRemaining=0;
     FVector BossAvoidTarget=FVector::ZeroVector;
+    TWeakObjectPtr<AReferenceWalker> RouteCombatTarget;
+    float RouteCombatElapsed=0,RouteAttackClock=0;
     bool bSurfaceTest=false,bWingApproachReady=true;
     FVector WingApproachPoint=FVector::ZeroVector;
     bool bBombTest=false,bBombChaseChecked=false,bBombThrowChecked=false,bBombFuseChecked=false,bBombResetChecked=false,bBombHeldPhoto=false;
