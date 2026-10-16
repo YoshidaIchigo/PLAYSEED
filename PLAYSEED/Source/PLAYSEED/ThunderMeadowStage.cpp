@@ -529,6 +529,8 @@ void AThunderMeadowStage::BeginPlay()
         BuildReferenceFlight();
         BuildSkyChimes();
         ReferenceCoinField=GetWorld()->SpawnActor<AReferenceCoinField>();
+        // 実コイン集計の100枚通知を使い、参照コースでも一度だけスター7を生成します。
+        HundredLantern=GetWorld()->SpawnActor<AThunderHundredLantern>();
         BuildLighting();
         return;
     }

@@ -122,9 +122,9 @@ void AThunderMeadowHUD::DrawHUD()
     }
     if(Mode->ShouldShowControls())
     {
-        UI.Rect(30,82,260,114,FLinearColor(0,0,0,.85f));
+        UI.Rect(30,82,260,126,FLinearColor(0,0,0,.85f));
         const TCHAR* BackHint=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>()->UsesEntrance()?TEXT("R/B: やりなおし   M: えにもどる"):TEXT("R/B: やりなおし   M: スターえらび");
-        const TCHAR* Lines[]={TEXT("そうさ"),TEXT("WASD / 左スティック: いどう"),TEXT("Space / A: ジャンプ   Shift / LB: はしる"),TEXT("マウス / 右スティック: カメラ"),TEXT("E/X: もつ   F/Y: のぼる   G/下: はなす"),TEXT("Ctrl/RB: ヒップドロップ  LMB/RT: こうげき"),BackHint,TEXT("はね: 空中Space とぶ/おりる  W/S そくど"),TEXT("H: このひょうじを とじる")};
+        const TCHAR* Lines[]={TEXT("そうさ"),TEXT("WASD / 左スティック: いどう"),TEXT("Space / A: ジャンプ   Shift / LB: はしる"),TEXT("マウス / 右スティック: カメラ"),TEXT("E/X: もつ   F/Y: のぼる   G/下: はなす"),TEXT("Ctrl/RB: ヒップドロップ  LMB/RT: こうげき"),BackHint,TEXT("はね: 空中Space とぶ/おりる  W/S そくど"),TEXT("木のくい: 3しゅうでコイン  100まいでスター"),TEXT("H: このひょうじを とじる")};
         for(int32 I=0;I<UE_ARRAY_COUNT(Lines);++I)UI.Text(Lines[I],42,89+I*12,7.5f,FLinearColor::White,false,false,true);
     }
     // 実保存失敗の案内は日本語です。Latin書体の代わりに日本語対応書体を明示します。
