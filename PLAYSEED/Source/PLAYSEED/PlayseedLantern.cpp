@@ -1,6 +1,7 @@
 #include "PlayseedLantern.h"
 #include "ThunderExpeditionSubsystem.h"
 #include "ReferenceBattlefieldTerrain.h"
+#include "ReferenceTravelSubsystem.h"
 #include "WindseedCharacter.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -47,7 +48,12 @@ void APlayseedLantern::ConfigureReward(int32 Number)
     RestLocation = GetActorLocation();
     if (Number < 1 || Number > UThunderExpeditionSubsystem::TotalRewardCount) { SetActorHiddenInGame(true); return; }
     RewardNumber = Number;
-    if (GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->HasEarnedReward(Number)) { bCollected = true; SetActorHiddenInGame(true); }
+    if(GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->HasEarnedReward(Number))
+    {
+        // 獲得済みでも青いスターとして取り直せます。保存済みの個数は増やしません。
+        for(UStaticMeshComponent* Part:Parts)if(!Part->GetName().Contains(TEXT("Eye")))
+            for(int32 Slot=0;Slot<Part->GetNumMaterials();++Slot)if(auto* Tint=Cast<UMaterialInstanceDynamic>(Part->GetMaterial(Slot)))Tint->SetVectorParameterValue(TEXT("Tint"),FLinearColor(.08f,.24f,.85f));
+    }
 }
 void APlayseedLantern::Tick(float DeltaSeconds)
 {
@@ -57,16 +63,20 @@ void APlayseedLantern::Tick(float DeltaSeconds)
     SetActorLocation(RestLocation + FVector(0, 0, FMath::Sin(GetWorld()->GetTimeSeconds() * 3) * 8));
     AddActorLocalRotation(FRotator(0, DeltaSeconds * 65, 0));
     auto* Player = Cast<AWindseedCharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
-    if (!Player || RetryRemaining > 0 || FVector::Dist2D(Player->GetActorLocation(), GetActorLocation()) > 75 || FMath::Abs(Player->GetActorLocation().Z - GetActorLocation().Z) > 100) return;
+    if(!Player)return;
+    const bool bTouching=FVector::Dist2D(Player->GetActorLocation(),GetActorLocation())<=75&&FMath::Abs(Player->GetActorLocation().Z-GetActorLocation().Z)<=100;
+    if(!bTouching){bNeedsExitAfterFailure=false;return;}
+    auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
+    if(RetryRemaining>0||bNeedsExitAfterFailure||Flow->IsTransitionLocked())return;
     auto* Progress = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
-    // 一度に複数の報酬が出ても各Actorと固有IDで守り、Worldを自動で出ません。
-    // これにより100コインと主ミッションの報酬を同じ入場で両方取れます。
+    // 保存成功後にだけ演出へ移り、全スターで絵の前へ帰還します。演出中の二重取得も状態で防ぎます。
     bCollected = true;
     const bool bNewReward = Progress->TryAwardReward(RewardNumber);
     if (bNewReward || Progress->HasEarnedReward(RewardNumber))
     {
         SetActorHiddenInGame(true);
         if (bNewReward) { ++SuccessfulCollections; UE_LOG(LogTemp, Display, TEXT("STAR COLLECTED: actual reward %d, saved total %d."), RewardNumber, Progress->GetEarnedRewardCount()); }
+        if(!Flow->Celebrate(Player,RewardNumber)&&Flow->BeginReturn())UGameplayStatics::OpenLevel(this,FName(TEXT("/Game/Battlefield/Entrance")));
     }
-    else { bCollected = false; RetryRemaining = 1; } // 保存失敗なら消さずに再試行できます。
+    else { bCollected=false;RetryRemaining=1;bNeedsExitAfterFailure=true; } // 保存失敗なら消さず、離れて再接触して試せます。
 }

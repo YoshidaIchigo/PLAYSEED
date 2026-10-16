@@ -27,4 +27,5 @@ private:
     int32 SuccessfulCollections = 0;
     float RetryRemaining = 0;
     bool bCollected = false;
+    bool bNeedsExitAfterFailure=false;
 };

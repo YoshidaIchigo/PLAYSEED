@@ -28,6 +28,7 @@ void AThunderMeadowHUD::DrawHUD()
     auto* Player=Cast<AWindseedCharacter>(UGameplayStatics::GetPlayerPawn(this,0));
     if(!Mode || !Player)return;
     auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
+    auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
     const FLinearColor Number(1,.37f,.025f),Multiply(.55f,.53f,.85f);
     UI.Face(FVector2D(29,20));UI.Text(TEXT("×"),42,9,19,Multiply);UI.Text(FString::FromInt(Mode->GetLives()->GetRemaining()),59,8,20,Number);
     UI.Coin(FVector2D(181,20));UI.Text(TEXT("×"),191,9,19,Multiply);UI.Text(FString::FromInt(Mode->GetCoinLedger()->GetTotal()),208,8,20,Number);
@@ -36,6 +37,17 @@ void AThunderMeadowHUD::DrawHUD()
     if(Health!=LastHealth){LastHealth=Health;PowerUntil=GetWorld()->GetTimeSeconds()+2;}
     if(Health<8 || GetWorld()->GetTimeSeconds()<PowerUntil)UI.Power(FVector2D(160,61),Health);
     UI.Camera();
+    if(Flow->IsCelebrating())
+    {
+        // 参照と同じくHUDを残し、操作できないカメラを赤い×で示します。
+        const FLinearColor Red(1,.04f,.02f);
+        UI.Triangle(FVector2D(298,215),FVector2D(300,215),FVector2D(308,224),Red);
+        UI.Triangle(FVector2D(298,215),FVector2D(308,224),FVector2D(306,224),Red);
+        UI.Triangle(FVector2D(306,215),FVector2D(308,215),FVector2D(300,224),Red);
+        UI.Triangle(FVector2D(306,215),FVector2D(300,224),FVector2D(298,224),Red);
+        if(Flow->GetCelebrationFade()>0)UI.Rect(0,0,320,240,FLinearColor(1,1,1,Flow->GetCelebrationFade()));
+        return;
+    }
     if(Mode->GetDropFade()>0)UI.Rect(0,0,320,240,FLinearColor(1,1,1,Mode->GetDropFade()));
     if(Player->GetLaunch()->IsAiming())
     {
@@ -69,7 +81,7 @@ AThunderMeadowGameMode::AThunderMeadowGameMode()
 {
     Lives = CreateDefaultSubobject<UThunderLivesComponent>(TEXT("VisitLives"));
     CoinLedger = CreateDefaultSubobject<UThunderCoinLedger>(TEXT("VisitCoinLedger"));
-    DefaultPawnClass = AReferenceBattlefieldTerrain::IsReferenceCourse() ? AReferenceHero::StaticClass() : AWindseedCharacter::StaticClass();
+    DefaultPawnClass = AReferenceHero::StaticClass();
     HUDClass = AThunderMeadowHUD::StaticClass();
 }
 
