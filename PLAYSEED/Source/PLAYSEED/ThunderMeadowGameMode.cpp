@@ -69,7 +69,8 @@ void AThunderMeadowHUD::DrawHUD()
         const TCHAR* Lines[]={TEXT("そうさ"),TEXT("WASD / 左スティック: いどう"),TEXT("Space / A: ジャンプ   Shift / LB: はしる"),TEXT("マウス / 右スティック: カメラ"),TEXT("E/X: もつ   F/Y: のぼる   G/下: はなす"),TEXT("Ctrl/RB: ヒップドロップ  LMB/RT: こうげき"),BackHint,TEXT("H: このひょうじを とじる")};
         for(int32 I=0;I<8;++I)UI.Text(Lines[I],42,89+I*12,7.5f,FLinearColor::White,false,false,true);
     }
-    if(!Progress->GetProgressProblem().IsEmpty()){UI.Rect(20,180,280,28,FLinearColor(0,0,0,.8f));UI.Text(Progress->GetProgressProblem(),25,187,7,FLinearColor(1,.35f,.25f));}
+    // 実保存失敗の案内は日本語です。Latin書体の代わりに日本語対応書体を明示します。
+    if(!Progress->GetProgressProblem().IsEmpty()){UI.Rect(20,180,280,28,FLinearColor(0,0,0,.8f));UI.Text(Progress->GetProgressProblem(),25,187,7,FLinearColor(1,.35f,.25f),false,true,true);}
     if(Mode->GetLives()->IsGameOver())
     {
         UI.Rect(0,0,320,240,FLinearColor(0,0,0,.85f));UI.Text(TEXT("GAME OVER"),160,91,29,FLinearColor(1,.12f,.025f),true);
