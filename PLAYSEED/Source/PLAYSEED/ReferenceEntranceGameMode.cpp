@@ -24,7 +24,7 @@ AReferenceEntranceRoom::AReferenceEntranceRoom()
 }
 void AReferenceEntranceRoom::Shape(UStaticMesh* Asset,FVector Position,FVector Size,FLinearColor Color,bool bSolid,USceneComponent* Parent)
 {
-    auto* Part=NewObject<UStaticMeshComponent>(this);Part->SetupAttachment(Parent?Parent:RootComponent);Part->SetStaticMesh(Asset);
+    auto* Part=NewObject<UStaticMeshComponent>(this);Part->SetupAttachment(Parent?Parent:RootComponent.Get());Part->SetStaticMesh(Asset);
     Part->SetRelativeLocation(Position);Part->SetRelativeScale3D(Size/100);
     Part->SetCollisionEnabled(bSolid?ECollisionEnabled::QueryAndPhysics:ECollisionEnabled::NoCollision);Part->SetCollisionResponseToAllChannels(ECR_Block);Part->SetCastShadow(false);
     if(auto* Palette=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Battlefield/M_Actor.M_Actor")))
