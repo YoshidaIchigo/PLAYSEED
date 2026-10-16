@@ -665,6 +665,10 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     else if(Step==47 && Player && Elapsed>.6f)
     {
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderControls.png"),false,false);
+        Step=48;Elapsed=0;
+    }
+    else if(Step==48 && Player && Elapsed>.2f)
+    {
         Tap(PC,EKeys::F1);if(Cast<AThunderMeadowGameMode>(CurrentMode)->ShouldShowControls()){Fail(TEXT("F1 controls did not close"));return;}
         bPresentationControlsChecked=true;Step=3;Elapsed=1.1f;
     }

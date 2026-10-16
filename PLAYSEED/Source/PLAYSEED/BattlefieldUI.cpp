@@ -33,6 +33,7 @@ void FBattlefieldUI::Text(const FString& Value,float X,float Y,float Size,FLinea
 }
 void FBattlefieldUI::Star(FVector2D P,float Radius,FLinearColor Color,bool bEyes) const
 {
+    // 外側5点と内側5点を交互に並べ、中心から10枚の三角形で星を塗ります。
     TArray<FVector2D> Points;
     for(int32 I=0;I<10;++I){const float A=-PI*.5f+I*PI/5,R=Radius*(I%2==0?1.f:.46f);Points.Add(P+FVector2D(FMath::Cos(A),FMath::Sin(A))*R);}
     for(int32 I=0;I<10;++I)Triangle(P,Points[I],Points[(I+1)%10],Color);
