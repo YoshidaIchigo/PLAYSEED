@@ -33,6 +33,7 @@
 #include "ThunderSkyCacheTestSubsystem.h"
 #include "ThunderScarletTestSubsystem.h"
 #include "ThunderChimeTestSubsystem.h"
+#include "ThunderSentinelTestSubsystem.h"
 #include "ThunderFlightSwitch.h"
 #include "ThunderFlightBloom.h"
 #include "ThunderLauncher.h"
@@ -98,7 +99,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 40 ? 420 : Step == 37 || Step == 39 ? 360 : Step == 31 || Step == 33 || Step == 34 || Step == 35 || Step == 36 || Step == 38 ? 300 : Step == 10 || (Step >= 12 && Step <= 32) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 41 ? 180 : Step == 40 ? 420 : Step == 37 || Step == 39 ? 360 : Step == 31 || Step == 33 || Step == 34 || Step == 35 || Step == 36 || Step == 38 ? 300 : Step == 10 || (Step >= 12 && Step <= 32) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -217,7 +218,14 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             || Expedition->GetSelectedMissionNumber() != (bBossTest ? 1 : bRaceTest ? 2 : bSkyCacheTest ? 3 : bScarletTest ? 4 : bChimeTest ? 5 : 6))
         { Fail(TEXT("Restart in the new stage failed")); return; }
         const bool bIslandTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderIslandTest"));
-        if (bChimeTest)
+        if (FParse::Param(FCommandLine::Get(), TEXT("ThunderSentinelTest")))
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+            if (!Meadow || !Meadow->GetBoundSentinel()) { Fail(TEXT("Bound sentinel missing")); return; }
+            GetGameInstance()->GetSubsystem<UThunderSentinelTestSubsystem>()->BeginTest(Player, Meadow->GetBoundSentinel());
+            Step = 41; Elapsed = 0;
+        }
+        else if (bChimeTest)
         {
             auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
             if (!Meadow || !Meadow->GetSkyChimes() || !Meadow->GetFlightBloom() || !Meadow->GetFlightSwitch() || !Meadow->GetLauncher()) { Fail(TEXT("Sky chimes or actual flight prerequisites missing")); return; }
@@ -557,6 +565,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         auto* BoxTest = GetGameInstance()->GetSubsystem<UThunderBoxTestSubsystem>();
         const bool bComplete = BoxTest->UpdateTest(Player, DeltaSeconds);
         if (!BoxTest->GetError().IsEmpty()) { Fail(BoxTest->GetError()); return; }
+        if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
+    else if (Step == 41 && Player)
+    {
+        auto* SentinelTest = GetGameInstance()->GetSubsystem<UThunderSentinelTestSubsystem>();
+        const bool bComplete = SentinelTest->UpdateTest(Player, DeltaSeconds);
+        if (!SentinelTest->GetError().IsEmpty()) { Fail(SentinelTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
     }
     else if (Step == 40 && Player)
