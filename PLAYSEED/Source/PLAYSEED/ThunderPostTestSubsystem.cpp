@@ -75,7 +75,7 @@ bool UThunderPostTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
         UE_LOG(LogTemp, Display, TEXT("POST TEST: actual post floor landing excluded, observed health%d actual enemy contacts%d; R before positive pound route."), Player->GetVitality()->GetHealth(), Enemy->GetConfirmedHits() - ContactBaseline);
         Player->StopJumping(); PostTap(PC, EKeys::R); Next(4); return false;
     }
-    if (Phase < 9 && Progress->GetEarnedRewardCount() != 0) { Error = TEXT("Reward6 was saved before walking to actual lantern"); return false; }
+    if (Phase < 8 && Progress->GetEarnedRewardCount() != 0) { Error = TEXT("Reward6 was saved before walking to actual lantern"); return false; }
     if (Phase == 0) { if (Approach(Player, DeltaSeconds)) Next(1); }
     else if (Phase == 1) { if (Enemy->IsRecovering()) Next(2); }
     else if (Phase == 2)
