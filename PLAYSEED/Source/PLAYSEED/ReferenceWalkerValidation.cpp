@@ -45,9 +45,12 @@ void UReferencePaintingTestSubsystem::UpdateReferenceWalkers(float DeltaSeconds,
         if(WalkerWaypoint>=Count){if(Move->IsMovingOnGround())Move->StopMovementImmediately();return true;}
         const auto& P=Points[WalkerWaypoint];const FVector Target(P.X,P.Y,P.Z);WalkerLegElapsed+=DeltaSeconds;
         if(WalkerLegElapsed>22){Finish(false,FString::Printf(TEXT("Walker ordinary route blocked phase%d point%d hero%s target%s"),Phase,WalkerWaypoint,*Hero->GetActorLocation().ToString(),*Target.ToString()));return false;}
-        if(FVector::Dist2D(Hero->GetActorLocation(),Target)<35&&FMath::Abs(Hero->GetActorLocation().Z-82-Target.Z)<160)
+        const float ActualFloor=Move->IsMovingOnGround()&&Move->CurrentFloor.bBlockingHit?Move->CurrentFloor.HitResult.ImpactPoint.Z:Hero->GetActorLocation().Z-82;
+        const bool bSecond=Phase==186;
+        if(FVector::Dist2D(Hero->GetActorLocation(),Target)<(bSecond?18:35)&&FMath::Abs((bSecond?ActualFloor:Hero->GetActorLocation().Z-82)-Target.Z)<(bSecond?80:160))
         {++WalkerWaypoint;WalkerLegElapsed=0;return false;}
-        Walk(Target,Target.Z>Hero->GetActorLocation().Z-82+60&&FVector::Dist2D(Target,Hero->GetActorLocation())<350);return false;
+        const bool bSmallStep=WalkerLegElapsed>1&&Move->IsMovingOnGround()&&Hero->GetVelocity().Size2D()<40;
+        Walk(Target,(Target.Z>Hero->GetActorLocation().Z-82+60||bSmallStep)&&FVector::Dist2D(Target,Hero->GetActorLocation())<350);return false;
     };
     auto AllReset=[&]()
     {
@@ -111,10 +114,14 @@ void UReferencePaintingTestSubsystem::UpdateReferenceWalkers(float DeltaSeconds,
             {Finish(false,TEXT("Ordinary Space jump did not stomp one walker and generate one real gold"));return;}
             Photo(TEXT("ThunderWalkerStomp.png"));Begin(187);return;
         }
-        if(WalkerWaypoint<UE_ARRAY_COUNT(ReferenceWalkerSecondWalk)){Route(ReferenceWalkerSecondWalk,UE_ARRAY_COUNT(ReferenceWalkerSecondWalk));return;}
         const float Distance=FVector::Dist2D(Hero->GetActorLocation(),Second->GetActorLocation());
-        const bool bJump=!bWalkerStompJump&&Move->IsMovingOnGround()&&Distance<300;
-        Walk(Second->GetActorLocation(),bJump);if(bJump)bWalkerStompJump=true;
-        if(Elapsed>35)Finish(false,TEXT("Normal Space did not stomp the second actual walker"));
+        const bool bSameFloor=FMath::Abs(Hero->GetActorLocation().Z-82-Second->GetActorLocation().Z)<55;
+        if(!bWalkerStompJump&&!(Move->IsMovingOnGround()&&bSameFloor&&Distance<350)&&WalkerWaypoint<UE_ARRAY_COUNT(ReferenceWalkerSecondWalk))
+        {Route(ReferenceWalkerSecondWalk,UE_ARRAY_COUNT(ReferenceWalkerSecondWalk));return;}
+        WalkerAttackClock+=DeltaSeconds;
+        const bool bJump=Move->IsMovingOnGround()&&Distance<350&&(!bWalkerStompJump||WalkerAttackClock>1.3f);
+        Walk(Second->GetActorLocation(),bJump);
+        if(bJump){bWalkerStompJump=true;WalkerAttackClock=0;UE_LOG(LogTemp,Display,TEXT("WALKER QA: actual Space stomp approach hero%s enemy%s"),*Hero->GetActorLocation().ToString(),*Second->GetActorLocation().ToString());}
+        if(Elapsed>60)Finish(false,FString::Printf(TEXT("Normal Space did not stomp walker: hero%s velocity%s enemy%s home%s health%d jumped%d point%d floor%s"),*Hero->GetActorLocation().ToString(),*Hero->GetVelocity().ToString(),*Second->GetActorLocation().ToString(),*Second->GetHomeLocation().ToString(),Health->GetHealth(),bWalkerStompJump,WalkerWaypoint,*Move->CurrentFloor.HitResult.ImpactPoint.ToString()));
     }
 }
