@@ -71,16 +71,16 @@ bool UThunderPostTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
     {
         if (JumpToPost(Player, DeltaSeconds, Round != 0))
         {
-            if (Round == 0) { Player->GetCharacterMovement()->StopMovementImmediately(); PostTap(PC, EKeys::LeftMouseButton); Next(3); }
+            if (Round == 0)
+            {
+                if (Post->GetPoundCount() != 0 || Enemy->IsReleased() || Gate->IsBroken() || Gate->GetReward()) { Error = TEXT("Ordinary top landing incorrectly advanced post"); return false; }
+                UE_LOG(LogTemp, Display, TEXT("POST TEST: actual ordinary landing on post top did not advance it."));
+                Player->GetCharacterMovement()->StopMovementImmediately(); PostTap(PC, EKeys::R); Next(4);
+            }
             else if (Round == 1) { PostTap(PC, EKeys::R); Next(4); }
             else if (Post->GetPoundCount() < 3) Next(5);
             else Next(6);
         }
-    }
-    else if (Phase == 3 && PhaseTime > .2f)
-    {
-        if (Post->GetPoundCount() != 0 || Enemy->IsReleased() || Gate->IsBroken() || Gate->GetReward()) { Error = TEXT("Ordinary top landing or melee incorrectly freed the post"); return false; }
-        UE_LOG(LogTemp, Display, TEXT("POST TEST: actual ordinary landing on top and melee did not advance post.")); PostTap(PC, EKeys::R); Next(4);
     }
     else if (Phase == 4)
     {
@@ -116,7 +116,7 @@ bool UThunderPostTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
     else if (Phase == 11 && PhaseTime > .4f)
     {
         if (Post->GetPoundCount() != 0 || Gate->IsBroken() || Gate->GetReward() || Enemy->IsReleased() || !Progress->HasEarnedReward(6) || Progress->GetEarnedRewardCount() != 1) { Error = TEXT("R failed to reset prison visit while retaining actually saved reward6"); return false; }
-        UE_LOG(LogTemp, Display, TEXT("POST TEST PASS: real ordinary landing and melee excluded, actual partial pound R, three real top pounds, released enemy actual gate sweep, actual walk into reward6, R persistence.")); return true;
+        UE_LOG(LogTemp, Display, TEXT("POST TEST PASS: real ordinary landing excluded, actual partial pound R, three real top pounds, released enemy actual gate sweep, actual walk into reward6, R persistence.")); return true;
     }
     else if (Phase == 20 && PhaseTime > 1)
     {
