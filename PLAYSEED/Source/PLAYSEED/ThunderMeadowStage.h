@@ -31,6 +31,7 @@ class AThunderStormkeeper;
 class AThunderCloudflagRace;
 class AThunderSkyCache;
 class AThunderScarletTrail;
+class AThunderSkyChimes;
 
 // Actor は World 内の一つの存在です。この Actor が地形・装飾の Component を所有します。
 // ミッションのルールやセーブは GameMode / Subsystem に任せ、形状の生成だけを担当します。
@@ -71,6 +72,7 @@ public:
     AThunderCloudflagRace* GetCloudflagRace() const { return CloudflagRace; }
     AThunderSkyCache* GetSkyCache() const { return SkyCache; }
     AThunderScarletTrail* GetScarletTrail() const { return ScarletTrail; }
+    AThunderSkyChimes* GetSkyChimes() const { return SkyChimes; }
     const TArray<FVector>& GetWingTowerFootPath() const { return WingTowerFootPath; }
     void ResetMechanisms();
 private:
@@ -105,6 +107,7 @@ private:
     void BuildCloudflagRace();
     void BuildSkyCache();
     void BuildScarletTrail();
+    void BuildSkyChimes();
     void AddRamp(FVector Start, FVector End, float Width);
     void BuildLighting();
 
@@ -140,6 +143,7 @@ private:
     UPROPERTY() TObjectPtr<AThunderCloudflagRace> CloudflagRace;
     UPROPERTY() TObjectPtr<AThunderSkyCache> SkyCache;
     UPROPERTY() TObjectPtr<AThunderScarletTrail> ScarletTrail;
+    UPROPERTY() TObjectPtr<AThunderSkyChimes> SkyChimes;
     TArray<FVector> WingTowerFootPath;
     TArray<FVector> MeadowCoinFootPath;
     TArray<FVector> MountainFootPath;
