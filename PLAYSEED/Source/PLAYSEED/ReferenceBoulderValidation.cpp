@@ -57,7 +57,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBoulders(float DeltaSeconds
     }
     if(Phase==131||Phase==134)
     {
-        const bool bPit=Phase==131;auto* Ball=Field->GetBalls()[bPit?2:1];
+        const bool bPit=Phase==131;AThunderRollingBoulder* Ball=Field->GetBalls()[bPit?2:1];
         if(Hero->RecoveryCount!=(bPit?0:1)){Finish(false,TEXT("Boulder contact unexpectedly killed or recovered the hero"));return;}
         if(Health->GetHealth()<8)
         {
