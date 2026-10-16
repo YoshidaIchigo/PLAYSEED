@@ -19,6 +19,7 @@ public:
 private:
     void Tap(APlayerController* PC,FKey Key);
     void Finish(bool bPassed,const FString& Message);
+    void UpdateReferenceSky(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceRed(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceCannon(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceRace(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
@@ -28,6 +29,11 @@ private:
     void ObserveFade(APlayerController* PC);
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
+    bool bWingOwnedReplay=false;
+    bool bReferenceSkyTest=false,bWingHubInitiallyUnlocked=false,bWingHubChecked=false,bWingHubJumped=false,bWingPoundSent=false;
+    bool bWingPowerObserved=false,bWingFlightObserved=false,bWingCameraHidden=false,bWingAimSent=false,bWingAimShot=false,bWingSlow=false,bWingFlightKeysSet=false;
+    int32 WingWaypoint=0,WingCentre=0;
+    float WingLegElapsed=0,WingAimStable=0,WingGoalYaw=0,WingGoalPitch=0;
     bool bReferenceRedTest=false,bRedRouteJump=false,bRedPlatformRidden=false,bRedTreeClimbed=false,bRedBridgeRidden=false,bRedBoardAttempt=false,bRedPlatformJump=false,bRedClimbSent=false;
     int32 RedWaypoint=0,RedDescentPoint=0;
     float RedLegElapsed=0;

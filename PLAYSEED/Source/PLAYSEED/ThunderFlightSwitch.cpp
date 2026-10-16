@@ -1,4 +1,5 @@
 #include "ThunderFlightSwitch.h"
+#include "ReferenceBattlefieldTerrain.h"
 #include "ThunderExpeditionSubsystem.h"
 #include "PlayseedActionComponent.h"
 #include "WindseedCharacter.h"
@@ -12,7 +13,7 @@
 
 AThunderFlightSwitch::AThunderFlightSwitch()
 {
-    PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bCanEverTick = true;bReferenceSwitch=AReferenceBattlefieldTerrain::IsReferenceCourse();
     RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("SunSwitchRoot"));
     Button = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SunButton")); Button->SetupAttachment(RootComponent);
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Mesh(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
@@ -21,14 +22,14 @@ AThunderFlightSwitch::AThunderFlightSwitch()
 void AThunderFlightSwitch::BeginPlay()
 {
     Super::BeginPlay();
-    if (auto* Palette = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Windseed/M_Palette.M_Palette"))) { ButtonTint = UMaterialInstanceDynamic::Create(Palette, this); Button->SetMaterial(0, ButtonTint); }
+    if (auto* Palette = LoadObject<UMaterialInterface>(nullptr, bReferenceSwitch?TEXT("/Game/Battlefield/M_Actor.M_Actor"):TEXT("/Game/Windseed/M_Palette.M_Palette"))) { ButtonTint = UMaterialInstanceDynamic::Create(Palette, this); Button->SetMaterial(0, ButtonTint); }
     RefreshFromProgress();
 }
 void AThunderFlightSwitch::RefreshFromProgress()
 {
     bActivated = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->IsFlightUnlocked();
     Button->SetRelativeLocation(FVector(0, 0, bActivated ? 10 : 20)); Button->SetRelativeScale3D(FVector(2, 2, bActivated ? .2f : .4f));
-    if (ButtonTint) ButtonTint->SetVectorParameterValue(TEXT("Tint"), bActivated ? FLinearColor(.06f, .65f, .42f) : FLinearColor(1, .72f, .1f));
+    if (ButtonTint) ButtonTint->SetVectorParameterValue(TEXT("Tint"), bReferenceSwitch?(bActivated?FLinearColor(.38f,.008f,.004f):FLinearColor(.9f,.015f,.008f)):(bActivated ? FLinearColor(.06f, .65f, .42f) : FLinearColor(1, .72f, .1f)));
 }
 void AThunderFlightSwitch::HandlePound(FVector ImpactPoint)
 {

@@ -27,6 +27,7 @@ class APlayseedGaleleafEnemy;
 class AThunderGuide;
 class AThunderLauncher;
 class AThunderFlightBloom;
+class AReferenceWingBox;
 class AThunderFlightSwitch;
 class AThunderStormkeeper;
 class AThunderCloudflagRace;
@@ -74,6 +75,7 @@ public:
     AThunderGuide* GetGuide() const { return Guide; }
     AThunderLauncher* GetLauncher() const { return Launcher; }
     const TArray<TObjectPtr<AThunderLauncher>>& GetReferenceLaunchers() const { return ReferenceLaunchers; }
+    const TArray<TObjectPtr<AReferenceWingBox>>& GetReferenceWingBoxes() const { return ReferenceWingBoxes; }
     AThunderFlightBloom* GetFlightBloom() const { return FlightBloom; }
     AThunderFlightSwitch* GetFlightSwitch() const { return FlightSwitch; }
     AThunderStormkeeper* GetStormkeeper() const { return Stormkeeper; }
@@ -117,6 +119,7 @@ private:
     void BuildGaleleafEnemy();
     void BuildGuideAndLauncher();
     void BuildFlightBloom();
+    void BuildReferenceFlight();
     void BuildWingTower();
     void BuildStormkeeper();
     void BuildCloudflagRace();
@@ -157,6 +160,7 @@ private:
     UPROPERTY() TObjectPtr<AThunderLauncher> Launcher;
     UPROPERTY() TArray<TObjectPtr<AThunderLauncher>> ReferenceLaunchers;
     UPROPERTY() TObjectPtr<AThunderFlightBloom> FlightBloom;
+    UPROPERTY() TArray<TObjectPtr<AReferenceWingBox>> ReferenceWingBoxes;
     UPROPERTY() TObjectPtr<AThunderFlightSwitch> FlightSwitch;
     UPROPERTY() TObjectPtr<AThunderStormkeeper> Stormkeeper;
     UPROPERTY() TObjectPtr<AThunderCloudflagRace> CloudflagRace;

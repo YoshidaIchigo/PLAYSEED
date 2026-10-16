@@ -1,4 +1,5 @@
 #include "ThunderSkyChimes.h"
+#include "ReferenceBattlefieldTerrain.h"
 #include "ThunderMeadowGameMode.h"
 #include "ThunderCoinLedger.h"
 #include "PlayseedCoin.h"
@@ -12,7 +13,7 @@
 
 AThunderSkyChimes::AThunderSkyChimes()
 {
-    PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bCanEverTick = true;bReferenceRings=AReferenceBattlefieldTerrain::IsReferenceCourse();
     RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("SkyChimeRoot"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Sphere(TEXT("/Engine/BasicShapes/Sphere.Sphere")); BeadMesh = Sphere.Object;
 }
@@ -34,6 +35,18 @@ void AThunderSkyChimes::Configure(const TArray<FVector>& Centres, FVector Reward
         const FName Id(*FString::Printf(TEXT("ThunderChimeCentre_%d"), Index + 1)); TargetIds.Add(Id);
         auto* Coin = GetWorld()->SpawnActor<APlayseedCoin>(Centres[Index], FRotator::ZeroRotator);
         if (Coin) { Coin->ConfigureCoin(Id, EPlayseedCoinKind::Gold); Coins.Add(Coin); }
+        if(bReferenceRings)
+        {
+            // 外周も触れて集められる8枚です。中央の5枚だけがスター5の条件です。
+            for(int32 Edge=0;Edge<8;++Edge)
+            {
+                const double Angle=Edge*2*PI/8;
+                const FVector Position=Centres[Index]+FVector(0,FMath::Sin(Angle)*200,FMath::Cos(Angle)*200);
+                auto* Outer=GetWorld()->SpawnActor<APlayseedCoin>(Position,FRotator::ZeroRotator);
+                if(Outer){Outer->ConfigureCoin(*FString::Printf(TEXT("ReferenceRing_%d_%d"),Index,Edge),EPlayseedCoinKind::Gold);OuterCoins.Add(Outer);}
+            }
+            Tints.Add(nullptr);continue;
+        }
         auto* Tint = Palette ? UMaterialInstanceDynamic::Create(Palette, this) : nullptr; Tints.Add(Tint);
         if (Tint) Tint->SetVectorParameterValue(TEXT("Tint"), FLinearColor(1, .65f, .12f));
         // 通常のメッシュで既存パレットの色を表示します。輪ごとに一つの素材を24球で共有します。
@@ -61,5 +74,6 @@ void AThunderSkyChimes::ResetChimes()
 {
     CollectedIds.Reset(); if (Reward.IsValid()) Reward->Destroy(); Reward.Reset();
     for (APlayseedCoin* Coin : Coins) if (Coin) Coin->ResetCoin();
+    for (APlayseedCoin* Coin : OuterCoins) if (Coin) Coin->ResetCoin();
     for (UMaterialInstanceDynamic* Tint : Tints) if (Tint) Tint->SetVectorParameterValue(TEXT("Tint"), FLinearColor(1, .65f, .12f));
 }

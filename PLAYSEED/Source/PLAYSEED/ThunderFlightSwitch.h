@@ -27,6 +27,7 @@ private:
     UPROPERTY() TObjectPtr<UStaticMeshComponent> Button;
     UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> ButtonTint;
     TWeakObjectPtr<UPlayseedActionComponent> BoundActions;
+    bool bReferenceSwitch=false;
     bool bActivated = false;
     int32 ActivationCount = 0;
 };

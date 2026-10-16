@@ -58,9 +58,13 @@ void UReferencePaintingTestSubsystem::Initialize(FSubsystemCollectionBase& Colle
     bReferenceRaceTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceRaceTest"));
     bReferenceCannonTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceCannonTest"));
     bReferenceRedTest=FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceRedTest"));
-    ExpectedReward=bReferenceRedTest?4:bReferenceBossTest?1:bReferenceRaceTest?2:bReferenceCannonTest?3:6;
-    BeforeRewardCount=bReferenceRedTest?3:bReferenceCannonTest?2:bReferenceRaceTest?1:0;AfterRewardCount=BeforeRewardCount+1;
-    bStarTest=bReferenceRedTest||bReferenceCannonTest||bReferenceRaceTest||bReferenceBossTest||bSelectionTest||bSaveFailureTest||bFadeTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest"));
+    bWingOwnedReplay=FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceSkyOwnedTest"));
+    bReferenceSkyTest=bWingOwnedReplay||FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceSkyTest"));
+    ExpectedReward=bReferenceSkyTest?5:bReferenceRedTest?4:bReferenceBossTest?1:bReferenceRaceTest?2:bReferenceCannonTest?3:6;
+    BeforeRewardCount=bReferenceSkyTest?4:bReferenceRedTest?3:bReferenceCannonTest?2:bReferenceRaceTest?1:0;AfterRewardCount=BeforeRewardCount+1;
+    // 獲得済みの実セーブを消さずに再プレイし、同じスターで数が増えないことも検証します。
+    if(bWingOwnedReplay)BeforeRewardCount=AfterRewardCount=5;
+    bStarTest=bReferenceSkyTest||bReferenceRedTest||bReferenceCannonTest||bReferenceRaceTest||bReferenceBossTest||bSelectionTest||bSaveFailureTest||bFadeTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest"));
     bReadMode=FParse::Param(FCommandLine::Get(),TEXT("ThunderStarReadTest"));
     bChainTest=bStarTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderChainTest"));
     bDropTest=bChainTest||FParse::Param(FCommandLine::Get(),TEXT("ThunderDropTest"));
@@ -71,6 +75,7 @@ void UReferencePaintingTestSubsystem::Tap(APlayerController* PC,FKey Key)
 {PC->InputKey(FInputKeyEventArgs::CreateSimulated(Key,IE_Pressed,1));PC->InputKey(FInputKeyEventArgs::CreateSimulated(Key,IE_Released,0));}
 void UReferencePaintingTestSubsystem::Finish(bool bPassed,const FString& Message)
 {
+    if(bReferenceSkyTest&&bPassed&&(!bWingHubChecked||!bWingPowerObserved||!bWingFlightObserved||!bWingCameraHidden)){bPassed=false;UE_LOG(LogTemp,Error,TEXT("WING QA missing actual hub/cap/flight/camera proof"));}
     if(bReferenceRedTest&&bPassed&&(!bRedPlatformRidden||!bRedTreeClimbed||!bRedBridgeRidden||!bCannonSawFlight||!bCannonAimHidden))bPassed=false;
     if(bReferenceCannonTest&&bPassed&&(!bCannonAimHidden||!bCannonSawFlight))bPassed=false;
     if(bReferenceRaceTest&&bPassed&&!bRaceSprintSeen)bPassed=false;
@@ -80,7 +85,7 @@ void UReferencePaintingTestSubsystem::Finish(bool bPassed,const FString& Message
     if(bFadeTest&&bPassed&&(ObservedFadeOut.Num()!=7||ObservedFadeCovered.Num()!=7||ObservedFadeIn.Num()!=7||GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>()->GetCompletedFades()!=7)){bPassed=false;UE_LOG(LogTemp,Error,TEXT("FADE QA incomplete sequences: out%d covered%d in%d"),ObservedFadeOut.Num(),ObservedFadeCovered.Num(),ObservedFadeIn.Num());}
     bFinished=true;auto* Recording=GetGameInstance()->GetSubsystem<UPlayseedRecordingSubsystem>();const int32 Frames=Recording->FinishRecording();
     bPassed=bPassed&&!Recording->HasCaptureError()&&Frames>=150;
-    const FString Details=Message+(bSaveFailureTest&&bPassed?TEXT(" Actual SaveGameToSlot failure from own empty QA directory, rollback0 and visible star, physical exit, nonrecursive removal of own empty obstacle, real recontact saved6 once and returned to painting."):TEXT(""));
+    const FString Details=(bWingOwnedReplay&&bPassed?TEXT("Owned star5 full replay: legitimate saved wing unlock, ordinary cap-box head bump and actual pickup, normal G/mouse/LMB cannon, mouse/W/S flight through five actual centre coins, one fixed blue owned star5, NEW0 and earned count unchanged5, visible pose, white fades, painting return and next6 menu. No save copy/reset/injection."):Message)+(bSaveFailureTest&&bPassed?TEXT(" Actual SaveGameToSlot failure from own empty QA directory, rollback0 and visible star, physical exit, nonrecursive removal of own empty obstacle, real recontact saved6 once and returned to painting."):TEXT(""));
     const FString Result=FString::Printf(TEXT("%s\n%s\nCaptureFrames: %d\nUTC: %s\n"),bPassed?TEXT("PASS"):TEXT("FAIL"),*Details,Frames,*FDateTime::UtcNow().ToIso8601());
     FFileHelper::SaveStringToFile(Result,*(FPaths::ProjectSavedDir()/TEXT("Validation/Result.txt")),FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
     UE_LOG(LogTemp,Display,TEXT("PAINTING TEST %s"),*Result);FPlatformMisc::RequestExit(false);
@@ -102,6 +107,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
     }
     if(bFadeTest&&Phase>0)ObserveFade(PC);
     if(bFinished)return;
+    if(bReferenceSkyTest&&Phase>=90){UpdateReferenceSky(DeltaSeconds,Hero,PC);return;}
     if(bReferenceRedTest&&Phase>=70){UpdateReferenceRed(DeltaSeconds,Hero,PC);return;}
     if((bReferenceCannonTest||bReferenceRedTest)&&Phase>=60){UpdateReferenceCannon(DeltaSeconds,Hero,PC);return;}
     if(bReferenceRaceTest&&Phase>=50){UpdateReferenceRace(DeltaSeconds,Hero,PC);return;}
@@ -112,11 +118,13 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
         if(Map!=TEXT("Entrance")||!Hero||!Mode||Elapsed<1)return;
         if(!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_"))||Progress->GetEarnedRewardCount()!=(bReadMode?AfterRewardCount:BeforeRewardCount)||UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0)!=(bReadMode||BeforeRewardCount>0)||(bReadMode&&!Progress->HasEarnedReward(ExpectedReward)))
         {Finish(false,TEXT("Painting QA requires a fresh isolated save"));return;}
+        if(bReferenceSkyTest&&(!Progress->HasEarnedReward(1)||!Progress->HasEarnedReward(2)||!Progress->HasEarnedReward(3)||!Progress->HasEarnedReward(4)||!Progress->IsLauncherUnlocked()||(bWingOwnedReplay&&!Progress->HasEarnedReward(5)))){Finish(false,TEXT("Wing QA requires actual earned stars1/2/3/4 and legitimate cannon access, plus actual5 for owned replay"));return;}
         if(bReferenceRedTest&&(!Progress->HasEarnedReward(1)||!Progress->HasEarnedReward(2)||!Progress->HasEarnedReward(3)||!Progress->IsLauncherUnlocked())){Finish(false,TEXT("Red QA requires actual earned stars1/2/3 and legitimate cannon access"));return;}
         if(bReferenceCannonTest&&(!Progress->HasEarnedReward(1)||!Progress->HasEarnedReward(2))){Finish(false,TEXT("Cannon QA requires actually earned star1/2"));return;}
         if(bReferenceRaceTest&&!Progress->HasEarnedReward(1)){Finish(false,TEXT("Race requires the previously actually earned star1 save"));return;}
         if(!GetGameInstance()->GetSubsystem<UPlayseedRecordingSubsystem>()->StartRecording(TEXT("Validation/CoursePlaythrough.avi"))){Finish(false,TEXT("Painting recording failed"));return;}
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderPaintingRoom.png"),false,false);
+        if(bReferenceSkyTest&&!bWingHubChecked){bWingHubInitiallyUnlocked=Progress->IsFlightUnlocked();Phase=90;Elapsed=0;return;}
         Phase=1;Elapsed=0;return;
     }
     if(Phase==1)
@@ -153,6 +161,12 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
         {
             if(Map!=TEXT("MissionSelect")||Progress->GetEarnedRewardCount()!=AfterRewardCount||!Progress->HasEarnedReward(ExpectedReward)||!UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(),0))
             {Finish(false,TEXT("Earned star6 did not persist through painting entry"));return;}
+            if(bReferenceSkyTest)
+            {
+                auto* Menu=Cast<AThunderMissionSelectionGameMode>(GetWorld()->GetAuthGameMode());
+                if(!Menu||Menu->GetVisibleMissionCount()!=6||!Menu->IsMissionSelectable(5)||!Menu->IsMissionSelectable(6))
+                {Finish(false,TEXT("Actual star5 did not reveal exactly the next mission6"));return;}
+            }
             if(bReferenceRedTest)
             {
                 auto* Menu=Cast<AThunderMissionSelectionGameMode>(GetWorld()->GetAuthGameMode());
@@ -204,7 +218,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
                 if(!bSelectionInitialShot){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderSelectionInitial.png"),false,false);bSelectionInitialShot=true;}
             }
             else FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderPaintingSelection.png"),false,false);
-            Tap(PC,bReferenceRedTest?EKeys::Four:bReferenceCannonTest?EKeys::Three:bReferenceRaceTest?EKeys::Two:EKeys::One);Phase=6;Elapsed=0;return;
+            Tap(PC,bReferenceSkyTest?EKeys::Five:bReferenceRedTest?EKeys::Four:bReferenceCannonTest?EKeys::Three:bReferenceRaceTest?EKeys::Two:EKeys::One);Phase=6;Elapsed=0;return;
         }
         if(Elapsed>10)
         {
@@ -214,7 +228,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
         return;
     }
     if(Phase==4&&Elapsed>1){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/CourseComplete.png"),false,false);Phase=5;Elapsed=0;return;}
-    if(Phase==5&&Elapsed>1)Finish(!bStarTest||(bMReentryChecked&&bPoseObserved&&bPoseShot),bReadMode?(bReferenceRedTest?TEXT("Actual eight reference red coins through seesaw bridge, ordinary moving-platform ride and jump, normal G/mouse/LMB cannon, F/W tree climb, one fixed-position star4, real save total4, pose/fades/painting return and earned1/2/3/4 next5 menu."):bReferenceCannonTest?TEXT("Loaded actually earned stars1/2, normal guide dialogue and saved cannon access, ordinary mountain walking, normal G aim/mouse controls/LMB physical2600 launch and island landing, actual upward jump head-bump box once, real star3 save total3, pose/fades/painting return and earned1/2/3 next4 menu."):bReferenceRaceTest?TEXT("Loaded previously actually earned star1, normal G race start, real sprint/walk/jump summit arrival before rival, waited for rival, G win dialogue, actual fixed-position star2 save, pose/fades/painting return and earned1/2 next3 menu."):bReferenceBossTest?TEXT("Actual M return and painting reentry, ordinary mountain route, three E rear pickups and real physical summit throws, actual fixed-position star1 save, pose/fades/painting return and earned1 menu persistence."):bStarTest?TEXT("Actual M return and painting reentry, second physical drop, reference post3 and gate collision, actual star6 save, pose/camera/held star, transition input spam and duplicate guard, automatic painting return, earned6 menu display persisted."):TEXT("Separate process loaded the actual star6 save, walked and jumped into the painting, and displayed earned6/count1 in selection without awarding progress.")):TEXT("Normal walking and Space jump into painting, ripple/dive/fade to star selection; R/M/Space/Ctrl/Enter spam blocked during transition; fresh progress remains zero and unsaved."));
+    if(Phase==5&&Elapsed>1)Finish(!bStarTest||(bMReentryChecked&&bPoseObserved&&bPoseShot),bReadMode?(bReferenceSkyTest?TEXT("Actual entrance-switch ground pound and saved wing access, ordinary cap-box head bump and actual pickup, normal field cannon G/mouse/LMB, real controlled flight through five actual centre coins, fixed star5 save total5, pose/fades/painting return and earned1/2/3/4/5 next6 menu."):bReferenceRedTest?TEXT("Actual eight reference red coins through seesaw bridge, ordinary moving-platform ride and jump, normal G/mouse/LMB cannon, F/W tree climb, one fixed-position star4, real save total4, pose/fades/painting return and earned1/2/3/4 next5 menu."):bReferenceCannonTest?TEXT("Loaded actually earned stars1/2, normal guide dialogue and saved cannon access, ordinary mountain walking, normal G aim/mouse controls/LMB physical2600 launch and island landing, actual upward jump head-bump box once, real star3 save total3, pose/fades/painting return and earned1/2/3 next4 menu."):bReferenceRaceTest?TEXT("Loaded previously actually earned star1, normal G race start, real sprint/walk/jump summit arrival before rival, waited for rival, G win dialogue, actual fixed-position star2 save, pose/fades/painting return and earned1/2 next3 menu."):bReferenceBossTest?TEXT("Actual M return and painting reentry, ordinary mountain route, three E rear pickups and real physical summit throws, actual fixed-position star1 save, pose/fades/painting return and earned1 menu persistence."):bStarTest?TEXT("Actual M return and painting reentry, second physical drop, reference post3 and gate collision, actual star6 save, pose/camera/held star, transition input spam and duplicate guard, automatic painting return, earned6 menu display persisted."):TEXT("Separate process loaded the actual star6 save, walked and jumped into the painting, and displayed earned6/count1 in selection without awarding progress.")):TEXT("Normal walking and Space jump into painting, ripple/dive/fade to star selection; R/M/Space/Ctrl/Enter spam blocked during transition; fresh progress remains zero and unsaved."));
     if(Phase==6)
     {
         if(Map!=TEXT("ThunderMeadow")||!Hero)return;
@@ -252,6 +266,7 @@ void UReferencePaintingTestSubsystem::Tick(float DeltaSeconds)
             if(!bSawJump||!Hero->GetCharacterMovement()->IsMovingOnGround()){Finish(false,TEXT("Ordinary jump was not available after drop landing"));return;}
             if(bStarTest&&VerifiedDropVisits==1){Tap(PC,EKeys::M);Phase=13;Elapsed=0;return;}
             if(bStarTest&&VerifiedDropVisits>=2)bMReentryChecked=true;
+            if(bReferenceSkyTest){Phase=93;Elapsed=0;WingWaypoint=0;WingLegElapsed=0;return;}
             if(bReferenceRedTest){Phase=70;Elapsed=0;RedWaypoint=0;RedLegElapsed=0;return;}
             if(bReferenceCannonTest){Phase=60;Elapsed=0;CannonWaypoint=0;CannonLegElapsed=0;return;}
             if(bReferenceRaceTest){Phase=50;Elapsed=0;RaceWaypoint=0;RaceLegElapsed=0;return;}
@@ -393,7 +408,7 @@ void UReferencePaintingTestSubsystem::UpdateStarCapture(float DeltaSeconds,AWind
     {
         if(Flow->IsCelebrating())
         {
-            if(!ObservedStar.IsValid()||ObservedStar->GetSuccessfulCollections()!=1||!ObservedStar->IsCollected())
+            if(!ObservedStar.IsValid()||ObservedStar->GetSuccessfulCollections()!=(bWingOwnedReplay?0:1)||!ObservedStar->IsCollected())
             {Finish(false,TEXT("Star collection duplicated or real actor was not collected"));return;}
             for(FKey Key:{EKeys::R,EKeys::M,EKeys::SpaceBar,EKeys::LeftControl,EKeys::Enter,EKeys::LeftMouseButton})Tap(PC,Key);
             if(Flow->HasStartedStarPose())
@@ -406,7 +421,7 @@ void UReferencePaintingTestSubsystem::UpdateStarCapture(float DeltaSeconds,AWind
                 {
                     if(bCameraTest&&Model->IsBodyHiddenForCamera()){Finish(false,TEXT("Star pose stayed hidden after the camera moved out"));return;}
                     if(!Cast<ACameraActor>(PC->GetViewTarget())){Finish(false,TEXT("Star camera did not become the actual view target"));return;}
-                    if(bReferenceRaceTest||bReferenceCannonTest||bReferenceRedTest)
+                    if(bReferenceRaceTest||bReferenceCannonTest||bReferenceRedTest||bReferenceSkyTest)
                     {
                         FCollisionQueryParams Query(SCENE_QUERY_STAT(RaceStarPoseVisibility),true,Hero);FHitResult Obstacle;
                         if(GetWorld()->LineTraceSingleByChannel(Obstacle,PC->GetViewTarget()->GetActorLocation(),Hero->GetActorLocation()+FVector(0,0,60),ECC_Camera,Query))

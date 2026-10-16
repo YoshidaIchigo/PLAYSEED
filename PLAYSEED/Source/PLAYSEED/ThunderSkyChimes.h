@@ -24,16 +24,19 @@ public:
     void ResetChimes();
     int32 GetCollectedCount() const { return CollectedIds.Num(); }
     const TArray<TObjectPtr<APlayseedCoin>>& GetCoins() const { return Coins; }
+    const TArray<TObjectPtr<APlayseedCoin>>& GetOuterCoins() const { return OuterCoins; }
     APlayseedLantern* GetReward() const { return Reward.Get(); }
     int32 GetRewardGenerationCount() const { return RewardGenerationCount; }
     FVector GetRewardRestLocation() const { return RewardRestLocation; }
 private:
+    bool bReferenceRings=false;
     void BindLedger();
     void HandleCoin(FName CoinId, EPlayseedCoinKind Kind);
     UPROPERTY() TObjectPtr<UStaticMesh> BeadMesh;
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Beads;
     UPROPERTY() TArray<TObjectPtr<UMaterialInstanceDynamic>> Tints;
     UPROPERTY() TArray<TObjectPtr<APlayseedCoin>> Coins;
+    UPROPERTY() TArray<TObjectPtr<APlayseedCoin>> OuterCoins;
     TSet<FName> TargetIds;
     TSet<FName> CollectedIds;
     TWeakObjectPtr<UThunderCoinLedger> Ledger;

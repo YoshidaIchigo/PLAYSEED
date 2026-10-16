@@ -1,0 +1,30 @@
+Initial actual new5 B source7f151e69d4794be8536223f51c5551ec725ecdf4
+{
+  "source_sha256": "c5184080554fde9c250eca38b534e8094d84dae257ce51c8100206d5754a9ae2",
+  "original_frames": 1817,
+  "exported_frames": 1817,
+  "width": 960,
+  "height": 540,
+  "source_frame_rate": "15/1",
+  "duration_seconds": 121.133008,
+  "continuous_timestamps": true,
+  "export_sha256": "5f51d14f3c031b4f32d764bcaeb237bb227520328b6b276b89d7e7a89f463bb5",
+  "bytes": 27022620,
+  "encoder_crf": 20,
+  "encoder": "ffmpeg version 9.0.2-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers"
+}
+Final owned replay D sourceec6f3bcbc933823060e5f2593981a1e85ee6af8e
+{
+  "source_sha256": "ce15249a440867aa18c397d7726e4970a6a6852fdce4384cc58e9597f711b0b3",
+  "original_frames": 1725,
+  "exported_frames": 1725,
+  "width": 960,
+  "height": 540,
+  "source_frame_rate": "15/1",
+  "duration_seconds": 115.0,
+  "continuous_timestamps": true,
+  "export_sha256": "a8a64b5f07bf51313c6d5b6500313a251740502386081b2c8518ea265eac5acb",
+  "bytes": 26153811,
+  "encoder_crf": 20,
+  "encoder": "ffmpeg version 9.0.2-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers"
+}
