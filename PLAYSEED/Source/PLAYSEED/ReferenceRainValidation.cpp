@@ -23,8 +23,9 @@ void UReferencePaintingTestSubsystem::UpdateReferenceRain(float DeltaSeconds,AWi
     auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
     if(!Hero||!Stage||!Terrain||Stage->GetReferenceRainSpawners().Num()!=3||Progress->GetEarnedRewardCount()!=7)
     {Finish(false,TEXT("Reference rain lost its three real spawners, terrain or legitimate earned7"));return;}
-    const auto& Rains=Stage->GetReferenceRainSpawners();AReferenceRainSpawner* Rain=Rains[1];
-    if(Rains[0]->GetRange()!=950||Rain->GetRange()!=1450||Rains[2]->GetRange()!=700)
+    const auto& Rains=Stage->GetReferenceRainSpawners();AReferenceRainSpawner* Rain=Rains[RainChosenIndex];
+    int32 TotalHits=0;for(AReferenceRainSpawner* Spawner:Rains)TotalHits+=Spawner->GetConfirmedHits();
+    if(Rains[0]->GetRange()!=950||Rains[1]->GetRange()!=1450||Rains[2]->GetRange()!=700)
     {Finish(false,TEXT("Actual reference rain ranges differed from source15/25/10 parameters"));return;}
     auto* Move=Hero->GetCharacterMovement();auto* Health=Hero->GetVitality();
     if(JumpHold>0){JumpHold-=DeltaSeconds;if(JumpHold<=0)PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Released,0));}
@@ -43,9 +44,11 @@ void UReferencePaintingTestSubsystem::UpdateReferenceRain(float DeltaSeconds,AWi
     {
         const bool bFirst=Phase==140;
         if(Hero->RecoveryCount!=(bFirst?0:1)){Finish(false,TEXT("Rain approach recovered without the expected ordinary R input"));return;}
-        if(bFirst&&Health->GetHealth()==7&&Rain->GetConfirmedHits()==1)
+        if(bFirst&&Health->GetHealth()==7&&TotalHits==1)
         {
+            for(int32 I=0;I<Rains.Num();++I)if(Rains[I]->GetConfirmedHits()==1){RainChosenIndex=I;Rain=Rains[I];break;}
             if(Health->GetLastImpulse().Size2D()<400){Finish(false,TEXT("Actual one-point rain impact did not physically knock back"));return;}
+            UE_LOG(LogTemp,Display,TEXT("RAIN QA: actual source%d contact, health7 and physical knockback"),RainChosenIndex);
             bRainContactVerified=true;FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderRainContact.png"),false,false);Phase=141;Elapsed=0;return;
         }
         if(Health->GetHealth()!=8)
@@ -61,6 +64,9 @@ void UReferencePaintingTestSubsystem::UpdateReferenceRain(float DeltaSeconds,AWi
             {
                 const FVector Unit=FVector(Direction.X,Direction.Y,0).GetSafeNormal2D();FVector Floor;
                 if(!Terrain->FindFloor(Feet+Unit*650,Floor)||FMath::Abs(Floor.Z-Feet.Z)>80)continue;
+                bool bOtherRain=false;
+                for(int32 I=0;I<Rains.Num();++I)if(I!=RainChosenIndex&&FVector::Dist2D(Floor,Rains[I]->GetActorLocation())<Rains[I]->GetRange()+100)bOtherRain=true;
+                if(bOtherRain)continue;
                 const float Score=FVector::DotProduct(Unit,Away);if(Score<=Best)continue;
                 // 読み取りの衝突調査だけです。移動は実カプセルの通常入力で行います。
                 if(GetWorld()->SweepTestByChannel(Hero->GetActorLocation(),Floor+FVector(0,0,82),FQuat::Identity,ECC_Visibility,FCollisionShape::MakeCapsule(34,70),Query))continue;
@@ -86,7 +92,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceRain(float DeltaSeconds,AWi
     if(Phase==141)
     {
         if(Elapsed<.85f)return;
-        if(Health->GetHealth()!=7||Rain->GetConfirmedHits()!=1){Finish(false,TEXT("One real rain drop damaged more than once"));return;}
+        if(Health->GetHealth()!=7||TotalHits!=1){Finish(false,TEXT("One real rain drop damaged more than once"));return;}
         Tap(PC,EKeys::R);Phase=142;Elapsed=0;return;
     }
     if(Phase==142||Phase==146)
@@ -102,7 +108,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceRain(float DeltaSeconds,AWi
     }
     if(Phase==144)
     {
-        if(Hero->RecoveryCount!=1||Health->GetHealth()!=8||Rain->GetConfirmedHits()!=1)
+        if(Hero->RecoveryCount!=1||Health->GetHealth()!=8||TotalHits!=1)
         {Finish(false,TEXT("Ordinary movement did not avoid the next real rain drop"));return;}
         Walk(RainDodgeTarget);
         if(Rain->GetBurstCount()>RainBurstBaseline&&FVector::Dist2D(Hero->GetActorLocation(),Rain->GetRainTarget())>250)
@@ -112,5 +118,9 @@ void UReferencePaintingTestSubsystem::UpdateReferenceRain(float DeltaSeconds,AWi
         }
         if(Elapsed>10)Finish(false,TEXT("Real rain did not burst after the ordinary dodge"));return;
     }
-    if(Phase==145&&Elapsed>.8f){Tap(PC,EKeys::R);Phase=146;Elapsed=0;}
+    if(Phase==145)
+    {
+        if(Health->GetHealth()!=8||TotalHits!=1){Finish(false,TEXT("Another rain drop damaged the hero after the ordinary dodge"));return;}
+        if(Elapsed>.8f){Tap(PC,EKeys::R);Phase=146;Elapsed=0;}
+    }
 }
