@@ -9,6 +9,7 @@
 #include "ThunderStormkeeper.h"
 #include "ThunderCloudflagRace.h"
 #include "ThunderScarletTrail.h"
+#include "ThunderSkyChimes.h"
 #include "Engine/World.h"
 #include "ThunderExpeditionSubsystem.h"
 #include "Engine/GameInstance.h"
@@ -74,6 +75,9 @@ void AThunderMeadowHUD::DrawHUD()
     if (Mission == 4)
         if (const auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(this, AThunderMeadowStage::StaticClass())); Meadow && Meadow->GetScarletTrail())
             DrawText(FString::Printf(TEXT("SCARLET TRAIL  %d / 8"), Meadow->GetScarletTrail()->GetCollectedCount()), FLinearColor(1, .5f, .6f), 30, 211, GEngine->GetMediumFont(), 1.1f);
+    if (Mission == 5)
+        if (const auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(this, AThunderMeadowStage::StaticClass())); Meadow && Meadow->GetSkyChimes())
+            DrawText(FString::Printf(TEXT("CENTRE CHIMES  %d / 5"), Meadow->GetSkyChimes()->GetCollectedCount()), FLinearColor(1, .85f, .5f), 30, 252, GEngine->GetMediumFont(), 1.1f);
 }
 
 AThunderMeadowGameMode::AThunderMeadowGameMode()

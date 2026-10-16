@@ -32,6 +32,7 @@
 #include "ThunderRaceTestSubsystem.h"
 #include "ThunderSkyCacheTestSubsystem.h"
 #include "ThunderScarletTestSubsystem.h"
+#include "ThunderChimeTestSubsystem.h"
 #include "ThunderFlightSwitch.h"
 #include "ThunderFlightBloom.h"
 #include "ThunderLauncher.h"
@@ -97,7 +98,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 37 || Step == 39 ? 360 : Step == 31 || Step == 33 || Step == 34 || Step == 35 || Step == 36 || Step == 38 ? 300 : Step == 10 || (Step >= 12 && Step <= 32) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 40 ? 420 : Step == 37 || Step == 39 ? 360 : Step == 31 || Step == 33 || Step == 34 || Step == 35 || Step == 36 || Step == 38 ? 300 : Step == 10 || (Step >= 12 && Step <= 32) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -109,6 +110,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     const bool bRaceTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderRaceTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderRaceReadTest"));
     const bool bSkyCacheTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderSkyCacheTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderSkyCacheReadTest"));
     const bool bScarletTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderScarletTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderScarletReadTest"));
+    const bool bChimeTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderChimeTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderChimeReadTest"));
     if (bProgressTest && (Expedition->GetEarnedRewardCount() != 2 || !Expedition->HasEarnedReward(1) || !Expedition->HasEarnedReward(7)))
     { Fail(TEXT("Saved rewards changed during restart or re-entry")); return; }
     if (Step == 0 && Map == TEXT("StageSelect") && Elapsed > 3 && Recording->GetCapturedFrameCount() > 15)
@@ -119,17 +121,22 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     }
     else if (Step == 1 && Map == TEXT("MissionSelect") && Elapsed > 3)
     {
-        Tap(PC, bSecondMissionEntry || bRaceTest ? EKeys::Two : bBossTest ? EKeys::One : bSkyCacheTest ? EKeys::Three : bScarletTest ? EKeys::Four : EKeys::Six);
+        Tap(PC, bSecondMissionEntry || bRaceTest ? EKeys::Two : bBossTest ? EKeys::One : bSkyCacheTest ? EKeys::Three : bScarletTest ? EKeys::Four : bChimeTest ? EKeys::Five : EKeys::Six);
         Step = 7;
     }
     else if (Step == 7 && Map == TEXT("ThunderMeadow") && Player && Elapsed > 2)
     {
-        const int32 ExpectedMission = bSecondMissionEntry || bRaceTest ? 2 : bBossTest ? 1 : bSkyCacheTest ? 3 : bScarletTest ? 4 : 6;
+        const int32 ExpectedMission = bSecondMissionEntry || bRaceTest ? 2 : bBossTest ? 1 : bSkyCacheTest ? 3 : bScarletTest ? 4 : bChimeTest ? 5 : 6;
         if (Expedition->GetSelectedMissionNumber() != ExpectedMission || Expedition->SelectMission(0) || Expedition->SelectMission(7)
             || Expedition->GetSelectedMissionNumber() != ExpectedMission)
         { Fail(TEXT("Mission selection did not survive travel or accepted an invalid number")); return; }
         if (bSecondMissionEntry)
         {
+            if (bChimeTest)
+            {
+                if (Expedition->GetEarnedRewardCount() != 1 || !Expedition->HasEarnedReward(5) || !Expedition->IsLauncherUnlocked() || !Expedition->IsFlightUnlocked()) { Fail(TEXT("Chime reward or actual unlocks lost in new World")); return; }
+                UE_LOG(LogTemp, Display, TEXT("CHIME REENTRY TEST PASS: actually earned reward5 and real guide/tower unlocks retained in new World."));
+            }
             if (bScarletTest)
             {
                 if (Expedition->GetEarnedRewardCount() != 1 || !Expedition->HasEarnedReward(4) || !Expedition->IsLauncherUnlocked()) { Fail(TEXT("Scarlet reward or actual launcher unlock lost on new World entry")); return; }
@@ -207,10 +214,17 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     else if (Step == 3 && Elapsed > 1 && Player)
     {
         if (FVector::Dist2D(Player->GetActorLocation(), FVector(-600, -600, 100)) > 5 || Player->RecoveryCount != 1
-            || Expedition->GetSelectedMissionNumber() != (bBossTest ? 1 : bRaceTest ? 2 : bSkyCacheTest ? 3 : bScarletTest ? 4 : 6))
+            || Expedition->GetSelectedMissionNumber() != (bBossTest ? 1 : bRaceTest ? 2 : bSkyCacheTest ? 3 : bScarletTest ? 4 : bChimeTest ? 5 : 6))
         { Fail(TEXT("Restart in the new stage failed")); return; }
         const bool bIslandTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderIslandTest"));
-        if (bScarletTest)
+        if (bChimeTest)
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+            if (!Meadow || !Meadow->GetSkyChimes() || !Meadow->GetFlightBloom() || !Meadow->GetFlightSwitch() || !Meadow->GetLauncher()) { Fail(TEXT("Sky chimes or actual flight prerequisites missing")); return; }
+            GetGameInstance()->GetSubsystem<UThunderChimeTestSubsystem>()->BeginTest(Player, Meadow, FParse::Param(FCommandLine::Get(), TEXT("ThunderChimeReadTest")));
+            Step = 40; Elapsed = 0;
+        }
+        else if (bScarletTest)
         {
             auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
             if (!Meadow || !Meadow->GetScarletTrail() || !Meadow->GetLauncher()) { Fail(TEXT("Scarlet trail or launcher missing")); return; }
@@ -543,6 +557,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         auto* BoxTest = GetGameInstance()->GetSubsystem<UThunderBoxTestSubsystem>();
         const bool bComplete = BoxTest->UpdateTest(Player, DeltaSeconds);
         if (!BoxTest->GetError().IsEmpty()) { Fail(BoxTest->GetError()); return; }
+        if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
+    else if (Step == 40 && Player)
+    {
+        auto* ChimeTest = GetGameInstance()->GetSubsystem<UThunderChimeTestSubsystem>();
+        const bool bComplete = ChimeTest->UpdateTest(Player, DeltaSeconds);
+        if (!ChimeTest->GetError().IsEmpty()) { Fail(ChimeTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
     }
     else if (Step == 39 && Player)

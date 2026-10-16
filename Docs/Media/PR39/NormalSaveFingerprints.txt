@@ -1,0 +1,13 @@
+{
+  "normal_before": "ABSENT",
+  "game_exit": 0,
+  "slot": "Validation_PR39_Chime_B",
+  "normal_after": "ABSENT"
+}
+
+{
+  "slot": "Validation_PR39_Chime_B",
+  "normal_after": "ABSENT",
+  "normal_before": "ABSENT",
+  "game_exit": 0
+}

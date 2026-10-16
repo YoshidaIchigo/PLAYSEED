@@ -22,6 +22,7 @@
 #include "ThunderCloudflagRace.h"
 #include "ThunderSkyCache.h"
 #include "ThunderScarletTrail.h"
+#include "ThunderSkyChimes.h"
 #include "ThunderExpeditionSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Camera/PlayerCameraManager.h"
@@ -244,6 +245,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (CloudflagRace) CloudflagRace->ResetRace();
     if (SkyCache) SkyCache->ResetBox();
     if (ScarletTrail) ScarletTrail->ResetTrail();
+    if (SkyChimes) SkyChimes->ResetChimes();
 }
 
 void AThunderMeadowStage::BuildWarpCaves()
@@ -485,6 +487,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildSkyIsland();
     BuildSkyCache();
     BuildScarletTrail();
+    BuildSkyChimes();
     BuildLighting();
 }
 
@@ -534,4 +537,12 @@ void AThunderMeadowStage::BuildScarletTrail()
         SkyIslandTop + FVector(-300, -150, 62), Court + FVector(-350, -100, 62)});
     AddShape(Cylinder, Court + FVector(0, 200, 3), FVector(220, 220, 6), FLinearColor(.7f, .15f, .25f));
     AddSign(Court + FVector(0, 250, 0), TEXT("THE BINDING COURT\nFind eight scarlet trail coins\nA lantern returns to this circle"));
+}
+
+void AThunderMeadowStage::BuildSkyChimes()
+{
+    if (GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->GetSelectedMissionNumber() != 5) return;
+    SkyChimes = GetWorld()->SpawnActor<AThunderSkyChimes>();
+    SkyChimes->Configure({FVector(-1200, 2000, 2400), FVector(-400, 2000, 2400), FVector(400, 2000, 2400), FVector(1200, 2000, 2400), FVector(2000, 2000, 2400)}, SkyIslandTop + FVector(-250, 250, 100));
+    AddSign(FVector(-2500, 1550, 0), TEXT("THE FIVE SKY CHIMES\nAwaken leafwings and launch above the crown\nCollect the five CENTRE coins - edges do not count"));
 }
