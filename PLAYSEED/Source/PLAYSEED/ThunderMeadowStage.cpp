@@ -21,6 +21,7 @@
 #include "ThunderFlightSwitch.h"
 #include "ThunderStormkeeper.h"
 #include "ThunderCloudflagRace.h"
+#include "ReferenceRaceRoute.h"
 #include "ThunderSkyCache.h"
 #include "ThunderScarletTrail.h"
 #include "ThunderSkyChimes.h"
@@ -494,6 +495,7 @@ void AThunderMeadowStage::BeginPlay()
         GetWorld()->SpawnActor<AReferenceBattlefieldTerrain>();
         BuildReferenceChain();
         BuildStormkeeper();
+        BuildCloudflagRace();
         BuildLighting();
         return;
     }
@@ -540,6 +542,16 @@ void AThunderMeadowStage::BeginPlay()
 void AThunderMeadowStage::BuildCloudflagRace()
 {
     if (GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->GetSelectedMissionNumber() != 2) return;
+    if(AReferenceBattlefieldTerrain::IsReferenceCourse())
+    {
+        CloudflagRace=GetWorld()->SpawnActor<AThunderCloudflagRace>(FVector(-4004,-5221,0),FRotator(0,-90,0));
+        TArray<FVector> Route;
+        for(const auto& Point:ReferenceRivalRoute)Route.Add(FVector(Point.X,Point.Y,Point.Z));
+        CloudflagRace->Configure(Route);
+        AddShape(Cylinder,FVector(3304,4603,4493),FVector(12,12,400),FLinearColor(.9f,.9f,.85f));
+        AddShape(Cube,FVector(3364,4603,4643),FVector(120,8,80),FLinearColor(.9f,.04f,.03f));
+        return;
+    }
     CloudflagRace = GetWorld()->SpawnActor<AThunderCloudflagRace>(FVector(-1050, -650, 0), FRotator::ZeroRotator);
     CloudflagRace->Configure(MountainFootPath);
     AddSign(FVector(-1250, -800, 0), TEXT("BRISK'S CLOUDFLAG RACE\nG / DOWN to start - caves allowed\nNo Skybloom launches - R to retry"));

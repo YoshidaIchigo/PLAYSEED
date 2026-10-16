@@ -19,6 +19,7 @@ public:
 private:
     void Tap(APlayerController* PC,FKey Key);
     void Finish(bool bPassed,const FString& Message);
+    void UpdateReferenceRace(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceBoss(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateChain(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateStarCapture(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
@@ -26,6 +27,9 @@ private:
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     bool bReferenceBossTest=false,bBossRouteJump=false,bBossCoaxed=false,bBossThrowObserved=false;
+    bool bReferenceRaceTest=false,bRaceStartSent=false,bRaceClaimSent=false,bRaceRouteJump=false,bRaceSprintSeen=false;
+    int32 BeforeRewardCount=0,AfterRewardCount=1,RaceWaypoint=0;
+    float RaceLegElapsed=0;
     int32 ExpectedReward=6,BossWaypoint=0,BossThrows=0;
     float BossLegElapsed=0;
     FVector BossCarryStart=FVector::ZeroVector;

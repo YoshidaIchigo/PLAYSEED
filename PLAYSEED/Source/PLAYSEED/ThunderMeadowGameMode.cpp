@@ -54,13 +54,45 @@ void AThunderMeadowHUD::DrawHUD()
         UI.Rect(153,119,14,1,FLinearColor::Black);UI.Rect(159,113,1,14,FLinearColor::Black);
         UI.Rect(155,120,10,1,FLinearColor::White);UI.Rect(160,115,1,10,FLinearColor::White);
     }
+    if(AReferenceBattlefieldTerrain::IsReferenceCourse())
+    {
+        auto* Stage=Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(GetWorld(),AThunderMeadowStage::StaticClass()));
+        auto* Race=Stage?Stage->GetCloudflagRace():nullptr;
+        if(Race&&Race->GetRaceState()!=ECloudflagRaceState::Idle)
+        {
+            // 自分が旗に着いた時刻で表示を止め、相手を待つ時間を記録に加えません。
+            const float ClockTime=Race->HasPlayerReachedFlag()?Race->GetPlayerTime():Race->GetElapsed();
+            const int32 Tenths=FMath::FloorToInt(ClockTime*10);
+            const FLinearColor TimeColors[]={FLinearColor(1,.1f,.7f),FLinearColor(.65f,1,.1f),FLinearColor(.1f,1,.25f),FLinearColor(1,.8f,.05f)};
+            for(int32 Index=0;Index<4;++Index)UI.Text(FString::Chr(TEXT("TIME")[Index]),174+Index*12,35,14,TimeColors[Index],false,true);
+            const FString TimeText=FString::FromInt(Tenths/600)+FString::Chr(39)+FString::Printf(TEXT("%02d"),(Tenths/10)%60)+FString::Chr(34)+FString::FromInt(Tenths%10);
+            UI.Text(TimeText,225,33,16,Number,false,true);
+            if(Race->GetRaceState()!=ECloudflagRaceState::Running)
+                UI.Text(Race->GetStateLabel(),160,161,7,FLinearColor::White,true,true,true);
+        }
+    }
     if(!Player->GetInteraction()->GetMessage().IsEmpty())
     {
         UI.Rect(44,77,232,64,FLinearColor(0,0,0,.75f));
+        if(AReferenceBattlefieldTerrain::IsReferenceCourse())
+        {
+            // 日本語は空白で単語を分けないため、改行と26文字幅で読みやすく折り返します。
+            FString Line;float Y=84;
+            for(TCHAR Character:Player->GetInteraction()->GetMessage())
+            {
+                if(Character==TEXT('\n')||Line.Len()>=26)
+                {UI.Text(Line,52,Y,8,FLinearColor::White,false,false,true);Line.Reset();Y+=12;}
+                if(Character!=TEXT('\n'))Line.AppendChar(Character);
+            }
+            UI.Text(Line,52,Y,8,FLinearColor::White,false,false,true);
+        }
+        else
+        {
         TArray<FString> Words;Player->GetInteraction()->GetMessage().ParseIntoArray(Words,TEXT(" "),true);
         FString Line;float Y=84;
         for(const FString& Word:Words){if(Line.Len()+Word.Len()>38){UI.Text(Line,52,Y,8,FLinearColor::White,false,false);Line.Reset();Y+=12;}Line+=Word+TEXT(" ");}
         UI.Text(Line,52,Y,8,FLinearColor::White,false,false);
+        }
     }
     if(Mode->ShouldShowControls())
     {
