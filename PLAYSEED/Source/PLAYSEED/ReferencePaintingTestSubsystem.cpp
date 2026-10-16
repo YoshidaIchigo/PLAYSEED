@@ -514,17 +514,24 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBoss(float DeltaSeconds,AWi
         Hero->AddMovementInput(Direction,1);
         if(FVector::Dist2D(Hero->GetActorLocation(),BossCarryStart)>90&&FVector::DotProduct(Hero->GetActorForwardVector(),Direction)>.98f)
         {
-            Movement->StopMovementImmediately();BossThrows=Boss->GetValidThrows();Tap(PC,EKeys::E);
-            if(!Boss->IsInThrownFlight()||Hero->GetCarry()->GetHeldObject()) {Finish(false,TEXT("Second E did not use the normal physical throw"));return;}
+            Movement->StopMovementImmediately();BossThrows=Boss->GetValidThrows();bBossThrowObserved=false;Tap(PC,EKeys::E);
             Phase=43;Elapsed=0;return;
         }
         if(Elapsed>4)Finish(false,TEXT("Ordinary carrying walk did not face summit interior"));return;
     }
     if(Phase==43)
     {
+        // InputKeyは通常の次フレームで処理されます。送信直後の古い保持状態で失敗させません。
+        if(!bBossThrowObserved&&Boss->GetThrowCount()==BossThrows+1&&!Boss->IsHeld()&&!Hero->GetCarry()->GetHeldObject()
+            &&(Boss->IsInThrownFlight()||Boss->GetThrownLandingCount()>BossThrows))
+        {
+            bBossThrowObserved=true;
+            UE_LOG(LogTemp,Display,TEXT("BOSS QA: normal E physical throw %d observed"),Boss->GetThrowCount());
+        }
+        if(Elapsed>.5f&&!bBossThrowObserved){Finish(false,TEXT("Second E did not use the normal physical throw after input processing"));return;}
         if(Boss->GetValidThrows()>BossThrows)
         {
-            if(Boss->GetPickupCount()!=BossThrows+1||Boss->GetThrowCount()!=BossThrows+1||Boss->GetThrownLandingCount()!=BossThrows+1)
+            if(!bBossThrowObserved||Boss->GetPickupCount()!=BossThrows+1||Boss->GetThrowCount()!=BossThrows+1||Boss->GetThrownLandingCount()!=BossThrows+1)
             {Finish(false,TEXT("Physical throw counts did not match real E inputs"));return;}
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderBossThrow.png"),false,false);
             if(Boss->IsDefeated())
