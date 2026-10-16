@@ -536,7 +536,8 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBoss(float DeltaSeconds,AWi
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderBossThrow.png"),false,false);
             if(Boss->IsDefeated())
             {
-                if(Boss->GetValidThrows()!=3||!Boss->GetReward()||FVector::Dist(Boss->GetReward()->GetActorLocation(),FVector(2000,4500,4500))>1)
+                // スターは見た目だけ±8cm浮くため、固定の配置は基準位置で検査します。
+                if(Boss->GetValidThrows()!=3||!Boss->GetReward()||Boss->GetReward()->GetRewardNumber()!=1||FVector::Dist(Boss->GetReward()->GetRestLocation(),FVector(2000,4500,4500))>1)
                 {Finish(false,TEXT("Three physical throws did not spawn star1 at reference position"));return;}
                 Phase=44;Elapsed=0;
             }

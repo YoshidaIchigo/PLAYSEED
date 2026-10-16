@@ -17,6 +17,8 @@ public:
     virtual void Tick(float DeltaSeconds) override;
     void ConfigureReward(int32 Number);
     int32 GetRewardNumber() const { return RewardNumber; }
+    // 見た目の上下浮遊とは別に、配置した基準位置を読み取ります。
+    FVector GetRestLocation() const { return RestLocation; }
     bool IsCollected() const { return bCollected; }
     int32 GetSuccessfulCollections() const { return SuccessfulCollections; }
 private:
