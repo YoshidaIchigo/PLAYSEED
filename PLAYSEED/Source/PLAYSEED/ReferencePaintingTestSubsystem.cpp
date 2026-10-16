@@ -580,6 +580,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBoss(float DeltaSeconds,AWi
     {Finish(false,FString::Printf(TEXT("Reference boss route failed: point%d recovery%d health%d offArena%d hero%s"),BossWaypoint,Hero?Hero->RecoveryCount:-1,Hero?Hero->GetVitality()->GetHealth():-1,Boss?Boss->GetOffArenaReturns():-1,Hero?*Hero->GetActorLocation().ToString():TEXT("missing")));return;}
     auto* Movement=Hero->GetCharacterMovement();
     if(JumpHold>0){JumpHold-=DeltaSeconds;if(JumpHold<=0)PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Released,0));}
+    if((Phase==40||Phase==46||Phase==48)&&UpdateReferenceRouteBombs(DeltaSeconds,Hero,PC)){Elapsed-=DeltaSeconds;return;}
     if((Phase==40||Phase==46||Phase==48)&&UpdateReferenceRouteCombat(DeltaSeconds,Hero,PC)){Elapsed-=DeltaSeconds;return;}
     auto WalkHeart=[&](FVector Target)
     {
@@ -825,6 +826,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceCannon(float DeltaSeconds,A
     auto* Movement=Hero->GetCharacterMovement();auto* Launch=Hero->GetLaunch();
     auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
     if(JumpHold>0){JumpHold-=DeltaSeconds;if(JumpHold<=0)PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Released,0));}
+    if((Phase==60||Phase==62||Phase==66)&&UpdateReferenceRouteBombs(DeltaSeconds,Hero,PC)){Elapsed-=DeltaSeconds;return;}
     if((Phase==60||Phase==62||Phase==66)&&UpdateReferenceRouteCombat(DeltaSeconds,Hero,PC)){Elapsed-=DeltaSeconds;return;}
     if(Phase==62&&UpdateReferenceRoadAvoidance(DeltaSeconds,Hero,PC)){Elapsed-=DeltaSeconds;return;}
     if(Phase==60||Phase==62||Phase==66)
