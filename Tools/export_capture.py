@@ -9,7 +9,7 @@ def run(arguments):
     result=subprocess.run([str(x) for x in arguments],check=True,capture_output=True,text=True,encoding='utf-8',errors='replace')
     return result.stdout
 
-def export(source,destination,review,ffmpeg):
+def export(source,destination,review,ffmpeg,crf=20):
     source,destination,review,ffmpeg=map(Path,(source,destination,review,ffmpeg))
     if source.suffix.lower()!='.avi' or destination.suffix.lower()!='.mp4':raise ValueError('Expected AVI input and MP4 output')
     if destination.exists():raise ValueError('Preserve existing video')
@@ -28,7 +28,7 @@ def export(source,destination,review,ffmpeg):
     if abs(expected_interval-interval/1e6)>1e-6:raise ValueError('AVI frame timing headers disagree')
     del data
     destination.parent.mkdir(parents=True,exist_ok=True);review.mkdir(parents=True,exist_ok=True)
-    run([ffmpeg,'-hide_banner','-loglevel','error','-n','-i',source,'-map','0:v:0','-c:v','libx264','-threads','4','-preset','medium','-crf','20','-pix_fmt','yuv420p','-fps_mode','passthrough','-movflags','+faststart','-an',destination])
+    run([ffmpeg,'-hide_banner','-loglevel','error','-n','-i',source,'-map','0:v:0','-c:v','libx264','-threads','4','-preset','medium','-crf',str(crf),'-pix_fmt','yuv420p','-fps_mode','passthrough','-movflags','+faststart','-an',destination])
     stream=json.loads(run([ffprobe,'-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=width,height,codec_name,nb_read_frames,duration','-of','json',destination]))['streams'][0]
     if (stream['width'],stream['height'],int(stream['nb_read_frames']))!=(width,height,count):raise RuntimeError('Export dropped frames or changed dimensions')
     times=json.loads(run([ffprobe,'-v','error','-select_streams','v:0','-show_frames','-show_entries','frame=best_effort_timestamp_time','-of','json',destination]))['frames']
@@ -38,10 +38,11 @@ def export(source,destination,review,ffmpeg):
     for name,second in [('VideoStart',0),('VideoEntry',min(1.7,duration*.15)),('VideoEnd',max(0,duration-1))]:
         run([ffmpeg,'-hide_banner','-loglevel','error','-n','-ss',second,'-i',destination,'-frames:v','1',review/(name+'.png')])
     if hashlib.sha256(source.read_bytes()).hexdigest()!=original_hash:raise RuntimeError('Original capture changed')
-    result=dict(source_sha256=original_hash,original_frames=count,exported_frames=count,width=width,height=height,source_frame_rate=f'{rate}/{scale}',duration_seconds=duration,continuous_timestamps=True,export_sha256=hashlib.sha256(destination.read_bytes()).hexdigest(),bytes=destination.stat().st_size,encoder=run([ffmpeg,'-version']).splitlines()[0])
+    result=dict(source_sha256=original_hash,original_frames=count,exported_frames=count,width=width,height=height,source_frame_rate=f'{rate}/{scale}',duration_seconds=duration,continuous_timestamps=True,export_sha256=hashlib.sha256(destination.read_bytes()).hexdigest(),bytes=destination.stat().st_size,encoder_crf=crf,encoder=run([ffmpeg,'-version']).splitlines()[0])
     (review/'ExportVerification.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
     print(json.dumps(result))
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('source');parser.add_argument('destination');parser.add_argument('review');parser.add_argument('--ffmpeg',required=True)
-    args=parser.parse_args();export(args.source,args.destination,args.review,args.ffmpeg)
+    parser.add_argument('--crf',type=int,choices=range(18,29),default=20,help='H.264 quality; lower values preserve more detail')
+    args=parser.parse_args();export(args.source,args.destination,args.review,args.ffmpeg,args.crf)

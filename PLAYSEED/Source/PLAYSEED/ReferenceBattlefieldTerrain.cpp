@@ -1,5 +1,6 @@
 #include "ReferenceBattlefieldTerrain.h"
 #include "ReferenceBattlefieldData.h"
+#include "PlayseedClimbTree.h"
 #include "ProceduralMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -25,7 +26,7 @@ AReferenceBattlefieldTerrain::AReferenceBattlefieldTerrain()
 
 bool AReferenceBattlefieldTerrain::IsReferenceCourse()
 {
-    return FParse::Param(FCommandLine::Get(),TEXT("ReferenceCourse")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderDropTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderChainTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderFadeTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderSaveFailureTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderCameraTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderSelectionTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceBossTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceRaceTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceCannonTest"));
+    return FParse::Param(FCommandLine::Get(),TEXT("ReferenceCourse")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderDropTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderChainTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderStarTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderFadeTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderSaveFailureTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderCameraTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderSelectionTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceBossTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceRaceTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceCannonTest")) || FParse::Param(FCommandLine::Get(),TEXT("ThunderReferenceRedTest"));
 }
 
 void AReferenceBattlefieldTerrain::BeginPlay()
@@ -57,23 +58,9 @@ void AReferenceBattlefieldTerrain::BeginPlay()
     Collision->CreateMeshSection(0,Vertices,Indices,TArray<FVector>(),TArray<FVector2D>(),TArray<FColor>(),Tangents,true);
     Collision->SetMeshSectionVisible(0,false);
     UE_LOG(LogTemp,Display,TEXT("REFERENCE TERRAIN: 1101 render triangles, 1060 collision triangles; start(-6558,-6464), summit4294, island3072."));
-    // 17本の木の位置も地形資料と同じ座標系です。形は同梱メッシュから組みます。
-    auto* Sphere=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Sphere.Sphere"));
-    auto* Cylinder=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
-    auto* Palette=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Battlefield/M_Actor.M_Actor"));
-    for(const auto& P:Trees)
-    {
-        const FVector Position(P.X,P.Y,P.Z);
-        for(int32 I=0;I<3;++I)
-        {
-            auto* Part=NewObject<UStaticMeshComponent>(this);Part->SetupAttachment(RootComponent);
-            Part->SetStaticMesh(I==0?Cylinder:Sphere);Part->SetRelativeLocation(Position+FVector(I==2?35:0,0,I==0?220:I==1?520:680));
-            Part->SetRelativeScale3D(I==0?FVector(.6,.6,4.4):I==1?FVector(4.5,3.8,5.2):FVector(3.6,3.2,3.5));
-            Part->SetCollisionEnabled(I==0?ECollisionEnabled::QueryAndPhysics:ECollisionEnabled::NoCollision);Part->SetCollisionResponseToAllChannels(ECR_Block);
-            if(Palette){auto* MID=UMaterialInstanceDynamic::Create(Palette,this);MID->SetVectorParameterValue(TEXT("Tint"),I==0?FLinearColor(.32f,.14f,.035f):FLinearColor(.15f,.6f,.015f));Part->SetMaterial(0,MID);}
-            Part->RegisterComponent();
-        }
-    }
+    // 同じ17地点を実際に登れるActorへ置き換え、装飾の幹を重複させません。
+    for(const auto& P:Trees)GetWorld()->SpawnActor<APlayseedClimbTree>(FVector(P.X,P.Y,P.Z),FRotator::ZeroRotator);
+
 }
 
 bool AReferenceBattlefieldTerrain::FindFloor(FVector Near,FVector& Floor) const

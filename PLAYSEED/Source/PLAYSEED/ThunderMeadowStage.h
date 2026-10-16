@@ -9,6 +9,7 @@ class UStaticMeshComponent;
 class UMaterialInterface;
 class UTextRenderComponent;
 class AThunderMovingPlatform;
+class AReferenceCheckerPlatform;
 class AThunderTiltingBridge;
 class AThunderShortcutGate;
 class AThunderWarpPair;
@@ -78,6 +79,7 @@ public:
     AThunderStormkeeper* GetStormkeeper() const { return Stormkeeper; }
     AThunderCloudflagRace* GetCloudflagRace() const { return CloudflagRace; }
     AThunderSkyCache* GetSkyCache() const { return SkyCache; }
+    const TArray<TObjectPtr<AReferenceCheckerPlatform>>& GetReferenceCheckers() const { return ReferenceCheckers; }
     AThunderScarletTrail* GetScarletTrail() const { return ScarletTrail; }
     AThunderSkyChimes* GetSkyChimes() const { return SkyChimes; }
     const TArray<FVector>& GetWingTowerFootPath() const { return WingTowerFootPath; }
@@ -135,6 +137,7 @@ private:
     UPROPERTY() TObjectPtr<UMaterialInterface> SkyMaterial;
     UPROPERTY() TArray<TObjectPtr<UTextRenderComponent>> Signs;
     UPROPERTY() TObjectPtr<AThunderMovingPlatform> MovingPlatform;
+    UPROPERTY() TArray<TObjectPtr<AReferenceCheckerPlatform>> ReferenceCheckers;
     UPROPERTY() TObjectPtr<AThunderTiltingBridge> TiltingBridge;
     UPROPERTY() TObjectPtr<AThunderShortcutGate> ShortcutGate;
     UPROPERTY() TObjectPtr<AThunderWarpPair> WarpPair;
