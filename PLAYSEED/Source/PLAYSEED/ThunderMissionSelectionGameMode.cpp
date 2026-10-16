@@ -29,7 +29,7 @@ void AThunderMissionSelectionHUD::DrawHUD()
     UI.Text(UThunderExpeditionSubsystem::GetMissionTitle(Selected),160,169,10,FLinearColor::Black,true,false,true);
     UI.Text(TEXT("← →  スターをえらぶ   Enter / A  けってい"),160,205,6.5f,FLinearColor(.18f,.18f,.2f),true,false,true);
     if(Progress->HasEarnedReward(7))UI.Star(FVector2D(300,217),7,FLinearColor(1,.78f,.02f));
-    if(!Progress->GetProgressProblem().IsEmpty())UI.Text(Progress->GetProgressProblem(),160,226,6,FLinearColor(.8f,.05f,.025f),true);
+    if(!Progress->GetProgressProblem().IsEmpty())UI.Text(Progress->GetProgressProblem(),160,226,6,FLinearColor(.8f,.05f,.025f),true,true,true);
     const float Fade=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>()->GetTransitionOpacity();
     if(Fade>0)UI.Rect(0,0,320,240,FLinearColor(1,1,1,Fade));
 }
