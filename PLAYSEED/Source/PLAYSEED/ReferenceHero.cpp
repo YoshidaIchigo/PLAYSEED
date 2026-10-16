@@ -114,8 +114,8 @@ void AReferenceHero::Tick(float DeltaSeconds)
     }
     if(bStarPose){LeftArmPose=FRotator(-15,0,20);RightArmPose=FRotator(-160,0,-20);LeftLegPose=FRotator(-12,0,0);RightLegPose=FRotator::ZeroRotator;}
     LeftArm->SetRelativeRotation(LeftArmPose);RightArm->SetRelativeRotation(RightArmPose);LeftLeg->SetRelativeRotation(LeftLegPose);RightLeg->SetRelativeRotation(RightLegPose);
-    Visual->SetRelativeScale3D(bPounding?FVector(1.15f,1.15f,.7f):FVector::OneVector);
-    Visual->SetRelativeLocation(FVector(0,0,bStarPose?0:FMath::Sin(Time*12)*FMath::Min(Speed/180,3.f)));
+    Visual->SetRelativeScale3D((bPounding||bLandingPose)?FVector(1.15f,1.15f,.7f):FVector::OneVector);
+    Visual->SetRelativeLocation(FVector(0,0,bLandingPose?-24:bStarPose?0:FMath::Sin(Time*12)*FMath::Min(Speed/180,3.f)));
     Visual->SetRelativeRotation(bClimbing?FRotator(-12,0,0):FRotator::ZeroRotator);
     for(UStaticMeshComponent* Finger:VictoryFingers)Finger->SetVisibility(bStarPose);
     for(UStaticMeshComponent* Feather:CapFeathers)Feather->SetVisibility(GetFlight()->HasPower());

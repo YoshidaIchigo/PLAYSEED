@@ -1,6 +1,7 @@
 #include "ThunderMeadowGameMode.h"
 #include "ReferenceBattlefieldTerrain.h"
 #include "ReferenceHero.h"
+#include "ReferenceTravelSubsystem.h"
 #include "BattlefieldUI.h"
 #include "ThunderCoinLedger.h"
 #include "ThunderLivesComponent.h"
@@ -35,6 +36,7 @@ void AThunderMeadowHUD::DrawHUD()
     if(Health!=LastHealth){LastHealth=Health;PowerUntil=GetWorld()->GetTimeSeconds()+2;}
     if(Health<8 || GetWorld()->GetTimeSeconds()<PowerUntil)UI.Power(FVector2D(160,61),Health);
     UI.Camera();
+    if(Mode->GetDropFade()>0)UI.Rect(0,0,320,240,FLinearColor(1,1,1,Mode->GetDropFade()));
     if(Player->GetLaunch()->IsAiming())
     {
         UI.Rect(153,119,14,1,FLinearColor::Black);UI.Rect(159,113,1,14,FLinearColor::Black);
@@ -82,11 +84,20 @@ void AThunderMeadowGameMode::StartPlay()
         Player->SetTrailStartLocation(AReferenceBattlefieldTerrain::IsReferenceCourse() ? FVector(-6558,-6464,100) : FVector(-600,-600,100));
         Player->ReturnToTrail();
         Player->RecoveryCount = 0;
+        if(GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>()->GetState()==EReferenceTravelState::Dropping)
+        {
+            // 製品の入場位置だけを上空へ置きます。その後の落下・床との接触はCharacterMovementの重力です。
+            Player->SetActorLocation(Player->GetActorLocation()+FVector(0,0,1000));
+            Player->GetCharacterMovement()->SetMovementMode(MOVE_Falling);
+            if(auto* PC=Cast<APlayerController>(Player->GetController()))Player->DisableInput(PC);
+            bDropActive=true;
+        }
     }
 }
 
 void AThunderMeadowGameMode::RestartStage(AWindseedCharacter* Player)
 {
+    if(GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>()->IsTransitionLocked())return;
     if (Lives->IsGameOver()) return; // 最後の残機を失った後のRでは再開しません。
     // このステージが生成した仕掛けだけを初期化し、永続の獲得済み報酬には触れません。
     CoinLedger->ResetVisit();
@@ -97,6 +108,12 @@ void AThunderMeadowGameMode::RestartStage(AWindseedCharacter* Player)
 void AThunderMeadowGameMode::HandlePlayerDefeat(AWindseedCharacter* Player)
 {
     if (!Player || Lives->IsGameOver()) return;
+    auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
+    if(bDropActive)
+    {
+        if(Flow->BeginReturn()){Lives->ConsumeLife();UGameplayStatics::OpenLevel(this,FName(TEXT("/Game/Battlefield/Entrance")));}
+        return;
+    }
     if (Lives->ConsumeLife()) RestartStage(Player);
     else
     {
@@ -105,6 +122,32 @@ void AThunderMeadowGameMode::HandlePlayerDefeat(AWindseedCharacter* Player)
         Player->GetCharacterMovement()->ClearAccumulatedForces(); Player->GetCharacterMovement()->DisableMovement();
         if(auto* PC=Cast<APlayerController>(Player->GetController())) Player->DisableInput(PC);
     }
+}
+
+bool AThunderMeadowGameMode::CanLeaveStage() const
+{
+    return !GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>()->IsTransitionLocked();
+}
+void AThunderMeadowGameMode::ToggleControls(){if(CanLeaveStage())bShowControls=!bShowControls;}
+float AThunderMeadowGameMode::GetDropFade() const{return bDropActive?FMath::Clamp(1-DropTime/.5f,0.f,1.f):0;}
+void AThunderMeadowGameMode::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);if(!bDropActive)return;DropTime+=DeltaSeconds;
+    auto* Hero=Cast<AWindseedCharacter>(UGameplayStatics::GetPlayerPawn(this,0));if(!Hero)return;
+    auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
+    if(Hero->GetCharacterMovement()->IsMovingOnGround())
+    {
+        if(DropLandedTime<0)DropLandedTime=DropTime;
+        if(auto* Model=Cast<AReferenceHero>(Hero))Model->SetLandingPose(true);
+        if(DropTime-DropLandedTime>.28f&&Flow->FinishDrop())
+        {
+            if(auto* Model=Cast<AReferenceHero>(Hero))Model->SetLandingPose(false);
+            if(auto* PC=Cast<APlayerController>(Hero->GetController()))Hero->EnableInput(PC);
+            bDropActive=false;
+        }
+    }
+    // 何らかの障害で着地しない場合も、入力を止めたまま残さず入口へ戻します。
+    if(DropTime>8&&Flow->BeginReturn())UGameplayStatics::OpenLevel(this,FName(TEXT("/Game/Battlefield/Entrance")));
 }
 
 void AThunderMeadowGameMode::HandlePlayerFall(AWindseedCharacter* Player)

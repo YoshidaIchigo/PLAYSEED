@@ -15,6 +15,10 @@ public:
     void ArriveAtPainting() { bEntranceFlow=true; State=EReferenceTravelState::AtPainting; }
     bool BeginPainting();
     bool FinishPainting();
+    bool BeginCourse();
+    bool FinishDrop();
+    bool BeginReturn();
+    bool IsTransitionLocked() const;
     bool UsesEntrance() const { return bEntranceFlow; }
     EReferenceTravelState GetState() const { return State; }
 private:
