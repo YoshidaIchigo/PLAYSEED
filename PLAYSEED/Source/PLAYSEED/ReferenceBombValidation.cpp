@@ -77,6 +77,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBombs(float DeltaSeconds,AW
         if(Coin->IsCollected())
         {
             if(Ledger->GetTotal()<1){Finish(false,TEXT("Bomb gold was not counted by real ledger"));return;}
+            BombInputClock+=DeltaSeconds;if(BombInputClock<.45f)return; // 実集計を動画のHUDにも表示してからRを押します。
             bBombThrowChecked=true;Photo(TEXT("ThunderBombThrowCoin.png"));Tap(PC,EKeys::R);Begin(194);return;
         }
         Walk(Coin->GetActorLocation());if(Elapsed>15)Finish(false,TEXT("Ordinary movement did not collect thrown bomb gold"));return;
@@ -100,7 +101,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBombs(float DeltaSeconds,AW
     {
         auto* Coin=Bomb->GetDropCoin();if(!Coin||Bomb->GetDropGenerationCount()!=2){Finish(false,TEXT("Held explosion duplicated or lost actual one gold"));return;}
         if(Coin->IsCollected())
-        {if(Ledger->GetTotal()<1){Finish(false,TEXT("Real fuse gold missing from ledger"));return;}Photo(TEXT("ThunderBombFuseCoin.png"));Tap(PC,EKeys::R);Begin(199);return;}
+        {if(Ledger->GetTotal()<1){Finish(false,TEXT("Real fuse gold missing from ledger"));return;}BombInputClock+=DeltaSeconds;if(BombInputClock<.45f)return;Photo(TEXT("ThunderBombFuseCoin.png"));Tap(PC,EKeys::R);Begin(199);return;}
         Walk(Coin->GetActorLocation());if(Elapsed>10)Finish(false,TEXT("Ordinary movement did not collect held explosion gold"));return;
     }
     if(Phase==194||Phase==199)
