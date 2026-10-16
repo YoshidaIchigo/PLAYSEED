@@ -105,6 +105,8 @@ bool UThunderPostTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
     else if (Phase == 6)
     {
         Walk(Player, Post->GetActorLocation() + FVector(0, 360, 82), DeltaSeconds);
+        const float GateYaw = (Gate->GetActorLocation() - Player->GetActorLocation()).Rotation().Yaw;
+        PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(), FRotator(-18, GateYaw, 0), DeltaSeconds, 5));
         if (Gate->IsBroken() && Enemy->IsDeparted())
         {
             if (Post->GetPoundCount() != 3 || Gate->GetBreakCount() != BreakBaseline + 1 || !Gate->GetReward() || Gate->GetReward()->IsCollected()) { Error = TEXT("Three real pounds did not cause exactly one actual gate collision and an uncollected reward"); return false; }
