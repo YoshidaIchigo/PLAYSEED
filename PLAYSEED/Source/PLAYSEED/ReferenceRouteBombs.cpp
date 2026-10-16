@@ -21,28 +21,38 @@ bool UReferencePaintingTestSubsystem::UpdateReferenceRouteBombs(float DeltaSecon
         for(TActorIterator<AReferenceBomb> It(GetWorld());It;++It)
         {
             const float Distance=FVector::Dist2D(Hero->GetActorLocation(),It->GetActorLocation());
+            FCollisionQueryParams Sight;Sight.AddIgnoredActor(Hero);Sight.AddIgnoredActor(*It);
             if(!It->HasExploded()&&Distance<Nearest&&FMath::Abs(Hero->GetActorLocation().Z-82-(It->GetActorLocation().Z-65))<100)
-            {Nearest=Distance;RouteBombTarget=*It;}
+                if(!GetWorld()->LineTraceTestByChannel(Hero->GetActorLocation(),It->GetActorLocation(),ECC_Visibility,Sight))
+                {Nearest=Distance;RouteBombTarget=*It;}
         }
         if(RouteBombTarget.IsValid())
         {
             // 通常R後も通算カウンターは残るため、この挑戦の実生成だけを数えます。
             RouteBombExpectedDrops=RouteBombTarget->GetDropGenerationCount()+(RouteBombTarget->GetDropCoin()?0:1);
+            RouteBombExplosionBaseline=RouteBombTarget->GetExplosionCount();
             RouteBombElapsed=RouteBombAttackClock=RouteBombAfterBurst=0;bRouteBombKicked=bRouteBombJumped=false;UE_LOG(LogTemp,Display,TEXT("ROUTE BOMB: ordinary LMB approach%s phase%d"),*RouteBombTarget->GetActorLocation().ToString(),Phase);
         }
     }
     if(!RouteBombTarget.IsValid())return false;
     AReferenceBomb* Bomb=RouteBombTarget.Get();RouteBombElapsed+=DeltaSeconds;RouteBombAttackClock+=DeltaSeconds;
     if(Bomb->GetBody()->IsSimulatingPhysics())bRouteBombKicked=true;
-    if(Bomb->HasExploded())
+    // 実爆発の通算値なら、短い表示状態が終わった後も発生済みと確認できます。
+    if(Bomb->GetExplosionCount()>RouteBombExplosionBaseline)
     {
         if(Move->IsMovingOnGround())Move->StopMovementImmediately();RouteBombAfterBurst+=DeltaSeconds;
         if(RouteBombAfterBurst>.4f)
         {
-            if(Bomb->GetDropGenerationCount()!=RouteBombExpectedDrops||!Bomb->GetDropCoin()){Finish(false,FString::Printf(TEXT("Actual bomb burst gold count%d expected%d coin%d"),Bomb->GetDropGenerationCount(),RouteBombExpectedDrops,Bomb->GetDropCoin()!=nullptr));return true;}
+            if(Bomb->GetExplosionCount()!=RouteBombExplosionBaseline+1||Bomb->GetDropGenerationCount()!=RouteBombExpectedDrops||!Bomb->GetDropCoin()){Finish(false,FString::Printf(TEXT("Actual bomb burst gold count%d expected%d coin%d explosions%d baseline%d"),Bomb->GetDropGenerationCount(),RouteBombExpectedDrops,Bomb->GetDropCoin()!=nullptr,Bomb->GetExplosionCount(),RouteBombExplosionBaseline));return true;}
             UE_LOG(LogTemp,Display,TEXT("ROUTE BOMB: actual burst after normal input, distance%.1f health%d"),FVector::Dist2D(Hero->GetActorLocation(),Bomb->GetActorLocation()),Hero->GetVitality()->GetHealth());RouteBombTarget.Reset();
         }
         return true;
+    }
+    FCollisionQueryParams Sight;Sight.AddIgnoredActor(Hero);Sight.AddIgnoredActor(Bomb);
+    if(FVector::Dist2D(Hero->GetActorLocation(),Bomb->GetActorLocation())>900||GetWorld()->LineTraceTestByChannel(Hero->GetActorLocation(),Bomb->GetActorLocation(),ECC_Visibility,Sight))
+    {
+        // 閉じた実柵の向こうや遠くまで追わず、元の通常歩行へ戻します。
+        UE_LOG(LogTemp,Display,TEXT("ROUTE BOMB: resume ordinary route after actual obstruction/distance, hero%s bomb%s"),*Hero->GetActorLocation().ToString(),*Bomb->GetActorLocation().ToString());RouteBombTarget.Reset();return false;
     }
     if(bRouteBombKicked)
     {if(Move->IsMovingOnGround())Move->StopMovementImmediately();}
@@ -65,6 +75,6 @@ bool UReferencePaintingTestSubsystem::UpdateReferenceRouteBombs(float DeltaSecon
         if(!bRouteBombJumped&&Bomb->GetFuseAge()>4.7f&&Move->IsMovingOnGround()&&JumpHold<=0)
         {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;bRouteBombJumped=true;}
     }
-    if(RouteBombElapsed>9)Finish(false,FString::Printf(TEXT("Normal LMB bomb response blocked hero%s bomb%s fuse%.2f kicked%d"),*Hero->GetActorLocation().ToString(),*Bomb->GetActorLocation().ToString(),Bomb->GetFuseAge(),bRouteBombKicked));
+    if(RouteBombElapsed>9)Finish(false,FString::Printf(TEXT("Normal LMB bomb response blocked hero%s bomb%s fuse%.2f kicked%d explosions%d baseline%d home%s"),*Hero->GetActorLocation().ToString(),*Bomb->GetActorLocation().ToString(),Bomb->GetFuseAge(),bRouteBombKicked,Bomb->GetExplosionCount(),RouteBombExplosionBaseline,*Bomb->GetHomeLocation().ToString()));
     return true;
 }
