@@ -34,6 +34,7 @@
 #include "ThunderScarletTestSubsystem.h"
 #include "ThunderChimeTestSubsystem.h"
 #include "ThunderSentinelTestSubsystem.h"
+#include "ThunderPostTestSubsystem.h"
 #include "ThunderFlightSwitch.h"
 #include "ThunderFlightBloom.h"
 #include "ThunderLauncher.h"
@@ -99,7 +100,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 41 ? 180 : Step == 40 ? 420 : Step == 37 || Step == 39 ? 360 : Step == 31 || Step == 33 || Step == 34 || Step == 35 || Step == 36 || Step == 38 ? 300 : Step == 10 || (Step >= 12 && Step <= 32) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 42 ? 300 : Step == 41 ? 180 : Step == 40 ? 420 : Step == 37 || Step == 39 ? 360 : Step == 31 || Step == 33 || Step == 34 || Step == 35 || Step == 36 || Step == 38 ? 300 : Step == 10 || (Step >= 12 && Step <= 32) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -111,6 +112,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     const bool bRaceTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderRaceTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderRaceReadTest"));
     const bool bSkyCacheTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderSkyCacheTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderSkyCacheReadTest"));
     const bool bScarletTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderScarletTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderScarletReadTest"));
+    const bool bPostTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderPostTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderPostReadTest"));
     const bool bChimeTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderChimeTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderChimeReadTest"));
     if (bProgressTest && (Expedition->GetEarnedRewardCount() != 2 || !Expedition->HasEarnedReward(1) || !Expedition->HasEarnedReward(7)))
     { Fail(TEXT("Saved rewards changed during restart or re-entry")); return; }
@@ -133,6 +135,11 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         { Fail(TEXT("Mission selection did not survive travel or accepted an invalid number")); return; }
         if (bSecondMissionEntry)
         {
+            if (bPostTest)
+            {
+                if (Expedition->GetEarnedRewardCount() != 1 || !Expedition->HasEarnedReward(6)) { Fail(TEXT("Actually earned post reward6 lost on new World entry")); return; }
+                UE_LOG(LogTemp, Display, TEXT("POST REENTRY TEST PASS: actual reward6 retained in new World."));
+            }
             if (bChimeTest)
             {
                 if (Expedition->GetEarnedRewardCount() != 1 || !Expedition->HasEarnedReward(5) || !Expedition->IsLauncherUnlocked() || !Expedition->IsFlightUnlocked()) { Fail(TEXT("Chime reward or actual unlocks lost in new World")); return; }
@@ -218,7 +225,14 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             || Expedition->GetSelectedMissionNumber() != (bBossTest ? 1 : bRaceTest ? 2 : bSkyCacheTest ? 3 : bScarletTest ? 4 : bChimeTest ? 5 : 6))
         { Fail(TEXT("Restart in the new stage failed")); return; }
         const bool bIslandTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderIslandTest"));
-        if (FParse::Param(FCommandLine::Get(), TEXT("ThunderSentinelTest")))
+        if (bPostTest)
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+            if (!Meadow || !Meadow->GetBindingPost() || !Meadow->GetPrisonGate() || !Meadow->GetBoundSentinel()) { Fail(TEXT("Binding post/prison missing")); return; }
+            GetGameInstance()->GetSubsystem<UThunderPostTestSubsystem>()->BeginTest(Player, Meadow, FParse::Param(FCommandLine::Get(), TEXT("ThunderPostReadTest")));
+            Step = 42; Elapsed = 0;
+        }
+        else if (FParse::Param(FCommandLine::Get(), TEXT("ThunderSentinelTest")))
         {
             auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
             if (!Meadow || !Meadow->GetBoundSentinel()) { Fail(TEXT("Bound sentinel missing")); return; }
@@ -565,6 +579,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         auto* BoxTest = GetGameInstance()->GetSubsystem<UThunderBoxTestSubsystem>();
         const bool bComplete = BoxTest->UpdateTest(Player, DeltaSeconds);
         if (!BoxTest->GetError().IsEmpty()) { Fail(BoxTest->GetError()); return; }
+        if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
+    else if (Step == 42 && Player)
+    {
+        auto* PostTest = GetGameInstance()->GetSubsystem<UThunderPostTestSubsystem>();
+        const bool bComplete = PostTest->UpdateTest(Player, DeltaSeconds);
+        if (!PostTest->GetError().IsEmpty()) { Fail(PostTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
     }
     else if (Step == 41 && Player)

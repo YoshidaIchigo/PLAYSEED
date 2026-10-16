@@ -24,6 +24,8 @@
 #include "ThunderScarletTrail.h"
 #include "ThunderSkyChimes.h"
 #include "ThunderBoundSentinel.h"
+#include "ThunderBindingPost.h"
+#include "ThunderPrisonGate.h"
 #include "ThunderExpeditionSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Camera/PlayerCameraManager.h"
@@ -248,6 +250,8 @@ void AThunderMeadowStage::ResetMechanisms()
     if (ScarletTrail) ScarletTrail->ResetTrail();
     if (SkyChimes) SkyChimes->ResetChimes();
     if (BoundSentinel) BoundSentinel->ResetSentinel();
+    if (BindingPost) BindingPost->ResetPost();
+    if (PrisonGate) PrisonGate->ResetGate();
 }
 
 void AThunderMeadowStage::BuildWarpCaves()
@@ -555,5 +559,12 @@ void AThunderMeadowStage::BuildBoundSentinel()
     if (GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->GetSelectedMissionNumber() != 6) return;
     BoundSentinel = GetWorld()->SpawnActor<AThunderBoundSentinel>();
     if (BoundSentinel) BoundSentinel->Configure(FVector(2700, -2800, 0));
+    PrisonGate = GetWorld()->SpawnActor<AThunderPrisonGate>(FVector(3250, -2800, 200), FRotator::ZeroRotator);
+    BindingPost = GetWorld()->SpawnActor<AThunderBindingPost>(FVector(2700, -2800, 0), FRotator::ZeroRotator);
+    if (PrisonGate) PrisonGate->Configure(BoundSentinel);
+    if (BindingPost) BindingPost->Configure(BoundSentinel, PrisonGate);
+    AddShape(Cube, FVector(3460, -2800, 200), FVector(30, 430, 400), FLinearColor(.17f, .24f, .24f), true);
+    for (float Side : {-1.f, 1.f}) AddShape(Cube, FVector(3350, -2800 + Side * 210, 200), FVector(220, 25, 400), FLinearColor(.17f, .24f, .24f), true);
+    AddSign(FVector(2450, -3100, 0), TEXT("THE COPPER BINDING POST\nJump above its top, then CTRL / RB dive\nThree real pounds free the sentinel"));
     AddSign(FVector(3150, -2450, 0), TEXT("MOSSBOUND SENTINEL\nThe copper tether limits its reach\nLeave the GOLD target before it lunges"));
 }
