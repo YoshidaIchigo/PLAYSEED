@@ -6,6 +6,9 @@
 #include "ReferenceWalker.h"
 #include "ReferenceChainWalk.h"
 #include "ReferenceSummitWalk.h"
+#include "ReferenceBossHeartWalk.h"
+#include "ReferenceBoulderField.h"
+#include "ThunderRollingBoulder.h"
 #include "ReferenceRaceRoute.h"
 #include "ReferenceCannonWalk.h"
 #include "ReferenceRedWalk.h"
@@ -573,9 +576,59 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBoss(float DeltaSeconds,AWi
     auto* Stage=Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(GetWorld(),AThunderMeadowStage::StaticClass()));
     auto* Boss=Stage?Stage->GetStormkeeper():nullptr;
     if(!Hero||!Boss||Hero->RecoveryCount!=0||Boss->GetOffArenaReturns()!=0)
-    {Finish(false,TEXT("Reference boss/player disappeared, route recovered or a throw left summit"));return;}
+    {Finish(false,FString::Printf(TEXT("Reference boss route failed: point%d recovery%d health%d offArena%d hero%s"),BossWaypoint,Hero?Hero->RecoveryCount:-1,Hero?Hero->GetVitality()->GetHealth():-1,Boss?Boss->GetOffArenaReturns():-1,Hero?*Hero->GetActorLocation().ToString():TEXT("missing")));return;}
     auto* Movement=Hero->GetCharacterMovement();
     if(JumpHold>0){JumpHold-=DeltaSeconds;if(JumpHold<=0)PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Released,0));}
+    auto WalkHeart=[&](FVector Target)
+    {
+        const FVector D=Target-Hero->GetActorLocation(),Desired=(D.GetSafeNormal2D()*D.Size2D()*4.5f).GetClampedToMaxSize2D(470),Correction=Desired-FVector(Hero->GetVelocity().X,Hero->GetVelocity().Y,0);
+        if(D.Size2D()>8)Hero->AddMovementInput(Correction.GetSafeNormal2D(),FMath::Clamp(Correction.Size2D()/150,0.f,1.f));else if(Movement->IsMovingOnGround())Movement->StopMovementImmediately();
+        PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(),FRotator(-18,D.Rotation().Yaw,0),DeltaSeconds,5));
+        if(Movement->IsMovingOnGround()&&JumpHold<=0&&D.Size2D()<350&&Target.Z>Hero->GetActorLocation().Z-82+38)
+        {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;}
+    };
+    if(Phase==40||Phase==46||Phase==48)
+    {
+        if(BossAvoidRemaining<=0)
+        {
+            auto* Field=Stage->GetReferenceBoulderField();auto* Terrain=Cast<AReferenceBattlefieldTerrain>(UGameplayStatics::GetActorOfClass(GetWorld(),AReferenceBattlefieldTerrain::StaticClass()));
+            if(Field&&Terrain)for(AThunderRollingBoulder* Ball:Field->GetBalls())
+            {
+                const FVector D=Ball->GetActorLocation()-Hero->GetActorLocation();const float Feet=Hero->GetActorLocation().Z-82;
+                if(Ball->IsWaiting()||D.Size2D()>800||FMath::Abs(Ball->GetActorLocation().Z-Feet-100)>350)continue;
+                const FVector Side=FVector(D.Y,-D.X,0).GetSafeNormal();float Best=99999;FVector Choice;
+                for(float Sign:{-1.f,1.f})
+                {
+                    FVector Floor;if(!Terrain->FindFloor(Hero->GetActorLocation()-FVector(0,0,82)+Side*Sign*200,Floor)||FMath::Abs(Floor.Z-Feet)>90)continue;
+                    const float Cost=FMath::Abs(Floor.Z-Feet);if(Cost<Best){Best=Cost;Choice=Floor;}
+                }
+                if(Best<99999){BossAvoidTarget=Choice;BossAvoidRemaining=1.2f;BossLegElapsed=0;UE_LOG(LogTemp,Display,TEXT("BOSS QA: ordinary side-step/jump from real ball at%s tofloor%s health%d"),*Ball->GetActorLocation().ToString(),*Choice.ToString(),Hero->GetVitality()->GetHealth());break;}
+            }
+        }
+        if(BossAvoidRemaining>0)
+        {
+            BossAvoidRemaining-=DeltaSeconds;WalkHeart(BossAvoidTarget);
+            if(Movement->IsMovingOnGround()&&JumpHold<=0){PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;}return;
+        }
+    }
+    if(Phase==46||Phase==48)
+    {
+        const int32 Count=UE_ARRAY_COUNT(ReferenceBossHeartWalk);
+        if((Phase==46&&BossHeartWaypoint>=Count)||(Phase==48&&BossHeartWaypoint<0))
+        {if(Movement->IsMovingOnGround())Movement->StopMovementImmediately();Phase=Phase==46?47:40;Elapsed=0;BossLegElapsed=0;return;}
+        const auto& P=ReferenceBossHeartWalk[BossHeartWaypoint];const FVector Target(P.X,P.Y,P.Z);BossLegElapsed+=DeltaSeconds;
+        if(BossLegElapsed>22){Finish(false,TEXT("Ordinary walking to/from actual rotating heart was blocked"));return;}
+        const float Floor=Movement->IsMovingOnGround()?Movement->CurrentFloor.HitResult.ImpactPoint.Z:Hero->GetActorLocation().Z-82;
+        if(FVector::Dist2D(Target,Hero->GetActorLocation())<30&&FMath::Abs(Floor-Target.Z)<80){BossHeartWaypoint+=Phase==46?1:-1;BossLegElapsed=0;return;}
+        WalkHeart(Target);return;
+    }
+    if(Phase==47)
+    {
+        WalkHeart(FVector(3603,7070,3659));
+        if(Hero->GetVitality()->GetHealth()==8)
+        {if(Elapsed<.5f)return;FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderBossHeart.png"),false,false);BossHeartWaypoint=UE_ARRAY_COUNT(ReferenceBossHeartWalk)-1;Phase=48;Elapsed=0;BossLegElapsed=0;return;}
+        if(Elapsed>22)Finish(false,TEXT("Actual rotating-heart contact did not restore real health"));return;
+    }
     if(Phase==40)
     {
         if(BossWaypoint>=UE_ARRAY_COUNT(ReferenceSummitWalk))
@@ -587,7 +640,10 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBoss(float DeltaSeconds,AWi
         const auto& Point=ReferenceSummitWalk[BossWaypoint];const FVector Target(Point.X,Point.Y,Point.Z),Delta=Target-Hero->GetActorLocation();BossLegElapsed+=DeltaSeconds;
         if(BossLegElapsed>18){Finish(false,FString::Printf(TEXT("Reference boss walk blocked %d hero%s target%s"),BossWaypoint,*Hero->GetActorLocation().ToString(),*Target.ToString()));return;}
         if(Delta.Size2D()<25&&FMath::Abs(Hero->GetActorLocation().Z-82-Target.Z)<80)
-        {UE_LOG(LogTemp,Display,TEXT("BOSS WALK %d"),BossWaypoint);++BossWaypoint;BossLegElapsed=0;bBossRouteJump=false;return;}
+        {
+            UE_LOG(LogTemp,Display,TEXT("BOSS WALK %d health%d"),BossWaypoint,Hero->GetVitality()->GetHealth());++BossWaypoint;BossLegElapsed=0;bBossRouteJump=false;
+            if(BossWaypoint==177&&!bBossHeartUsed&&Hero->GetVitality()->GetHealth()<8){bBossHeartUsed=true;BossHeartWaypoint=0;Phase=46;Elapsed=0;}return;
+        }
         PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(),FRotator(-18,Delta.Rotation().Yaw,0),DeltaSeconds,4));
         if(Movement->IsFalling())
         {

@@ -38,7 +38,10 @@ private:
     void ObserveFade(APlayerController* PC);
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
-    bool bBossOwnedReplay=false;
+    bool bBossOwnedReplay=false,bBossHeartUsed=false;
+    int32 BossHeartWaypoint=0;
+    float BossAvoidRemaining=0;
+    FVector BossAvoidTarget=FVector::ZeroVector;
     bool bSurfaceTest=false,bWingApproachReady=true;
     FVector WingApproachPoint=FVector::ZeroVector;
     bool bBombTest=false,bBombChaseChecked=false,bBombThrowChecked=false,bBombFuseChecked=false,bBombResetChecked=false,bBombHeldPhoto=false;
