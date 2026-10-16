@@ -30,7 +30,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceWorld(float DeltaSeconds,AW
     if(Hero->RecoveryCount!=Recovery){Finish(false,TEXT("Reference world suffered an unintended recovery"));return;}
     for(AThunderWarpPair* Pair:Pairs)if(Pair->HasFailedWarp()){Finish(false,TEXT("Actual warp destination failed its capsule collision check"));return;}
     if(JumpHold>0){JumpHold-=DeltaSeconds;if(JumpHold<=0)PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Released,0));}
-    auto Photo=[&](const TCHAR* Name){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/FString(Name),false,false);};
+    auto Photo=[&](const TCHAR* Name){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation")/FString(Name),false,false);};
     auto Walk=[&](FVector Target,bool bJump=false)
     {
         const FVector D=Target-Hero->GetActorLocation(),Desired=(D.GetSafeNormal2D()*D.Size2D()*4.5f).GetClampedToMaxSize2D(470);
@@ -82,7 +82,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceWorld(float DeltaSeconds,AW
     if(Phase==162){if(Route(ReferenceWorldSwitchWalk,UE_ARRAY_COUNT(ReferenceWorldSwitchWalk)))Begin(163);return;}
     if(Phase==163)
     {
-        Walk(World->GetSwitchTop());
+        if(World->IsGateOpen())Hold(Centre);else Walk(World->GetSwitchTop());
         if(World->IsGateOpen()&&World->GetGateOpening()>=1)
         {if(World->GetGateActivations()!=1){Finish(false,TEXT("Real floor switch activated more than once"));return;}Photo(TEXT("ThunderWorldGateOpen.png"));Begin(164);return;}
         if(Elapsed>10)Finish(false,TEXT("Ordinary standing on the actual purple switch did not open both leaves"));return;
