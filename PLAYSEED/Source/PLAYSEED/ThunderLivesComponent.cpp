@@ -1,4 +1,6 @@
 #include "ThunderLivesComponent.h"
+#include "ReferenceTravelSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "Kismet/GameplayStatics.h"
 UThunderLivesComponent::UThunderLivesComponent() { PrimaryComponentTick.bCanEverTick=true; }
 bool UThunderLivesComponent::TryCollectLife()
@@ -23,6 +25,9 @@ void UThunderLivesComponent::TickComponent(float DeltaTime,ELevelTick TickType,F
     {
         bReturningToMenu=true;
         // OpenLevelで古いWorldと入場中の残機を終了します。永続の報酬は変更しません。
-        UGameplayStatics::OpenLevel(GetOwner(),FName(TEXT("/Game/ThunderMeadow/MissionSelect")));
+        auto* Flow=GetWorld()->GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
+        if(Flow->UsesEntrance())
+        {if(Flow->BeginReturn())UGameplayStatics::OpenLevel(GetOwner(),FName(TEXT("/Game/Battlefield/Entrance")));}
+        else UGameplayStatics::OpenLevel(GetOwner(),FName(TEXT("/Game/ThunderMeadow/MissionSelect")));
     }
 }

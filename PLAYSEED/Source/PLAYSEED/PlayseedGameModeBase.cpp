@@ -1,6 +1,7 @@
 #include "PlayseedGameModeBase.h"
 #include "WindseedCharacter.h"
 #include "PlayseedSelectionTestSubsystem.h"
+#include "ReferenceTravelSubsystem.h"
 #include "Components/InputComponent.h"
 #include "Engine/GameInstance.h"
 #include "Kismet/GameplayStatics.h"
@@ -43,8 +44,12 @@ bool APlayseedGameModeBase::HasPassedSelectionTest() const
 
 void APlayseedGameModeBase::ReturnToStageSelection()
 {
-    if (CanLeaveStage() && UGameplayStatics::GetCurrentLevelName(this, true) != TEXT("MissionSelect"))
-        UGameplayStatics::OpenLevel(this, FName(TEXT("/Game/ThunderMeadow/MissionSelect")));
+    if(!CanLeaveStage()||UGameplayStatics::GetCurrentLevelName(this,true)==TEXT("MissionSelect"))return;
+    auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
+    // 絵から入ったプレイは入口へ戻し、次回も同じ入場手順を使える状態にします。
+    if(Flow->UsesEntrance())
+    {if(Flow->BeginReturn())UGameplayStatics::OpenLevel(this,FName(TEXT("/Game/Battlefield/Entrance")));}
+    else UGameplayStatics::OpenLevel(this,FName(TEXT("/Game/ThunderMeadow/MissionSelect")));
 }
 
 void APlayseedGameModeBase::RestartStage(AWindseedCharacter* Player)
