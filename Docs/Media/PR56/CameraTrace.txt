@@ -1,0 +1,8 @@
+[2026.10.16-09.16.07:439][397]LogTemp: Display: REFERENCE CAMERA BODY: hidden at actual distance 150.3; hide count1
+[2026.10.16-09.16.07:443][398]LogTemp: Display: REFERENCE CAMERA BODY: restored at actual distance 358.9; hide count1
+[2026.10.16-09.17.22:772][147]LogTemp: Display: REFERENCE CAMERA BODY: hidden at actual distance 159.1; hide count1
+[2026.10.16-09.17.23:779][317]LogTemp: Display: REFERENCE CAMERA BODY: restored at actual distance 340.3; hide count1
+[2026.10.16-09.17.25:731][647]LogTemp: Display: REFERENCE CAMERA BODY: hidden at actual distance 258.3; hide count2
+[2026.10.16-09.17.26:634][814]LogTemp: Display: REFERENCE CAMERA BODY: restored at actual distance 340.2; hide count2
+[2026.10.16-09.17.29:958][407]LogTemp: Display: REFERENCE CAMERA BODY: hidden at actual distance 150.2; hide count1
+[2026.10.16-09.17.29:962][408]LogTemp: Display: REFERENCE CAMERA BODY: restored at actual distance 362.8; hide count1

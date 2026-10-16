@@ -1,4 +1,5 @@
 #include "ReferenceHero.h"
+#include "ReferenceCameraVisibilityComponent.h"
 #include "PlayseedActionComponent.h"
 #include "PlayseedCarryComponent.h"
 #include "PlayseedClimbComponent.h"
@@ -7,9 +8,13 @@
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
+#include "Components/PrimitiveComponent.h"
+#include "Camera/PlayerCameraManager.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -25,6 +30,7 @@ UStaticMeshComponent* AReferenceHero::Part(USceneComponent* Parent,UStaticMesh* 
 AReferenceHero::AReferenceHero()
 {
     Tags.Add(TEXT("ReferenceHero"));
+    CameraVisibility=CreateDefaultSubobject<UReferenceCameraVisibilityComponent>(TEXT("ReferenceCameraVisibility"));
     Visual=CreateDefaultSubobject<USceneComponent>(TEXT("ReferenceVisual"));Visual->SetupAttachment(GetRootComponent());
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Sphere(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
@@ -128,4 +134,20 @@ void AReferenceHero::Tick(float DeltaSeconds)
         Shadow->SetWorldLocation(Floor.ImpactPoint+Floor.ImpactNormal*1.5f);Shadow->SetWorldRotation(FRotationMatrix::MakeFromZ(Floor.ImpactNormal).Rotator());
         const float Size=FMath::Clamp(1.15f-(GetActorLocation().Z-82-Floor.ImpactPoint.Z)*.0004f,.65f,1.15f);Shadow->SetWorldScale3D(FVector(Size,Size,1));
     }
+}
+
+void AReferenceHero::UpdateCameraVisibility()
+{
+    auto* PC=Cast<APlayerController>(GetController());if(!PC||!PC->PlayerCameraManager)return;
+    // 予定のアーム長ではなく、壁で押し戻された後のカメラ位置を使います。
+    const FVector CameraPoint=PC->GetViewTarget()==this?GetCameraBoom()->GetSocketTransform(USpringArmComponent::SocketName,RTS_World).GetLocation():PC->PlayerCameraManager->GetCameraLocation();
+    ActualCameraDistance=FVector::Dist(CameraPoint,GetActorLocation());
+    // 身長約170cmの全身が画面を埋めない距離で再表示します。二つの距離で境界の点滅も防ぎます。
+    const bool bHide=ActualCameraDistance<(bBodyHiddenForCamera?340.f:260.f);
+    if(bHide==bBodyHiddenForCamera)return;
+    bBodyHiddenForCamera=bHide;if(bHide)++CameraHideCount;
+    // HiddenInGameは表示だけの設定です。衝突・体力・移動はそのままにし、羽やピースのVisibility設定も保ちます。
+    TArray<USceneComponent*> VisualChildren;Visual->GetChildrenComponents(true,VisualChildren);
+    for(auto* Child:VisualChildren)if(auto* Shape=Cast<UPrimitiveComponent>(Child))Shape->SetHiddenInGame(bHide,false);
+    UE_LOG(LogTemp,Display,TEXT("REFERENCE CAMERA BODY: %s at actual distance %.1f; hide count%d"),bHide?TEXT("hidden"):TEXT("restored"),ActualCameraDistance,CameraHideCount);
 }
