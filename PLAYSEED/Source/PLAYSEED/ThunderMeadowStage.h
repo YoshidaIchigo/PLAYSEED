@@ -28,6 +28,7 @@ class AThunderGuide;
 class AThunderLauncher;
 class AThunderFlightBloom;
 class AReferenceWingBox;
+class AReferenceCoinField;
 class AThunderFlightSwitch;
 class AThunderStormkeeper;
 class AThunderCloudflagRace;
@@ -88,6 +89,7 @@ public:
     AThunderBoundSentinel* GetBoundSentinel() const { return BoundSentinel; }
     AThunderBindingPost* GetBindingPost() const { return BindingPost; }
     AThunderPrisonGate* GetPrisonGate() const { return PrisonGate; }
+    AReferenceCoinField* GetReferenceCoinField() const { return ReferenceCoinField; }
     AThunderHundredLantern* GetHundredLantern() const { return HundredLantern; }
     AThunderMountainRest* GetMountainRest() const { return MountainRest; }
     AThunderLifeseed* GetLifeseed() const { return Lifeseed; }
@@ -171,6 +173,7 @@ private:
     UPROPERTY() TObjectPtr<AThunderBindingPost> BindingPost;
     UPROPERTY() TObjectPtr<AThunderPrisonGate> PrisonGate;
     UPROPERTY() TObjectPtr<AThunderHundredLantern> HundredLantern;
+    UPROPERTY() TObjectPtr<AReferenceCoinField> ReferenceCoinField;
     UPROPERTY() TObjectPtr<AThunderMountainRest> MountainRest;
     UPROPERTY() TObjectPtr<AThunderLifeseed> Lifeseed;
     TArray<FVector> WingTowerFootPath;
