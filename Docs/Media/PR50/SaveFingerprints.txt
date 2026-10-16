@@ -1,0 +1,6 @@
+{
+  "slot": "Validation_PR50_Painting_C",
+  "game_exit": 0,
+  "normal_before": "ABSENT",
+  "normal_after": "ABSENT"
+}
