@@ -1,0 +1,88 @@
+{
+  "decoded_frames": 1647,
+  "all_pixels_at_original_resolution": true,
+  "white_threshold_each_channel": 247,
+  "viewport_crop": [
+    120,
+    0,
+    720,
+    540
+  ],
+  "white_segments": [
+    {
+      "first_frame": 72,
+      "last_frame": 74,
+      "frames": 3,
+      "start_seconds": 4.8,
+      "end_seconds": 5.0
+    },
+    {
+      "first_frame": 116,
+      "last_frame": 118,
+      "frames": 3,
+      "start_seconds": 7.733,
+      "end_seconds": 7.933
+    },
+    {
+      "first_frame": 222,
+      "last_frame": 223,
+      "frames": 2,
+      "start_seconds": 14.8,
+      "end_seconds": 14.933
+    },
+    {
+      "first_frame": 308,
+      "last_frame": 309,
+      "frames": 2,
+      "start_seconds": 20.533,
+      "end_seconds": 20.667
+    },
+    {
+      "first_frame": 351,
+      "last_frame": 353,
+      "frames": 3,
+      "start_seconds": 23.4,
+      "end_seconds": 23.6
+    },
+    {
+      "first_frame": 1368,
+      "last_frame": 1369,
+      "frames": 2,
+      "start_seconds": 91.2,
+      "end_seconds": 91.333
+    },
+    {
+      "first_frame": 1471,
+      "last_frame": 1472,
+      "frames": 2,
+      "start_seconds": 98.067,
+      "end_seconds": 98.2
+    }
+  ],
+  "outside_bars": {
+    "left": {
+      "maximum_channel": 7,
+      "all_frames_black_within_tolerance12": true,
+      "all_pixels_at_original_resolution": true,
+      "crop": [
+        0,
+        0,
+        112,
+        540
+      ],
+      "codec_boundary_margin_pixels": 8
+    },
+    "right": {
+      "maximum_channel": 7,
+      "all_frames_black_within_tolerance12": true,
+      "all_pixels_at_original_resolution": true,
+      "crop": [
+        848,
+        0,
+        112,
+        540
+      ],
+      "codec_boundary_margin_pixels": 8
+    }
+  }
+}

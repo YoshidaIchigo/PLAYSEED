@@ -77,7 +77,8 @@ AReferenceEntranceGameMode::AReferenceEntranceGameMode(){DefaultPawnClass=ARefer
 void AReferenceEntranceGameMode::StartPlay()
 {
     Room=GetWorld()->SpawnActor<AReferenceEntranceRoom>();Super::StartPlay();
-    GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>()->ArriveAtPainting();
+    auto* ArrivalFlow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
+    ArrivalFlow->ArriveAtPainting();ArrivalFlow->HoldIncomingInput();
     if(auto* Hero=Cast<AWindseedCharacter>(UGameplayStatics::GetPlayerPawn(this,0)))
     {
         Hero->SetTrailStartLocation(FVector(-600,0,84));Hero->ReturnToTrail();Hero->RecoveryCount=0;Hero->SetActorRotation(FRotator::ZeroRotator);
@@ -104,11 +105,11 @@ void AReferenceEntranceGameMode::Tick(float DeltaSeconds)
     const float Alpha=FMath::Clamp(EntryTime/.7f,0.f,1.f);
     // これは製品の入場演出です。通常探索や検証の移動を座標で代用する処理ではありません。
     Hero->SetActorLocation(FMath::Lerp(DiveStart,FVector(430,0,300),Alpha));Hero->SetActorRotation(FRotator(-60*Alpha,0,0));
-    if(EntryTime>1.1f && Flow->FinishPainting())UGameplayStatics::OpenLevel(this,FName(TEXT("/Game/ThunderMeadow/MissionSelect")));
+    if(EntryTime>2.f&&!Flow->IsFading())Flow->StartPaintingFade();
 }
 void AReferenceEntranceGameMode::RestartStage(AWindseedCharacter* Player){if(!bEntering)Super::RestartStage(Player);}
 void AReferenceEntranceGameMode::HandlePlayerDefeat(AWindseedCharacter* Player){if(!bEntering)Super::HandlePlayerDefeat(Player);}
-float AReferenceEntranceGameMode::GetEntryFade() const{return bEntering?FMath::Clamp((EntryTime-.55f)/.5f,0.f,1.f):0;}
+float AReferenceEntranceGameMode::GetEntryFade() const{return GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>()->GetTransitionOpacity();}
 void AReferenceEntranceHUD::DrawHUD()
 {
     Super::DrawHUD();if(!Canvas)return;FBattlefieldUI UI(Canvas);
@@ -118,5 +119,5 @@ void AReferenceEntranceHUD::DrawHUD()
     auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
     if(Flow->GetLastRewardNumber()>0&&GetWorld()->GetTimeSeconds()<5)
         UI.Text(FString::Printf(TEXT("スター %d を ゲット！"),Flow->GetLastRewardNumber()),160,46,12,FLinearColor(1,.8f,.05f),true,false,true);
-    if(auto* Mode=Cast<AReferenceEntranceGameMode>(GetWorld()->GetAuthGameMode()))if(Mode->GetEntryFade()>0)UI.Rect(0,0,320,240,FLinearColor(1,1,1,Mode->GetEntryFade()));
+    if(Flow->GetTransitionOpacity()>0)UI.Rect(0,0,320,240,FLinearColor(1,1,1,Flow->GetTransitionOpacity()));
 }

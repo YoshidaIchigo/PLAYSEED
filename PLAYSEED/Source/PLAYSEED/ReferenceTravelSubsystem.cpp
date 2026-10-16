@@ -14,7 +14,9 @@
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/PlayerInput.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/PackageName.h"
 
 void UReferenceTravelSubsystem::ArriveAtPainting()
 {
@@ -23,7 +25,7 @@ void UReferenceTravelSubsystem::ArriveAtPainting()
 }
 bool UReferenceTravelSubsystem::BeginPainting()
 {
-    if(State!=EReferenceTravelState::AtPainting)return false;
+    if(State!=EReferenceTravelState::AtPainting||IsTransitionLocked())return false;
     LastRewardNumber=0;
     State=EReferenceTravelState::EnteringPainting;return true;
 }
@@ -34,23 +36,83 @@ bool UReferenceTravelSubsystem::FinishPainting()
 }
 bool UReferenceTravelSubsystem::BeginCourse()
 {
-    if(!bEntranceFlow)return true;
-    if(State!=EReferenceTravelState::SelectingStar)return false;
-    State=EReferenceTravelState::Dropping;return true;
+    if(IsTransitionLocked()||(bEntranceFlow&&State!=EReferenceTravelState::SelectingStar))return false;
+    if(!BeginFadeTo(FName(TEXT("/Game/ThunderMeadow/ThunderMeadow"))))return false;
+    bEntranceFlow=true;State=EReferenceTravelState::Dropping;return true;
 }
 bool UReferenceTravelSubsystem::FinishDrop()
 {
-    if(State!=EReferenceTravelState::Dropping)return false;
+    if(State!=EReferenceTravelState::Dropping||IsFading())return false;
     State=EReferenceTravelState::InCourse;return true;
 }
 bool UReferenceTravelSubsystem::BeginReturn()
 {
-    if(!bEntranceFlow||State==EReferenceTravelState::Returning)return false;
+    if(!bEntranceFlow||State==EReferenceTravelState::Returning||IsFading())return false;
+    if(!BeginFadeTo(FName(TEXT("/Game/Battlefield/Entrance"))))return false;
     State=EReferenceTravelState::Returning;return true;
 }
 bool UReferenceTravelSubsystem::IsTransitionLocked() const
 {
-    return State==EReferenceTravelState::EnteringPainting||State==EReferenceTravelState::Dropping||State==EReferenceTravelState::Celebrating||State==EReferenceTravelState::Returning;
+    return IsFading()||State==EReferenceTravelState::EnteringPainting||State==EReferenceTravelState::Dropping||State==EReferenceTravelState::Celebrating||State==EReferenceTravelState::Returning;
+}
+
+bool UReferenceTravelSubsystem::StartPaintingFade()
+{
+    return State==EReferenceTravelState::EnteringPainting&&BeginFadeTo(FName(TEXT("/Game/ThunderMeadow/MissionSelect")));
+}
+bool UReferenceTravelSubsystem::BeginFadeTo(FName Destination)
+{
+    if(IsFading()||!GetWorld())return false;
+    FadeDestination=Destination;FadeSourceWorld=GetWorld();FadeClock=FadeOpacity=0;FadePhase=EReferenceFadePhase::Out;++FadeSequence;
+    HoldIncomingInput();
+    UE_LOG(LogTemp,Display,TEXT("REFERENCE FADE %d: OUT white rectangle 1.00s to %s"),FadeSequence,*Destination.ToString());
+    return true;
+}
+void UReferenceTravelSubsystem::HoldIncomingInput()
+{
+    if(!IsFading())return;
+    auto* PC=UGameplayStatics::GetPlayerController(GetWorld(),0);if(!PC||FadeLockedController.Get()==PC)return;
+    // Controllerの入力も止めます。新Worldで作られたControllerには改めて一度だけ設定します。
+    FadeLockedController=PC;PC->SetIgnoreMoveInput(true);PC->SetIgnoreLookInput(true);
+    if(auto* Hero=Cast<AWindseedCharacter>(PC->GetPawn()))
+    {Hero->StopJumping();Hero->GetCharacterMovement()->StopMovementImmediately();Hero->GetCharacterMovement()->ClearAccumulatedForces();Hero->DisableInput(PC);}
+}
+void UReferenceTravelSubsystem::UpdateFade(float DeltaSeconds)
+{
+    if(!IsFading())return;
+    if(FadePhase==EReferenceFadePhase::Out)
+    {
+        FadeClock+=DeltaSeconds;FadeOpacity=FMath::Clamp(FadeClock/1.f,0.f,1.f);
+        if(FadeOpacity<1)return;
+        // 完全に白くしてから一度だけOpenLevelします。白はGameInstanceが次のWorldへ持ち越します。
+        FadePhase=EReferenceFadePhase::Covered;FadeClock=0;
+        if(FadeDestination==FName(TEXT("/Game/ThunderMeadow/MissionSelect")))FinishPainting();
+        else if(FadeDestination==FName(TEXT("/Game/Battlefield/Entrance")))State=EReferenceTravelState::Returning;
+        UE_LOG(LogTemp,Display,TEXT("REFERENCE FADE %d: OPAQUE OpenLevel once, alpha %.2f"),FadeSequence,FadeOpacity);
+        UGameplayStatics::OpenLevel(this,FadeDestination);return;
+    }
+    if(FadePhase==EReferenceFadePhase::Covered)
+    {
+        if(GetWorld()==FadeSourceWorld.Get()||UGameplayStatics::GetCurrentLevelName(GetWorld(),true)!=FPackageName::GetShortName(FadeDestination.ToString()))return;
+        auto* PC=UGameplayStatics::GetPlayerController(GetWorld(),0);
+        if(!PC||!PC->GetHUD()||(State!=EReferenceTravelState::SelectingStar&&!PC->GetPawn()))return;
+        HoldIncomingInput();FadeClock+=DeltaSeconds;
+        // 新しいカメラとHUDが揃ってから、白いフレームを少なくとも0.15秒表示します。
+        if(FadeClock>=.15f){FadePhase=EReferenceFadePhase::In;FadeClock=0;UE_LOG(LogTemp,Display,TEXT("REFERENCE FADE %d: IN new World ready, white hold >=0.15s, reveal 0.75s"),FadeSequence);}
+        return;
+    }
+    FadeClock+=DeltaSeconds;FadeOpacity=1-FMath::Clamp(FadeClock/.75f,0.f,1.f);
+    if(FadeOpacity>0)return;
+    FadePhase=EReferenceFadePhase::None;++CompletedFades;
+    if(auto* PC=FadeLockedController.Get())
+    {
+        // 明転直前の確定キーを次の場面へ持ち越さないよう、状態と未処理イベントを両方消します。
+        if(PC->PlayerInput){PC->PlayerInput->FlushPressedKeys();PC->PlayerInput->DiscardPlayerInput();}
+        PC->SetIgnoreMoveInput(false);PC->SetIgnoreLookInput(false);
+        if(State==EReferenceTravelState::AtPainting)if(auto* Hero=Cast<AWindseedCharacter>(PC->GetPawn()))Hero->EnableInput(PC);
+    }
+    FadeLockedController.Reset();FadeSourceWorld.Reset();FadeDestination=NAME_None;
+    UE_LOG(LogTemp,Display,TEXT("REFERENCE FADE %d: COMPLETE alpha0, input released; completed%d"),FadeSequence,CompletedFades);
 }
 
 bool UReferenceTravelSubsystem::Celebrate(AWindseedCharacter* Hero,int32 RewardNumber)
@@ -96,12 +158,13 @@ void UReferenceTravelSubsystem::StartStarPose()
     if(DisplayStar.IsValid())DisplayStar->SetActorScale3D(FVector(.45f));
 }
 
-float UReferenceTravelSubsystem::GetCelebrationFade() const{return bPoseStarted?FMath::Clamp((PoseTime-2.4f)/.65f,0.f,1.f):0;}
+float UReferenceTravelSubsystem::GetCelebrationFade() const{return GetTransitionOpacity();}
 void UReferenceTravelSubsystem::Tick(float DeltaSeconds)
 {
-    if(!GetWorld()||!GetWorld()->IsGameWorld()||!IsCelebrating())return;
+    if(!GetWorld()||!GetWorld()->IsGameWorld())return;
+    UpdateFade(DeltaSeconds);if(!IsCelebrating())return;
     auto* Hero=CapturedHero.Get();
-    if(!Hero){if(BeginReturn())UGameplayStatics::OpenLevel(this,FName(TEXT("/Game/Battlefield/Entrance")));return;}
+    if(!Hero){BeginReturn();return;}
     CelebrationTime+=DeltaSeconds;
     if(!bPoseStarted)
     {
@@ -111,5 +174,5 @@ void UReferenceTravelSubsystem::Tick(float DeltaSeconds)
     }
     PoseTime+=DeltaSeconds;
     if(DisplayStar.IsValid())DisplayStar->SetActorRotation(FRotator(0,Hero->GetActorRotation().Yaw+FMath::Sin(PoseTime*3)*10,0));
-    if(PoseTime>3.1f&&BeginReturn())UGameplayStatics::OpenLevel(this,FName(TEXT("/Game/Battlefield/Entrance")));
+    if(PoseTime>2.4f&&!IsFading())BeginFadeTo(FName(TEXT("/Game/Battlefield/Entrance")));
 }

@@ -1,0 +1,28 @@
+[2026.10.16-08.25.27:979][280]LogTemp: Display: REFERENCE FADE 1: OUT white rectangle 1.00s to /Game/ThunderMeadow/MissionSelect
+[2026.10.16-08.25.28:976][524]LogTemp: Display: REFERENCE FADE 1: OPAQUE OpenLevel once, alpha 1.00
+[2026.10.16-08.25.29:126][543]LogTemp: Display: REFERENCE FADE 1: IN new World ready, white hold >=0.15s, reveal 0.75s
+[2026.10.16-08.25.29:877][733]LogTemp: Display: REFERENCE FADE 1: COMPLETE alpha0, input released; completed1
+[2026.10.16-08.25.31:016][ 14]LogTemp: Display: REFERENCE FADE 2: OUT white rectangle 1.00s to /Game/ThunderMeadow/ThunderMeadow
+[2026.10.16-08.25.31:994][263]LogTemp: Display: REFERENCE FADE 2: OPAQUE OpenLevel once, alpha 1.00
+[2026.10.16-08.25.32:230][265]LogTemp: Display: REFERENCE FADE 2: IN new World ready, white hold >=0.15s, reveal 0.75s
+[2026.10.16-08.25.33:030][276]LogTemp: Display: REFERENCE FADE 2: COMPLETE alpha0, input released; completed2
+[2026.10.16-08.25.38:489][229]LogTemp: Display: REFERENCE FADE 3: OUT white rectangle 1.00s to /Game/Battlefield/Entrance
+[2026.10.16-08.25.39:486][419]LogTemp: Display: REFERENCE FADE 3: OPAQUE OpenLevel once, alpha 1.00
+[2026.10.16-08.25.39:637][436]LogTemp: Display: REFERENCE FADE 3: IN new World ready, white hold >=0.15s, reveal 0.75s
+[2026.10.16-08.25.40:388][636]LogTemp: Display: REFERENCE FADE 3: COMPLETE alpha0, input released; completed3
+[2026.10.16-08.25.44:479][612]LogTemp: Display: REFERENCE FADE 4: OUT white rectangle 1.00s to /Game/ThunderMeadow/MissionSelect
+[2026.10.16-08.25.45:455][865]LogTemp: Display: REFERENCE FADE 4: OPAQUE OpenLevel once, alpha 1.00
+[2026.10.16-08.25.45:605][893]LogTemp: Display: REFERENCE FADE 4: IN new World ready, white hold >=0.15s, reveal 0.75s
+[2026.10.16-08.25.46:356][ 92]LogTemp: Display: REFERENCE FADE 4: COMPLETE alpha0, input released; completed4
+[2026.10.16-08.25.47:485][377]LogTemp: Display: REFERENCE FADE 5: OUT white rectangle 1.00s to /Game/ThunderMeadow/ThunderMeadow
+[2026.10.16-08.25.48:464][632]LogTemp: Display: REFERENCE FADE 5: OPAQUE OpenLevel once, alpha 1.00
+[2026.10.16-08.25.48:661][634]LogTemp: Display: REFERENCE FADE 5: IN new World ready, white hold >=0.15s, reveal 0.75s
+[2026.10.16-08.25.49:458][645]LogTemp: Display: REFERENCE FADE 5: COMPLETE alpha0, input released; completed5
+[2026.10.16-08.26.57:593][909]LogTemp: Display: REFERENCE FADE 6: OUT white rectangle 1.00s to /Game/Battlefield/Entrance
+[2026.10.16-08.26.58:595][ 84]LogTemp: Display: REFERENCE FADE 6: OPAQUE OpenLevel once, alpha 1.00
+[2026.10.16-08.26.58:745][ 94]LogTemp: Display: REFERENCE FADE 6: IN new World ready, white hold >=0.15s, reveal 0.75s
+[2026.10.16-08.26.59:496][283]LogTemp: Display: REFERENCE FADE 6: COMPLETE alpha0, input released; completed6
+[2026.10.16-08.27.04:763][555]LogTemp: Display: REFERENCE FADE 7: OUT white rectangle 1.00s to /Game/ThunderMeadow/MissionSelect
+[2026.10.16-08.27.05:763][806]LogTemp: Display: REFERENCE FADE 7: OPAQUE OpenLevel once, alpha 1.00
+[2026.10.16-08.27.05:916][833]LogTemp: Display: REFERENCE FADE 7: IN new World ready, white hold >=0.15s, reveal 0.75s
+[2026.10.16-08.27.06:666][ 27]LogTemp: Display: REFERENCE FADE 7: COMPLETE alpha0, input released; completed7

@@ -24,11 +24,12 @@ void AThunderMeadowHUD::DrawHUD()
 {
     Super::DrawHUD();if(!Canvas)return;
     FBattlefieldUI UI(Canvas);
+    auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
+    if(Flow->GetTransitionOpacity()>=1){UI.Rect(0,0,320,240,FLinearColor::White);return;}
     auto* Mode=Cast<AThunderMeadowGameMode>(GetWorld()->GetAuthGameMode());
     auto* Player=Cast<AWindseedCharacter>(UGameplayStatics::GetPlayerPawn(this,0));
     if(!Mode || !Player)return;
     auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
-    auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
     const FLinearColor Number(1,.37f,.025f),Multiply(.55f,.53f,.85f);
     UI.Face(FVector2D(29,20));UI.Text(TEXT("×"),42,9,19,Multiply);UI.Text(FString::FromInt(Mode->GetLives()->GetRemaining()),59,8,20,Number);
     UI.Coin(FVector2D(181,20));UI.Text(TEXT("×"),191,9,19,Multiply);UI.Text(FString::FromInt(Mode->GetCoinLedger()->GetTotal()),208,8,20,Number);
@@ -48,7 +49,6 @@ void AThunderMeadowHUD::DrawHUD()
         if(Flow->GetCelebrationFade()>0)UI.Rect(0,0,320,240,FLinearColor(1,1,1,Flow->GetCelebrationFade()));
         return;
     }
-    if(Mode->GetDropFade()>0)UI.Rect(0,0,320,240,FLinearColor(1,1,1,Mode->GetDropFade()));
     if(Player->GetLaunch()->IsAiming())
     {
         UI.Rect(153,119,14,1,FLinearColor::Black);UI.Rect(159,113,1,14,FLinearColor::Black);
@@ -75,6 +75,7 @@ void AThunderMeadowHUD::DrawHUD()
         UI.Rect(0,0,320,240,FLinearColor(0,0,0,.85f));UI.Text(TEXT("GAME OVER"),160,91,29,FLinearColor(1,.12f,.025f),true);
         UI.Text(TEXT("スターは そのまま。もういちど ちょうせん！"),160,145,8,FLinearColor::White,true,false,true);
     }
+    if(Flow->GetTransitionOpacity()>0)UI.Rect(0,0,320,240,FLinearColor(1,1,1,Flow->GetTransitionOpacity()));
 }
 
 AThunderMeadowGameMode::AThunderMeadowGameMode()
@@ -103,7 +104,7 @@ void AThunderMeadowGameMode::StartPlay()
             Player->SetActorLocation(Player->GetActorLocation()+FVector(0,0,1000));
             Player->GetCharacterMovement()->SetMovementMode(MOVE_Falling);
             if(auto* PC=Cast<APlayerController>(Player->GetController()))Player->DisableInput(PC);
-            bDropActive=true;
+            bDropActive=true;GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>()->HoldIncomingInput();
         }
     }
 }
@@ -124,7 +125,7 @@ void AThunderMeadowGameMode::HandlePlayerDefeat(AWindseedCharacter* Player)
     auto* Flow=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>();
     if(bDropActive)
     {
-        if(Flow->BeginReturn()){Lives->ConsumeLife();UGameplayStatics::OpenLevel(this,FName(TEXT("/Game/Battlefield/Entrance")));}
+        if(Flow->BeginReturn())Lives->ConsumeLife();
         return;
     }
     if (Lives->ConsumeLife()) RestartStage(Player);
@@ -142,7 +143,7 @@ bool AThunderMeadowGameMode::CanLeaveStage() const
     return !GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>()->IsTransitionLocked();
 }
 void AThunderMeadowGameMode::ToggleControls(){if(CanLeaveStage())bShowControls=!bShowControls;}
-float AThunderMeadowGameMode::GetDropFade() const{return bDropActive?FMath::Clamp(1-DropTime/.5f,0.f,1.f):0;}
+float AThunderMeadowGameMode::GetDropFade() const{return GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>()->GetTransitionOpacity();}
 void AThunderMeadowGameMode::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);if(!bDropActive)return;DropTime+=DeltaSeconds;
@@ -160,7 +161,7 @@ void AThunderMeadowGameMode::Tick(float DeltaSeconds)
         }
     }
     // 何らかの障害で着地しない場合も、入力を止めたまま残さず入口へ戻します。
-    if(DropTime>8&&Flow->BeginReturn())UGameplayStatics::OpenLevel(this,FName(TEXT("/Game/Battlefield/Entrance")));
+    if(DropTime>8)Flow->BeginReturn();
 }
 
 void AThunderMeadowGameMode::HandlePlayerFall(AWindseedCharacter* Player)

@@ -30,11 +30,13 @@ void AThunderMissionSelectionHUD::DrawHUD()
     UI.Text(TEXT("← →  スターをえらぶ   Enter / A  けってい"),160,205,6.5f,FLinearColor(.18f,.18f,.2f),true,false,true);
     if(Progress->HasEarnedReward(7))UI.Star(FVector2D(300,217),7,FLinearColor(1,.78f,.02f));
     if(!Progress->GetProgressProblem().IsEmpty())UI.Text(Progress->GetProgressProblem(),160,226,6,FLinearColor(.8f,.05f,.025f),true);
+    const float Fade=GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>()->GetTransitionOpacity();
+    if(Fade>0)UI.Rect(0,0,320,240,FLinearColor(1,1,1,Fade));
 }
 AThunderMissionSelectionGameMode::AThunderMissionSelectionGameMode(){DefaultPawnClass=nullptr;HUDClass=AThunderMissionSelectionHUD::StaticClass();}
 void AThunderMissionSelectionGameMode::StartPlay()
 {
-    Super::StartPlay();auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
+    Super::StartPlay();GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>()->HoldIncomingInput();auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
     HighlightedMission=1;while(HighlightedMission<6 && Progress->HasEarnedReward(HighlightedMission))++HighlightedMission;
     if(!InputComponent)return;
     InputComponent->BindKey(EKeys::One,IE_Pressed,this,&AThunderMissionSelectionGameMode::ChooseOne);
@@ -49,7 +51,7 @@ void AThunderMissionSelectionGameMode::StartPlay()
     InputComponent->BindAxisKey(EKeys::Gamepad_LeftX,this,&AThunderMissionSelectionGameMode::Stick);
     if(auto* PC=UGameplayStatics::GetPlayerController(this,0)){PC->SetInputMode(FInputModeGameOnly());PC->bShowMouseCursor=false;}
 }
-void AThunderMissionSelectionGameMode::Navigate(int32 Direction){if(!bTravelRequested)HighlightedMission=(HighlightedMission-1+Direction+6)%6+1;}
+void AThunderMissionSelectionGameMode::Navigate(int32 Direction){if(!bTravelRequested&&!GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>()->IsTransitionLocked())HighlightedMission=(HighlightedMission-1+Direction+6)%6+1;}
 void AThunderMissionSelectionGameMode::Stick(float Value)
 {
     if(FMath::Abs(Value)<.2f){NextStickTime=0;return;}
@@ -57,8 +59,8 @@ void AThunderMissionSelectionGameMode::Stick(float Value)
 }
 void AThunderMissionSelectionGameMode::EnterMission(int32 Number)
 {
-    if(bTravelRequested)return;
+    if(bTravelRequested||GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>()->IsTransitionLocked())return;
     if(!GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>()->SelectMission(Number))return;
     if(!GetGameInstance()->GetSubsystem<UReferenceTravelSubsystem>()->BeginCourse())return;
-    bTravelRequested=true;UGameplayStatics::OpenLevel(this,FName(TEXT("/Game/ThunderMeadow/ThunderMeadow")));
+    bTravelRequested=true; // マップ切替は完全な白になってから共通フローが一度だけ行います。
 }
