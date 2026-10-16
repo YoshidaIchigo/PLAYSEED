@@ -19,6 +19,7 @@ public:
 private:
     void Tap(APlayerController* PC,FKey Key);
     void Finish(bool bPassed,const FString& Message);
+    void UpdateReferenceWorld(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceWaterCannons(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceRain(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceBoulders(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
@@ -35,6 +36,10 @@ private:
     void ObserveFade(APlayerController* PC);
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
+    bool bWorldTest=false,bWorldGateChecked=false,bWorldGateResetChecked=false,bWorldWestWarpsChecked=false,bWorldMountainWarpsChecked=false,bWorldHeartChecked=false,bWorldRouteJump=false,bWorldFirstVisitDone=false;
+    int32 WorldWaypoint=0,WorldWarpPair=1,WorldWarpExpected=0,WorldHealthBaseline=0;
+    float WorldLegElapsed=0;
+    FVector WorldExitTarget=FVector::ZeroVector;
     bool bWaterCannonTest=false,bFieldWaterCannonChecked=false,bWaterCannonShotsChecked=false,bWaterCannonResetChecked=false,bWaterCannonRouteJump=false,bWaterCannonShotPhoto=false;
     int32 WaterCannonWaypoint=0,WaterCannonShotBaseline=0,WaterCannonHealthBaseline=0;
     float WaterCannonLegElapsed=0;

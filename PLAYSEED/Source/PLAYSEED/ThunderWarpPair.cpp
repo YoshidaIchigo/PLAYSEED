@@ -1,4 +1,5 @@
 #include "ThunderWarpPair.h"
+#include "WindseedCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SceneComponent.h"
 #include "GameFramework/Character.h"
@@ -40,7 +41,7 @@ void AThunderWarpPair::Tick(float DeltaSeconds)
     const float FeetZ = Position.Z - Player->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
     for (int32 Index = 0; Index < 2; ++Index)
     {
-        if (FVector::Dist2D(Position, Floors[Index]) < 75 && FMath::Abs(FeetZ - Floors[Index].Z) < 20)
+        if (FVector::Dist2D(Position, Floors[Index]) < TriggerRadius && FMath::Abs(FeetZ - Floors[Index].Z) < 20)
         { WarpPlayer(Player, 1 - Index); break; }
     }
 }
@@ -60,7 +61,9 @@ void AThunderWarpPair::WarpPlayer(ACharacter* Player, int32 DestinationIndex)
     if (bFailedWarp) return;
     Movement->SetMovementMode(MOVE_Walking);
     if (auto* PC = Cast<APlayerController>(Player->GetController())) PC->SetControlRotation(FRotator(-15, Facing.Yaw, 0));
+    if(auto* Hero=Cast<AWindseedCharacter>(Player))Hero->SnapCameraAfterTeleport();
     ++WarpCount;
+    UE_LOG(LogTemp,Display,TEXT("REFERENCE WARP: actual transfer%d destination%d floor%s"),WarpCount,DestinationIndex,*Floors[DestinationIndex].ToString());
     bNeedsExit = true;
 }
 

@@ -196,13 +196,18 @@ void AWindseedCharacter::ReturnToTrail()
     SetActorLocation(TrailStartLocation, false, nullptr, ETeleportType::TeleportPhysics);
     // 瞬間的な復帰では、カメラが古い場所から長距離を追いかけないようにします。
     // 通常移動の滑らかな追従は残し、SpringArmの前フレーム位置だけを新しい原点へ合わせます。
+    SnapCameraAfterTeleport();
+    SetSprinting(false);
+    Vitality->Restore();
+    ++RecoveryCount;
+}
+void AWindseedCharacter::SnapCameraAfterTeleport()
+{
+    if(!CameraBoom)return;
     const FVector CameraOrigin=CameraBoom->GetComponentLocation()+CameraBoom->TargetOffset;
     CameraBoom->PreviousDesiredLoc=CameraOrigin;
     CameraBoom->PreviousArmOrigin=CameraOrigin;
     CameraBoom->PreviousDesiredRot=CameraBoom->GetTargetRotation();
-    SetSprinting(false);
-    Vitality->Restore();
-    ++RecoveryCount;
 }
 void AWindseedCharacter::RestartTrail()
 {
