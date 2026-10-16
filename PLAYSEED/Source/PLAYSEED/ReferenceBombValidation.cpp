@@ -91,7 +91,8 @@ void UReferencePaintingTestSubsystem::UpdateReferenceBombs(float DeltaSeconds,AW
             {Finish(false,TEXT("Real held fuse expiry must cause exactly two damage, knockback and one gold"));return;}
             bBombFuseChecked=true;Photo(TEXT("ThunderBombExplosion.png"));Begin(198);return;
         }
-        if(!Bomb->IsHeldBy(Hero)){if(Elapsed<.5f)return;Finish(false,TEXT("Real held bomb disappeared before its fuse expired"));return;}
+        // 導火線が切れると通常のDropをして5/30秒だけ膨らみます。その実遷移も待ちます。
+        if(!Bomb->IsHeldBy(Hero)){if(Elapsed<.5f||(Bomb->GetFuseAge()>5&&Elapsed<7))return;Finish(false,TEXT("Real held bomb disappeared before its fuse expired"));return;}
         if(Elapsed>2&&!bBombHeldPhoto){bBombHeldPhoto=true;Photo(TEXT("ThunderBombFuseLit.png"));}
         if(Elapsed>7)Finish(false,TEXT("Real five-second fuse did not expire"));return;
     }
