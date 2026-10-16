@@ -27,5 +27,6 @@ private:
     float Elapsed=0,LegElapsed=0,JumpTime=0;
     float JumpStartZ=0,JumpPeak=0,JumpObservationTime=0;
     bool bFlatJumpStarted=false,bFlatJumpAirborne=false,bFlatJumpFinished=false;
+    bool bRouteJumpIssued=false;
     bool bEnabled=false,bFinished=false,bRecording=false;
 };

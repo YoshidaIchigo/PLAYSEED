@@ -1,5 +1,6 @@
 #include "ReferenceCourseTestSubsystem.h"
 #include "ReferenceBattlefieldTerrain.h"
+#include "ReferenceSummitWalk.h"
 #include "PlayseedRecordingSubsystem.h"
 #include "ThunderExpeditionSubsystem.h"
 #include "WindseedCharacter.h"
@@ -44,7 +45,7 @@ void UReferenceCourseTestSubsystem::Tick(float DeltaSeconds)
     if(!GetWorld() || !GetWorld()->IsGameWorld())return;
     auto* PC=UGameplayStatics::GetPlayerController(GetWorld(),0);if(!PC)return;
     Elapsed+=DeltaSeconds;
-    if(Elapsed>240){Finish(false,TEXT("Reference terrain route timed out"));return;}
+    if(Elapsed>420){Finish(false,TEXT("Reference terrain route timed out"));return;}
     const FString Map=UGameplayStatics::GetCurrentLevelName(GetWorld(),true);
     auto* Progress=GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
     if(Phase==0)
@@ -65,7 +66,8 @@ void UReferenceCourseTestSubsystem::Tick(float DeltaSeconds)
         if(!Terrain || !Player || Elapsed<1)return;
         if(FVector::Dist2D(Player->GetActorLocation(),FVector(-6558,-6464,0))>30){Finish(false,TEXT("Reference spawn is not at the documented start"));return;}
         RecoveryBaseline=Player->RecoveryCount;
-        Route={FVector(-6400,-6900,0),FVector(-5700,-6900,0),FVector(-5000,-6900,0),FVector(-4300,-6200,0),FVector(-4004,-5221,0),FVector(-3500,-5800,0),FVector(-2220,-5520,204),FVector(-2020,-5820,204),FVector(760,-5680,765),FVector(1920,-5040,768),FVector(2000,-4360,768),FVector(1240,-3600,768),FVector(-280,-2720,768),FVector(-1680,-1840,768),FVector(-2280,-1800,0),FVector(-2720,-1120,0),FVector(-2520,-480,0),FVector(-1720,-120,0),FVector(560,840,630),FVector(2700,1500,1571),FVector(4520,2600,1830),FVector(6240,3500,1943),FVector(6380,6180,2066),FVector(4000,7720,2390),FVector(-120,5515,2608),FVector(-180,4860,2641),FVector(580,3380,2769),FVector(1670,2580,2867),FVector(2216,2126,2900),FVector(3167,1870,2965),FVector(4069,2487,3050),FVector(4880,3416,3037),FVector(5020,5760,3181),FVector(4660,6300,3354),FVector(3940,6800,3514),FVector(3200,6850,3619),FVector(1290,5793,3768),FVector(1150,3670,3900),FVector(2980,2930,4046),FVector(4334,3680,4186),FVector(4180,4220,4242),FVector(3660,4380,4242),FVector(2800,5200,4293)};
+        Route.Reset();for(const auto& Point:ReferenceSummitWalk)Route.Add(FVector(Point.X,Point.Y,Point.Z));
+        bFlatJumpStarted=true;JumpStartZ=Player->GetActorLocation().Z;Player->Jump();JumpTime=.14f;
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderReferenceStart.png"),false,false);
         Phase=2;Elapsed=0;return;
     }
@@ -91,19 +93,25 @@ void UReferenceCourseTestSubsystem::Tick(float DeltaSeconds)
             Phase=3;Elapsed=0;return;
         }
         const FVector Target=Route[Waypoint];const FVector Delta=Target-Player->GetActorLocation();LegElapsed+=DeltaSeconds;
-        if(Waypoint==1 && LegElapsed>.5f && !bFlatJumpStarted && Movement->IsMovingOnGround())
-        {bFlatJumpStarted=true;JumpStartZ=Player->GetActorLocation().Z;Player->Jump();JumpTime=.14f;}
         if(LegElapsed>18){Finish(false,FString::Printf(TEXT("Ordinary terrain walking blocked at waypoint %d: %s target %s"),Waypoint,*Player->GetActorLocation().ToString(),*Target.ToString()));return;}
-        if(Delta.Size2D()<65)
+        if(Delta.Size2D()<25 && FMath::Abs(Player->GetActorLocation().Z-82-Target.Z)<80)
         {
             UE_LOG(LogTemp,Display,TEXT("REFERENCE WALK %d feet %s"),Waypoint,*(Player->GetActorLocation()-FVector(0,0,82)).ToString());
-            if(Waypoint==8 || Waypoint==19)FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/(Waypoint==8?TEXT("Validation/ThunderReferenceBridge.png"):TEXT("Validation/ThunderReferenceMountain.png")),false,false);
-            ++Waypoint;LegElapsed=0;return;
+            if(ReferenceSummitWalk[Waypoint].Milestone>0)FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/(ReferenceSummitWalk[Waypoint].Milestone==1?TEXT("Validation/ThunderReferenceBridge.png"):TEXT("Validation/ThunderReferenceMountain.png")),false,false);
+            ++Waypoint;LegElapsed=0;bRouteJumpIssued=false;return;
         }
         PC->SetControlRotation(FMath::RInterpTo(PC->GetControlRotation(),FRotator(-18,Delta.Rotation().Yaw,0),DeltaSeconds,4));
-        Player->AddMovementInput(Delta.GetSafeNormal2D(),FMath::Clamp(Delta.Size2D()/140,.25f,1.f));
+        if(Movement->IsFalling())
+        {
+            const FVector Desired=(Delta.GetSafeNormal2D()*Delta.Size2D()*4.5f).GetClampedToMaxSize2D(470);
+            const FVector Correction=Desired-FVector(Player->GetVelocity().X,Player->GetVelocity().Y,0);
+            Player->AddMovementInput(Correction.GetSafeNormal2D(),FMath::Clamp(Correction.Size2D()/150,0.f,1.f));
+        }
+        else Player->AddMovementInput(Delta.GetSafeNormal2D(),FMath::Clamp(Delta.Size2D()/140,.25f,1.f));
         // 目標足場が高く近い時だけ通常Jumpを使います。加速・座標・速度を直接設定しません。
         const float Feet=Player->GetActorLocation().Z-82;
+        if(ReferenceSummitWalk[Waypoint].bJump && !bRouteJumpIssued && Movement->IsMovingOnGround())
+        {Player->Jump();JumpTime=.14f;bRouteJumpIssued=true;UE_LOG(LogTemp,Display,TEXT("REFERENCE WALK: ordinary jump across real mountain path gap"));}
         if(Movement->IsMovingOnGround() && JumpTime<=0 && Delta.Size2D()<450 && Target.Z>Feet+70){Player->Jump();JumpTime=.14f;}
         return;
     }
