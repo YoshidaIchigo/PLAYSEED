@@ -94,8 +94,8 @@ void AReferenceHero::BeginPlay()
         for(int32 Slot=0;Slot<Parts[I]->GetNumMaterials();++Slot)Parts[I]->SetMaterial(Slot,Tint);
     }
     if(auto* Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Battlefield/M_Shadow.M_Shadow")))Shadow->SetMaterial(0,Material);
-    for(auto* Finger:VictoryFingers)Finger->SetVisibility(false);
-    for(auto* Feather:CapFeathers)Feather->SetVisibility(false);
+    for(UStaticMeshComponent* Finger:VictoryFingers)Finger->SetVisibility(false);
+    for(UStaticMeshComponent* Feather:CapFeathers)Feather->SetVisibility(false);
 }
 
 void AReferenceHero::Tick(float DeltaSeconds)
@@ -117,8 +117,8 @@ void AReferenceHero::Tick(float DeltaSeconds)
     Visual->SetRelativeScale3D(bPounding?FVector(1.15f,1.15f,.7f):FVector::OneVector);
     Visual->SetRelativeLocation(FVector(0,0,bStarPose?0:FMath::Sin(Time*12)*FMath::Min(Speed/180,3.f)));
     Visual->SetRelativeRotation(bClimbing?FRotator(-12,0,0):FRotator::ZeroRotator);
-    for(auto* Finger:VictoryFingers)Finger->SetVisibility(bStarPose);
-    for(auto* Feather:CapFeathers)Feather->SetVisibility(GetFlight()->HasPower());
+    for(UStaticMeshComponent* Finger:VictoryFingers)Finger->SetVisibility(bStarPose);
+    for(UStaticMeshComponent* Feather:CapFeathers)Feather->SetVisibility(GetFlight()->HasPower());
     // 足元へ影だけを投影します。読み取った床の位置でプレイヤーを動かすことはありません。
     FHitResult Floor;FCollisionQueryParams Params(SCENE_QUERY_STAT(ReferenceHeroShadow),true,this);
     const bool bFloor=GetWorld()->LineTraceSingleByChannel(Floor,GetActorLocation()+FVector(0,0,40),GetActorLocation()-FVector(0,0,2500),ECC_Visibility,Params) && Floor.ImpactNormal.Z>.5f;
