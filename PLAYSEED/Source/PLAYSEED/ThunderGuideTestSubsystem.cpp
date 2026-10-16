@@ -1,4 +1,5 @@
 #include "ThunderGuideTestSubsystem.h"
+#include "ThunderCampaignValidation.h"
 #include "ThunderGuide.h"
 #include "ThunderLauncher.h"
 #include "ThunderMeadowStage.h"
@@ -27,8 +28,9 @@ void UThunderGuideTestSubsystem::BeginTest(AWindseedCharacter* Player, AThunderM
     Stage = InStage; bReadProcess = bRestoredProcess;
     Phase = Waypoint = 0; PhaseTime = 0; Error.Reset(); RecoveryBefore = Player->RecoveryCount;
     auto* Progress = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
-    if (!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_")) || !Progress->GetProgressProblem().IsEmpty() || Progress->GetEarnedRewardCount() != 0 || Progress->IsLauncherUnlocked() != bReadProcess || UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(), 0) != bReadProcess)
-    { Error = TEXT("Guide test requires a healthy isolated fresh/read save with zero quest rewards"); return; }
+    ExpectedRewards = ThunderCampaignEnabled() ? Progress->GetEarnedRewardCount() : 0;
+    if (!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_")) || !Progress->GetProgressProblem().IsEmpty() || Progress->GetEarnedRewardCount() != ExpectedRewards || Progress->IsLauncherUnlocked() != bReadProcess || (!ThunderCampaignEnabled() && UGameplayStatics::DoesSaveGameExist(Progress->GetSaveSlotName(), 0) != bReadProcess))
+    { Error = TEXT("Guide test requires a healthy isolated fresh/read save with unchanged quest rewards"); return; }
     GuideTap(Cast<APlayerController>(Player->GetController()), EKeys::G);
 }
 bool UThunderGuideTestSubsystem::Walk(AWindseedCharacter* Player, FVector Goal, float DeltaSeconds)
@@ -48,7 +50,7 @@ bool UThunderGuideTestSubsystem::UpdateTest(AWindseedCharacter* Player, float De
     if (!Stage.IsValid() || !PC) { Error = TEXT("Guide stage/controller missing"); return false; }
     PhaseTime += DeltaSeconds;
     if (PhaseTime > 50) { Error = FString::Printf(TEXT("Guide phase %d waypoint %d timed out at %s"), Phase, Waypoint, *Player->GetActorLocation().ToString()); return false; }
-    if (Player->GetVitality()->GetHealth() != 8 || Progress->GetEarnedRewardCount() != 0 || !Progress->GetProgressProblem().IsEmpty()) { Error = TEXT("Guide route changed health/rewards or could not save"); return false; }
+    if (Player->GetVitality()->GetHealth() != 8 || Progress->GetEarnedRewardCount() != ExpectedRewards || !Progress->GetProgressProblem().IsEmpty()) { Error = TEXT("Guide route changed health/rewards or could not save"); return false; }
     if (Phase == 0 && PhaseTime > .4f)
     {
         if (!Player->GetInteraction()->GetMessage().IsEmpty() || Progress->IsLauncherUnlocked() != bReadProcess) { Error = TEXT("G interacted with a distant actor"); return false; }
@@ -92,7 +94,7 @@ bool UThunderGuideTestSubsystem::UpdateTest(AWindseedCharacter* Player, float De
     else if (Phase == 7 && PhaseTime > .4f)
     {
         if (!Progress->IsLauncherUnlocked() || !Stage->GetLauncher()->IsOpen() || Stage->GetGuide()->IsAwaitingConfirmation() || !Player->GetInteraction()->GetMessage().IsEmpty() || Player->RecoveryCount != RecoveryBefore + 1) { Error = TEXT("R did not retain saved unlock and reset temporary dialogue"); return false; }
-        UE_LOG(LogTemp, Display, TEXT("GUIDE TEST PASS: %s isolated slot %s; normal walking, distant interaction rejection, actual G/D-pad dialogue, idempotence, launcher visual and R persistence with zero quest rewards passed."), bReadProcess ? TEXT("loaded after process restart") : TEXT("unlocked through dialogue into a fresh"), *Progress->GetSaveSlotName());
+        UE_LOG(LogTemp, Display, TEXT("GUIDE TEST PASS: %s isolated slot %s; normal walking, distant interaction rejection, actual G/D-pad dialogue, idempotence, launcher visual and R persistence with unchanged quest rewards passed."), bReadProcess ? TEXT("loaded after process restart") : TEXT("unlocked through dialogue into a fresh"), *Progress->GetSaveSlotName());
         return true;
     }
     return false;

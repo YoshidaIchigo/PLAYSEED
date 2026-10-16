@@ -21,9 +21,9 @@ void UThunderSkyCacheTestSubsystem::BeginTest(AWindseedCharacter* Player, AThund
 {
     Stage = InStage; Error.Reset(); RecoveryBefore = Player->RecoveryCount; LaunchBefore = Player->GetLaunch()->GetLaunchCount(); HighestFeet = 0;
     auto* Progress = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
-    if (!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_")) || !Progress->GetProgressProblem().IsEmpty() || Progress->GetEarnedRewardCount() != (bReadProcess ? 1 : 0) || Progress->HasEarnedReward(3) != bReadProcess) { Error = TEXT("Sky cache requires isolated expected actual reward 3 state"); return; }
+    if (!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_")) || !Progress->GetProgressProblem().IsEmpty() || !RewardBaseline.Begin(Progress, 3, bReadProcess) || Progress->HasEarnedReward(3) != bReadProcess) { Error = TEXT("Sky cache requires isolated expected actual reward 3 state"); return; }
     if (bReadProcess) { SetPhase(20); return; }
-    GetGameInstance()->GetSubsystem<UThunderGuideTestSubsystem>()->BeginTest(Player, InStage, false); SetPhase(0);
+    GetGameInstance()->GetSubsystem<UThunderGuideTestSubsystem>()->BeginTest(Player, InStage, Progress->IsLauncherUnlocked()); SetPhase(0);
 }
 bool UThunderSkyCacheTestSubsystem::Walk(AWindseedCharacter* Player, FVector Goal, float DeltaSeconds)
 {
@@ -38,11 +38,12 @@ bool UThunderSkyCacheTestSubsystem::UpdateTest(AWindseedCharacter* Player, float
     auto* Box = Stage.IsValid() ? Stage->GetSkyCache() : nullptr; auto* PC = Cast<APlayerController>(Player->GetController());
     auto* Progress = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>(); auto* Move = Player->GetCharacterMovement();
     if (!Box || !PC) { Error = TEXT("Sky cache stage/controller missing"); return false; }
+    if (!RewardBaseline.HasPrior(Progress)) { Error = TEXT("A previously earned campaign reward was lost"); return false; }
     PhaseTime += DeltaSeconds;
     if (PhaseTime > 60) { Error = FString::Printf(TEXT("Sky cache phase %d waypoint %d timed out at %s"), Phase, Waypoint, *Player->GetActorLocation().ToString()); return false; }
     if (Player->GetVitality()->GetHealth() != 8 || !Progress->GetProgressProblem().IsEmpty()) { Error = TEXT("Sky route took damage or save failed"); return false; }
     if (Phase != 0 && Phase != 11 && Phase != 21 && Player->RecoveryCount != RecoveryBefore) { Error = TEXT("Unexpected recovery on actual ground-to-island route"); return false; }
-    if (Phase < 8 && Progress->GetEarnedRewardCount() != 0) { Error = TEXT("Sky reward awarded before actual box pickup"); return false; }
+    if (Phase < 8 && Progress->GetEarnedRewardCount() != RewardBaseline.BeforeCount()) { Error = TEXT("Sky reward awarded before actual box pickup"); return false; }
     if (Phase == 0)
     {
         auto* Guide = GetGameInstance()->GetSubsystem<UThunderGuideTestSubsystem>(); const bool bDone = Guide->UpdateTest(Player, DeltaSeconds);
@@ -76,12 +77,12 @@ bool UThunderSkyCacheTestSubsystem::UpdateTest(AWindseedCharacter* Player, float
     }
     else if (Phase == 6 && PhaseTime > .4f)
     {
-        if (!Box->IsBroken() || Box->GetRewardGenerationCount() != 1 || !Box->GetReward() || Progress->GetEarnedRewardCount() != 0 || !Box->GetDropCoins().IsEmpty()) { Error = TEXT("Actual island strike did not create one uncollected reward 3 without coins"); return false; }
+        if (!Box->IsBroken() || Box->GetRewardGenerationCount() != 1 || !Box->GetReward() || Progress->GetEarnedRewardCount() != RewardBaseline.BeforeCount() || !Box->GetDropCoins().IsEmpty()) { Error = TEXT("Actual island strike did not create one uncollected reward 3 without coins"); return false; }
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir() / TEXT("Validation/ThunderSkyCacheOpen.png"), false, false); SkyCacheTap(PC, EKeys::LeftMouseButton); SetPhase(7);
     }
     else if (Phase == 7 && PhaseTime > .4f)
     {
-        if (Box->GetRewardGenerationCount() != 1 || Progress->GetEarnedRewardCount() != 0) { Error = TEXT("Repeated strike duplicated sky lantern"); return false; } SetPhase(8);
+        if (Box->GetRewardGenerationCount() != 1 || Progress->GetEarnedRewardCount() != RewardBaseline.BeforeCount()) { Error = TEXT("Repeated strike duplicated sky lantern"); return false; } SetPhase(8);
     }
     else if (Phase == 8)
     {
@@ -89,23 +90,23 @@ bool UThunderSkyCacheTestSubsystem::UpdateTest(AWindseedCharacter* Player, float
     }
     else if (Phase == 9 && PhaseTime > .4f)
     {
-        if (!Progress->HasEarnedReward(3) || Progress->GetEarnedRewardCount() != 1 || !Box->GetReward()->IsCollected() || Box->GetReward()->GetSuccessfulCollections() != 1) { Error = TEXT("Actual sky lantern contact did not save reward 3 once"); return false; }
+        if (!Progress->HasEarnedReward(3) || Progress->GetEarnedRewardCount() != RewardBaseline.AfterCount() || !Box->GetReward()->IsCollected() || Box->GetReward()->GetSuccessfulCollections() != 1) { Error = TEXT("Actual sky lantern contact did not save reward 3 once"); return false; }
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir() / TEXT("Validation/ThunderSkyCacheReward.png"), false, false); SetPhase(10);
     }
     else if (Phase == 10 && PhaseTime > .5f) { SkyCacheTap(PC, EKeys::R); SetPhase(11); }
     else if (Phase == 11 && PhaseTime > .4f)
     {
-        if (Player->RecoveryCount != RecoveryBefore + 1 || Box->IsBroken() || Box->GetReward() || !Progress->HasEarnedReward(3) || Progress->GetEarnedRewardCount() != 1 || Player->GetLaunch()->IsAiming()) { Error = TEXT("R did not restore box/ground player and preserve reward 3"); return false; }
+        if (Player->RecoveryCount != RecoveryBefore + 1 || Box->IsBroken() || Box->GetReward() || !Progress->HasEarnedReward(3) || Progress->GetEarnedRewardCount() != RewardBaseline.AfterCount() || Player->GetLaunch()->IsAiming()) { Error = TEXT("R did not restore box/ground player and preserve reward 3"); return false; }
         UE_LOG(LogTemp, Display, TEXT("SKY CACHE TEST PASS: actual guide, ground walk, real launch arc, island floor landing, normal strike, one lantern3, repeated strike rejection, actual pickup and R persistence.")); return true;
     }
     else if (Phase == 20 && PhaseTime > 1)
     {
-        if (Progress->GetEarnedRewardCount() != 1 || !Progress->HasEarnedReward(3) || Box->IsBroken() || Box->GetReward()) { Error = TEXT("Restart did not load actual sky reward 3 with fresh box"); return false; }
+        if (Progress->GetEarnedRewardCount() != RewardBaseline.AfterCount() || !Progress->HasEarnedReward(3) || Box->IsBroken() || Box->GetReward()) { Error = TEXT("Restart did not load actual sky reward 3 with fresh box"); return false; }
         SkyCacheTap(PC, EKeys::R); SetPhase(21);
     }
     else if (Phase == 21 && PhaseTime > .4f)
     {
-        if (Player->RecoveryCount != RecoveryBefore + 1 || Progress->GetEarnedRewardCount() != 1 || !Progress->HasEarnedReward(3)) { Error = TEXT("Restarted sky reward lost on R"); return false; }
+        if (Player->RecoveryCount != RecoveryBefore + 1 || Progress->GetEarnedRewardCount() != RewardBaseline.AfterCount() || !Progress->HasEarnedReward(3)) { Error = TEXT("Restarted sky reward lost on R"); return false; }
         UE_LOG(LogTemp, Display, TEXT("SKY CACHE READ TEST PASS: separate process restored actually earned reward 3 and R retained it; no fixtures.")); return true;
     }
     return false;

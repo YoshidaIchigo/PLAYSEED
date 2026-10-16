@@ -28,7 +28,7 @@ void AThunderMissionSelectionHUD::DrawHUD()
         Text(UThunderExpeditionSubsystem::GetMissionGoal(Number), Y + 29, .95f, FLinearColor::White);
     }
     Text(Expedition->HasEarnedReward(7) ? TEXT("Bonus lantern: 100 lightcoins  [earned]") : TEXT("Bonus lantern: gather 100 lightcoins during one visit."), 590, 1.2f, FLinearColor(.7f, 1, .8f));
-    Text(TEXT("Press 1-6 to enter. M: stage selection. New expedition under construction."), 645, 1.15f, FLinearColor::White);
+    Text(TEXT("Press 1-6 to enter. M: stage selection. Seven lanterns to discover."), 645, 1.15f, FLinearColor::White);
     if (!Expedition->GetProgressProblem().IsEmpty()) Text(Expedition->GetProgressProblem(), 683, .9f, FLinearColor(1, .5f, .4f));
 }
 

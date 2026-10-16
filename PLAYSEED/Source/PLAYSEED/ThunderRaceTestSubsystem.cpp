@@ -23,7 +23,7 @@ void UThunderRaceTestSubsystem::BeginTest(AWindseedCharacter* Player, AThunderMe
 {
     Stage = InStage; Error.Reset(); RecoveryBefore = Player->RecoveryCount; LaunchBefore = Player->GetLaunch()->GetLaunchCount(); bWinningAttempt = false;
     auto* Progress = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
-    if (!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_")) || !Progress->GetProgressProblem().IsEmpty() || Progress->GetEarnedRewardCount() != (bReadProcess ? 1 : 0) || Progress->HasEarnedReward(2) != bReadProcess) { Error = TEXT("Race test requires isolated expected actual reward 2 state"); return; }
+    if (!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_")) || !Progress->GetProgressProblem().IsEmpty() || !RewardBaseline.Begin(Progress, 2, bReadProcess) || Progress->HasEarnedReward(2) != bReadProcess) { Error = TEXT("Race test requires isolated expected actual reward 2 state"); return; }
     if (bReadProcess) { SetPhase(30); return; }
     GetGameInstance()->GetSubsystem<UThunderGuideTestSubsystem>()->BeginTest(Player, InStage, false); SetPhase(0);
 }
@@ -54,11 +54,12 @@ bool UThunderRaceTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
     auto* Race = Stage.IsValid() ? Stage->GetCloudflagRace() : nullptr; auto* PC = Cast<APlayerController>(Player->GetController());
     auto* Progress = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
     if (!Race || !PC) { Error = TEXT("Race stage/controller missing"); return false; }
+    if (!RewardBaseline.HasPrior(Progress)) { Error = TEXT("A previously earned campaign reward was lost"); return false; }
     PhaseTime += DeltaSeconds;
     if (PhaseTime > 90) { Error = FString::Printf(TEXT("Race phase %d waypoint %d timed out at %s, state %d time %.1f"), Phase, Waypoint, *Player->GetActorLocation().ToString(), static_cast<int32>(Race->GetRaceState()), Race->GetElapsed()); return false; }
     if (!Progress->GetProgressProblem().IsEmpty()) { Error = TEXT("Race progress save failed"); return false; }
     if (Phase != 0 && Phase != 8 && Phase != 15 && Phase != 24 && Phase != 31 && Player->RecoveryCount != RecoveryBefore) { Error = TEXT("Unexpected recovery during actual race"); return false; }
-    if (Phase < 22 && Progress->GetEarnedRewardCount() != 0) { Error = TEXT("Race reward awarded before real winning pickup"); return false; }
+    if (Phase < 22 && Progress->GetEarnedRewardCount() != RewardBaseline.BeforeCount()) { Error = TEXT("Race reward awarded before real winning pickup"); return false; }
     if (Phase == 0)
     {
         auto* Guide = GetGameInstance()->GetSubsystem<UThunderGuideTestSubsystem>(); const bool bDone = Guide->UpdateTest(Player, DeltaSeconds);
@@ -95,7 +96,7 @@ bool UThunderRaceTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
     }
     else if (Phase == 6 && PhaseTime > .4f)
     {
-        if (Race->GetReward() || Progress->GetEarnedRewardCount() != 0) { Error = TEXT("Lost race granted a lantern through dialogue"); return false; }
+        if (Race->GetReward() || Progress->GetEarnedRewardCount() != RewardBaseline.BeforeCount()) { Error = TEXT("Lost race granted a lantern through dialogue"); return false; }
         RaceTap(PC, EKeys::R); SetPhase(8);
     }
     else if (Phase == 8 && PhaseTime > .4f)
@@ -149,7 +150,7 @@ bool UThunderRaceTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
     }
     else if (Phase == 21 && PhaseTime > .4f)
     {
-        if (!Race->GetReward() || Progress->GetEarnedRewardCount() != 0) { Error = TEXT("Winning dialogue did not produce an uncollected lantern"); return false; }
+        if (!Race->GetReward() || Progress->GetEarnedRewardCount() != RewardBaseline.BeforeCount()) { Error = TEXT("Winning dialogue did not produce an uncollected lantern"); return false; }
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir() / TEXT("Validation/ThunderRaceWon.png"), false, false); SetPhase(22);
     }
     else if (Phase == 22)
@@ -158,23 +159,23 @@ bool UThunderRaceTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
     }
     else if (Phase == 23 && PhaseTime > .4f)
     {
-        if (!Progress->HasEarnedReward(2) || Progress->GetEarnedRewardCount() != 1 || !Race->GetReward()->IsCollected() || Race->GetReward()->GetSuccessfulCollections() != 1) { Error = TEXT("Real race lantern pickup did not save reward 2 once"); return false; }
+        if (!Progress->HasEarnedReward(2) || Progress->GetEarnedRewardCount() != RewardBaseline.AfterCount() || !Race->GetReward()->IsCollected() || Race->GetReward()->GetSuccessfulCollections() != 1) { Error = TEXT("Real race lantern pickup did not save reward 2 once"); return false; }
         RaceTap(PC, EKeys::G); SetPhase(25);
     }
-    else if (Phase == 25 && PhaseTime > .4f) { if (Race->GetReward()->GetSuccessfulCollections() != 1 || Progress->GetEarnedRewardCount() != 1) { Error = TEXT("Repeat winner dialogue duplicated reward"); return false; } RaceTap(PC, EKeys::R); SetPhase(24); }
+    else if (Phase == 25 && PhaseTime > .4f) { if (Race->GetReward()->GetSuccessfulCollections() != 1 || Progress->GetEarnedRewardCount() != RewardBaseline.AfterCount()) { Error = TEXT("Repeat winner dialogue duplicated reward"); return false; } RaceTap(PC, EKeys::R); SetPhase(24); }
     else if (Phase == 24 && PhaseTime > .4f)
     {
-        if (Player->RecoveryCount != RecoveryBefore + 1 || Race->GetRaceState() != ECloudflagRaceState::Idle || Race->GetReward() || !Progress->HasEarnedReward(2) || Progress->GetEarnedRewardCount() != 1) { Error = TEXT("R did not reset race and retain earned reward 2"); return false; }
+        if (Player->RecoveryCount != RecoveryBefore + 1 || Race->GetRaceState() != ECloudflagRaceState::Idle || Race->GetReward() || !Progress->HasEarnedReward(2) || Progress->GetEarnedRewardCount() != RewardBaseline.AfterCount()) { Error = TEXT("R did not reset race and retain earned reward 2"); return false; }
         UE_LOG(LogTemp, Display, TEXT("RACE TEST PASS: real guide unlock, dialogue starts, actual late loss, retry, aim eligible, actual cannon disqualification, allowed cave warp, early flag wait, rival arrival, winner dialogue, actual reward 2, duplicate and R persistence.")); return true;
     }
     else if (Phase == 30 && PhaseTime > 1)
     {
-        if (Progress->GetEarnedRewardCount() != 1 || !Progress->HasEarnedReward(2) || Race->GetRaceState() != ECloudflagRaceState::Idle || Race->GetReward()) { Error = TEXT("Restart did not restore actual race reward 2"); return false; }
+        if (Progress->GetEarnedRewardCount() != RewardBaseline.AfterCount() || !Progress->HasEarnedReward(2) || Race->GetRaceState() != ECloudflagRaceState::Idle || Race->GetReward()) { Error = TEXT("Restart did not restore actual race reward 2"); return false; }
         RaceTap(PC, EKeys::R); SetPhase(31);
     }
     else if (Phase == 31 && PhaseTime > .4f)
     {
-        if (Progress->GetEarnedRewardCount() != 1 || !Progress->HasEarnedReward(2) || Player->RecoveryCount != RecoveryBefore + 1) { Error = TEXT("Restart-loaded race reward lost on R"); return false; }
+        if (Progress->GetEarnedRewardCount() != RewardBaseline.AfterCount() || !Progress->HasEarnedReward(2) || Player->RecoveryCount != RecoveryBefore + 1) { Error = TEXT("Restart-loaded race reward lost on R"); return false; }
         UE_LOG(LogTemp, Display, TEXT("RACE READ TEST PASS: separate process loaded actually earned reward 2, R retained it; no fixtures.")); return true;
     }
     return false;

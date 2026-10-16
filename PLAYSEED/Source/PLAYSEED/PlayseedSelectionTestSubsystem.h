@@ -19,6 +19,7 @@ public:
 private:
     void Fail(const FString& Message);
     void RunProgressTestOnce();
+    int32 CampaignIndex = 0;
     int32 Step = 0;
     float Elapsed = 0;
     int32 TrailRecoveryBeforeReset = 0;

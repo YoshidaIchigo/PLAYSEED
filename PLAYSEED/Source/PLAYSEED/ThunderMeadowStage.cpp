@@ -26,6 +26,7 @@
 #include "ThunderBoundSentinel.h"
 #include "ThunderBindingPost.h"
 #include "ThunderPrisonGate.h"
+#include "ThunderHundredLantern.h"
 #include "ThunderExpeditionSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Camera/PlayerCameraManager.h"
@@ -252,6 +253,7 @@ void AThunderMeadowStage::ResetMechanisms()
     if (BoundSentinel) BoundSentinel->ResetSentinel();
     if (BindingPost) BindingPost->ResetPost();
     if (PrisonGate) PrisonGate->ResetGate();
+    if (HundredLantern) HundredLantern->ResetBonus();
 }
 
 void AThunderMeadowStage::BuildWarpCaves()
@@ -495,6 +497,7 @@ void AThunderMeadowStage::BeginPlay()
     BuildScarletTrail();
     BuildSkyChimes();
     BuildBoundSentinel();
+    HundredLantern = GetWorld()->SpawnActor<AThunderHundredLantern>();
     BuildLighting();
 }
 

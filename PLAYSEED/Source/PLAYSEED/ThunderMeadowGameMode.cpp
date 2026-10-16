@@ -12,6 +12,8 @@
 #include "ThunderSkyChimes.h"
 #include "ThunderBindingPost.h"
 #include "ThunderPrisonGate.h"
+#include "ThunderHundredLantern.h"
+#include "PlayseedLantern.h"
 #include "Engine/World.h"
 #include "ThunderExpeditionSubsystem.h"
 #include "Engine/GameInstance.h"
@@ -80,6 +82,8 @@ void AThunderMeadowHUD::DrawHUD()
     if (Mission == 6)
         if (const auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(this, AThunderMeadowStage::StaticClass())); Meadow && Meadow->GetBindingPost())
             DrawText(FString::Printf(TEXT("BINDING POST %d / 3%s"), Meadow->GetBindingPost()->GetPoundCount(), Meadow->GetPrisonGate() && Meadow->GetPrisonGate()->IsBroken() ? TEXT("  GATE OPEN") : TEXT("")), FLinearColor(1, .85f, .5f), 30, 252, GEngine->GetMediumFont(), 1.1f);
+    if (const auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(this, AThunderMeadowStage::StaticClass())); Meadow && Meadow->GetHundredLantern() && Meadow->GetHundredLantern()->GetReward() && !Meadow->GetHundredLantern()->GetReward()->IsCollected())
+        DrawText(TEXT("HUNDRED LANTERN READY - claim its light"), FLinearColor(1, .9f, .4f), 30, 290, GEngine->GetMediumFont(), 1.f);
     if (Mission == 5)
         if (const auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(this, AThunderMeadowStage::StaticClass())); Meadow && Meadow->GetSkyChimes())
             DrawText(FString::Printf(TEXT("CENTRE CHIMES  %d / 5"), Meadow->GetSkyChimes()->GetCollectedCount()), FLinearColor(1, .85f, .5f), 30, 252, GEngine->GetMediumFont(), 1.1f);

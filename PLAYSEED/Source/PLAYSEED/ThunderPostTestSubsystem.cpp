@@ -20,7 +20,7 @@ void UThunderPostTestSubsystem::BeginTest(AWindseedCharacter* Player, AThunderMe
 {
     Stage = InStage; Error.Reset(); Round = 0; RecoveryBaseline = Player->RecoveryCount; BreakBaseline = Stage->GetPrisonGate()->GetBreakCount(); ContactBaseline = Stage->GetBoundSentinel()->GetConfirmedHits();
     auto* Progress = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
-    if (!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_")) || !Progress->GetProgressProblem().IsEmpty() || Progress->GetEarnedRewardCount() != (bReadProcess ? 1 : 0) || Progress->HasEarnedReward(6) != bReadProcess) { Error = TEXT("Post test needs isolated expected actual reward6 state"); return; }
+    if (!Progress->GetSaveSlotName().StartsWith(TEXT("Validation_")) || !Progress->GetProgressProblem().IsEmpty() || !RewardBaseline.Begin(Progress, 6, bReadProcess) || Progress->HasEarnedReward(6) != bReadProcess) { Error = TEXT("Post test needs isolated expected actual reward6 state"); return; }
     Next(bReadProcess ? 20 : 0);
 }
 bool UThunderPostTestSubsystem::Walk(AWindseedCharacter* Player, FVector Goal, float DeltaSeconds)
@@ -61,6 +61,7 @@ bool UThunderPostTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
     auto* Post = Stage.IsValid() ? Stage->GetBindingPost() : nullptr; auto* Gate = Stage.IsValid() ? Stage->GetPrisonGate() : nullptr; auto* Enemy = Stage.IsValid() ? Stage->GetBoundSentinel() : nullptr;
     auto* PC = Cast<APlayerController>(Player->GetController()); auto* Progress = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
     if (!Post || !Gate || !Enemy || !PC) { Error = TEXT("Post/gate/sentinel/controller missing"); return false; }
+    if (!RewardBaseline.HasPrior(Progress)) { Error = TEXT("A previously earned campaign reward was lost"); return false; }
     PhaseTime += DeltaSeconds;
     if (PhaseTime > 45) { Error = FString::Printf(TEXT("Post phase %d round %d timed out hero %s enemy %s pounds%d"), Phase, Round, *Player->GetActorLocation().ToString(), *Enemy->GetActorLocation().ToString(), Post->GetPoundCount()); return false; }
     // 通常着地の負例では、無防備な静止に番獣が接触する場合も実観測してからRへ進みます。
@@ -75,7 +76,7 @@ bool UThunderPostTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
         UE_LOG(LogTemp, Display, TEXT("POST TEST: actual post floor landing excluded, observed health%d actual enemy contacts%d; R before positive pound route."), Player->GetVitality()->GetHealth(), Enemy->GetConfirmedHits() - ContactBaseline);
         Player->StopJumping(); PostTap(PC, EKeys::R); Next(4); return false;
     }
-    if (Phase < 8 && Progress->GetEarnedRewardCount() != 0) { Error = TEXT("Reward6 was saved before walking to actual lantern"); return false; }
+    if (Phase < 8 && Progress->GetEarnedRewardCount() != RewardBaseline.BeforeCount()) { Error = TEXT("Reward6 was saved before walking to actual lantern"); return false; }
     if (Phase == 0) { if (Approach(Player, DeltaSeconds)) Next(1); }
     else if (Phase == 1) { if (Enemy->IsRecovering()) Next(2); }
     else if (Phase == 2)
@@ -122,13 +123,13 @@ bool UThunderPostTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
     else if (Phase == 8) { Walk(Player, Gate->GetRewardLocation() - FVector(0, 0, 18), DeltaSeconds); if (Progress->HasEarnedReward(6)) Next(9); }
     else if (Phase == 9 && PhaseTime > .5f)
     {
-        if (Progress->GetEarnedRewardCount() != 1 || !Gate->GetReward() || !Gate->GetReward()->IsCollected() || Gate->GetBreakCount() != BreakBaseline + 1) { Error = TEXT("Walking through actually broken gate did not save only reward6 once"); return false; }
+        if (Progress->GetEarnedRewardCount() != RewardBaseline.AfterCount() || !Gate->GetReward() || !Gate->GetReward()->IsCollected() || Gate->GetBreakCount() != BreakBaseline + 1) { Error = TEXT("Walking through actually broken gate did not save only reward6 once"); return false; }
         FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir() / TEXT("Validation/ThunderPostReward.png"), false, false); Next(10);
     }
     else if (Phase == 10 && PhaseTime > .5f) { PostTap(PC, EKeys::R); Next(11); }
     else if (Phase == 11 && PhaseTime > .4f)
     {
-        if (Post->GetPoundCount() != 0 || Gate->IsBroken() || Gate->GetReward() || Enemy->IsReleased() || !Progress->HasEarnedReward(6) || Progress->GetEarnedRewardCount() != 1) { Error = TEXT("R failed to reset prison visit while retaining actually saved reward6"); return false; }
+        if (Post->GetPoundCount() != 0 || Gate->IsBroken() || Gate->GetReward() || Enemy->IsReleased() || !Progress->HasEarnedReward(6) || Progress->GetEarnedRewardCount() != RewardBaseline.AfterCount()) { Error = TEXT("R failed to reset prison visit while retaining actually saved reward6"); return false; }
         UE_LOG(LogTemp, Display, TEXT("POST TEST PASS: real ordinary landing excluded, actual partial pound R, three real top pounds, released enemy actual gate sweep, actual walk into reward6, R persistence.")); return true;
     }
     else if (Phase == 20 && PhaseTime > 1)
@@ -138,7 +139,7 @@ bool UThunderPostTestSubsystem::UpdateTest(AWindseedCharacter* Player, float Del
     }
     else if (Phase == 21 && PhaseTime > .4f)
     {
-        if (!Progress->HasEarnedReward(6) || Progress->GetEarnedRewardCount() != 1 || Post->GetPoundCount() != 0 || Gate->IsBroken()) { Error = TEXT("Separate read R lost actual reward6"); return false; }
+        if (!Progress->HasEarnedReward(6) || Progress->GetEarnedRewardCount() != RewardBaseline.AfterCount() || Post->GetPoundCount() != 0 || Gate->IsBroken()) { Error = TEXT("Separate read R lost actual reward6"); return false; }
         UE_LOG(LogTemp, Display, TEXT("POST READ TEST PASS: separate process loaded actually earned reward6, fresh post/prison, R retained save; no fixtures.")); return true;
     }
     return false;

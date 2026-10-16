@@ -21,6 +21,7 @@ private:
     void SetPhase(int32 Number) { Phase = Number; PhaseTime = 0; }
     TWeakObjectPtr<AThunderMeadowStage> Stage;
     FString Error;
+    int32 ExpectedRewards = 0;
     int32 Phase = 0;
     int32 Waypoint = 0;
     int32 RecoveryBefore = 0;

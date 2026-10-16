@@ -35,6 +35,8 @@
 #include "ThunderChimeTestSubsystem.h"
 #include "ThunderSentinelTestSubsystem.h"
 #include "ThunderPostTestSubsystem.h"
+#include "ThunderHundredTestSubsystem.h"
+#include "ThunderCampaignValidation.h"
 #include "ThunderFlightSwitch.h"
 #include "ThunderFlightBloom.h"
 #include "ThunderLauncher.h"
@@ -100,7 +102,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
 {
     if (Step < 0 || HasPassed()) return;
     Elapsed += DeltaSeconds;
-    if (Elapsed > (Step == 42 ? 300 : Step == 41 ? 180 : Step == 40 ? 420 : Step == 37 || Step == 39 ? 360 : Step == 31 || Step == 33 || Step == 34 || Step == 35 || Step == 36 || Step == 38 ? 300 : Step == 10 || (Step >= 12 && Step <= 32) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
+    if (Elapsed > (Step == 43 ? 300 : Step == 42 ? 300 : Step == 41 ? 180 : Step == 40 ? 420 : Step == 37 || Step == 39 ? 360 : Step == 31 || Step == 33 || Step == 34 || Step == 35 || Step == 36 || Step == 38 ? 300 : Step == 10 || (Step >= 12 && Step <= 32) ? 120 : 20)) { Fail(TEXT("Stage selection timed out")); return; }
     auto* PC = UGameplayStatics::GetPlayerController(CurrentMode, 0);
     if (!PC) return;
     const FString Map = UGameplayStatics::GetCurrentLevelName(CurrentMode, true);
@@ -108,16 +110,22 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     // 起動中は Tick が先に進む場合があるため、実際に選択画面を録画できてから入力します。
     const auto* Recording = GetGameInstance()->GetSubsystem<UPlayseedRecordingSubsystem>();
     auto* Expedition = GetGameInstance()->GetSubsystem<UThunderExpeditionSubsystem>();
-    const bool bBossTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderBossTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderBossReadTest"));
-    const bool bRaceTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderRaceTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderRaceReadTest"));
-    const bool bSkyCacheTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderSkyCacheTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderSkyCacheReadTest"));
-    const bool bScarletTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderScarletTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderScarletReadTest"));
-    const bool bPostTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderPostTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderPostReadTest"));
-    const bool bChimeTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderChimeTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderChimeReadTest"));
+    const bool bCampaignRun = FParse::Param(FCommandLine::Get(), TEXT("ThunderCampaignTest"));
+    const bool bCampaignRead = FParse::Param(FCommandLine::Get(), TEXT("ThunderCampaignReadTest"));
+    const bool bHundredTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderHundredTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderHundredReadTest"));
+    const int32 CampaignTargets[] = {1, 2, 3, 5, 6, 4};
+    const int32 CampaignTarget = CampaignTargets[FMath::Clamp(CampaignIndex, 0, 5)];
+    const bool bBossTest = (bCampaignRun && CampaignTarget == 1) || (!bCampaignRun && (FParse::Param(FCommandLine::Get(), TEXT("ThunderBossTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderBossReadTest"))));
+    const bool bRaceTest = (bCampaignRun && CampaignTarget == 2) || (!bCampaignRun && (FParse::Param(FCommandLine::Get(), TEXT("ThunderRaceTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderRaceReadTest"))));
+    const bool bSkyCacheTest = (bCampaignRun && CampaignTarget == 3) || (!bCampaignRun && (FParse::Param(FCommandLine::Get(), TEXT("ThunderSkyCacheTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderSkyCacheReadTest"))));
+    const bool bScarletTest = (bCampaignRun && CampaignTarget == 4) || bCampaignRead || (!bCampaignRun && (FParse::Param(FCommandLine::Get(), TEXT("ThunderScarletTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderScarletReadTest"))));
+    const bool bPostTest = (bCampaignRun && CampaignTarget == 6) || (!bCampaignRun && (FParse::Param(FCommandLine::Get(), TEXT("ThunderPostTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderPostReadTest"))));
+    const bool bChimeTest = (bCampaignRun && CampaignTarget == 5) || (!bCampaignRun && (FParse::Param(FCommandLine::Get(), TEXT("ThunderChimeTest")) || FParse::Param(FCommandLine::Get(), TEXT("ThunderChimeReadTest"))));
     if (bProgressTest && (Expedition->GetEarnedRewardCount() != 2 || !Expedition->HasEarnedReward(1) || !Expedition->HasEarnedReward(7)))
     { Fail(TEXT("Saved rewards changed during restart or re-entry")); return; }
     if (Step == 0 && Map == TEXT("StageSelect") && Elapsed > 3 && Recording->GetCapturedFrameCount() > 15)
     {
+        if (bCampaignRun && (Expedition->GetEarnedRewardCount() != 0 || Expedition->IsLauncherUnlocked() || Expedition->IsFlightUnlocked() || UGameplayStatics::DoesSaveGameExist(Expedition->GetSaveSlotName(), 0))) { Fail(TEXT("All7 campaign must start with a genuinely fresh isolated save"); return; }
         Tap(PC, EKeys::Two);
         Step = 1;
         UE_LOG(LogTemp, Display, TEXT("SELECTION TEST: pressed 2 to enter Thunder Meadow."));
@@ -135,6 +143,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         { Fail(TEXT("Mission selection did not survive travel or accepted an invalid number")); return; }
         if (bSecondMissionEntry)
         {
+            if (bCampaignRun || bCampaignRead)
+            {
+                if (!ThunderHasExactRewards(Expedition, {1, 2, 3, 4, 5, 6, 7}) || !Expedition->IsLauncherUnlocked() || !Expedition->IsFlightUnlocked()) { Fail(TEXT("Actual all7 campaign rewards or real unlocks lost on fresh World entry")); return; }
+                UE_LOG(LogTemp, Display, TEXT("CAMPAIGN REENTRY TEST PASS: all7 actual saved unique rewards and real guide/tower unlocks retained in a new World."));
+                Tap(PC, EKeys::M); Step = 8; return;
+            }
+            if (bHundredTest && (Expedition->GetEarnedRewardCount() != 1 || !Expedition->HasEarnedReward(7))) { Fail(TEXT("Actual hundred reward7 lost on new World entry")); return; }
             if (bPostTest)
             {
                 if (Expedition->GetEarnedRewardCount() != 1 || !Expedition->HasEarnedReward(6)) { Fail(TEXT("Actually earned post reward6 lost on new World entry")); return; }
@@ -225,7 +240,14 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
             || Expedition->GetSelectedMissionNumber() != (bBossTest ? 1 : bRaceTest ? 2 : bSkyCacheTest ? 3 : bScarletTest ? 4 : bChimeTest ? 5 : 6))
         { Fail(TEXT("Restart in the new stage failed")); return; }
         const bool bIslandTest = FParse::Param(FCommandLine::Get(), TEXT("ThunderIslandTest"));
-        if (bPostTest)
+        if (bHundredTest)
+        {
+            auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
+            if (!Meadow || !Meadow->GetHundredLantern()) { Fail(TEXT("Hundred lantern manager missing")); return; }
+            GetGameInstance()->GetSubsystem<UThunderHundredTestSubsystem>()->BeginTest(Player, Meadow, FParse::Param(FCommandLine::Get(), TEXT("ThunderHundredReadTest")));
+            Step = 43; Elapsed = 0;
+        }
+        else if (bPostTest)
         {
             auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
             if (!Meadow || !Meadow->GetBindingPost() || !Meadow->GetPrisonGate() || !Meadow->GetBoundSentinel()) { Fail(TEXT("Binding post/prison missing")); return; }
@@ -250,7 +272,7 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         {
             auto* Meadow = Cast<AThunderMeadowStage>(UGameplayStatics::GetActorOfClass(CurrentMode, AThunderMeadowStage::StaticClass()));
             if (!Meadow || !Meadow->GetScarletTrail() || !Meadow->GetLauncher()) { Fail(TEXT("Scarlet trail or launcher missing")); return; }
-            GetGameInstance()->GetSubsystem<UThunderScarletTestSubsystem>()->BeginTest(Player, Meadow, FParse::Param(FCommandLine::Get(), TEXT("ThunderScarletReadTest")));
+            GetGameInstance()->GetSubsystem<UThunderScarletTestSubsystem>()->BeginTest(Player, Meadow, bCampaignRead || FParse::Param(FCommandLine::Get(), TEXT("ThunderScarletReadTest")));
             Step = 39; Elapsed = 0;
         }
         else if (bSkyCacheTest)
@@ -581,6 +603,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
         if (!BoxTest->GetError().IsEmpty()) { Fail(BoxTest->GetError()); return; }
         if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
     }
+    else if (Step == 43 && Player)
+    {
+        auto* HundredTest = GetGameInstance()->GetSubsystem<UThunderHundredTestSubsystem>();
+        const bool bComplete = HundredTest->UpdateTest(Player, DeltaSeconds);
+        if (!HundredTest->GetError().IsEmpty()) { Fail(HundredTest->GetError()); return; }
+        if (bComplete) { Elapsed = 0; Tap(PC, EKeys::M); Step = 4; }
+    }
     else if (Step == 42 && Player)
     {
         auto* PostTest = GetGameInstance()->GetSubsystem<UThunderPostTestSubsystem>();
@@ -723,6 +752,13 @@ void UPlayseedSelectionTestSubsystem::Update(float DeltaSeconds, APlayseedGameMo
     }
     else if (Step == 4 && Map == TEXT("StageSelect") && Elapsed > 3)
     {
+        if (bCampaignRun)
+        {
+            TArray<int32> Expected = ThunderCampaignPrefix(CampaignTarget); Expected.Add(CampaignTarget); if (CampaignTarget == 4) Expected.Add(7);
+            if (!ThunderHasExactRewards(Expedition, Expected)) { Fail(TEXT("Campaign leg finished without exactly its actual cumulative reward set")); return; }
+            UE_LOG(LogTemp, Display, TEXT("CAMPAIGN LEG COMPLETE: actual target%d saved total%d captureframe%d in the same slot %s."), CampaignTarget, Expedition->GetEarnedRewardCount(), Recording->GetCapturedFrameCount(), *Expedition->GetSaveSlotName());
+            if (CampaignIndex < 5) { ++CampaignIndex; bSecondMissionEntry = false; Tap(PC, EKeys::Two); Step = 1; return; }
+        }
         bSecondMissionEntry = true;
         Tap(PC, EKeys::Two);
         Step = 1;
