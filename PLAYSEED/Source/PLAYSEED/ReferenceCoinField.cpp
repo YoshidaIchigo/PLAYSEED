@@ -93,7 +93,7 @@ void AReferenceCoinField::AddGroundCoin(FName Id,FVector Near)
     if(!Terrain||!Terrain->FindFloor(Near+FVector(0,0,120),Floor))
     {UE_LOG(LogTemp,Warning,TEXT("REFERENCE COIN: no actual ground for%s at%s"),*Id.ToString(),*Near.ToString());return;}
     auto* Coin=GetWorld()->SpawnActor<APlayseedCoin>(Floor+FVector(0,0,30),FRotator::ZeroRotator);
-    if(Coin){Coin->ConfigureCoin(Id,EPlayseedCoinKind::Gold);Coins.Add(Coin);}
+    if(Coin){Coin->ConfigureCoin(Id,EPlayseedCoinKind::Gold);Coin->ConfigureReferenceGroundPickup();Coins.Add(Coin);}
 }
 void AReferenceCoinField::BeginPlay()
 {

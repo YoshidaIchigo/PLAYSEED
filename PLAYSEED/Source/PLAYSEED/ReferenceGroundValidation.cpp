@@ -38,6 +38,9 @@ void UReferencePaintingTestSubsystem::UpdateReferenceGround(float DeltaSeconds,A
         if(Move->IsMovingOnGround()&&Distance<350&&Target.Z>Hero->GetActorLocation().Z-82+38&&JumpHold<=0)
         {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::SpaceBar,IE_Pressed,1));JumpHold=.14f;}
     };
+    if(Phase!=115&&(UpdateReferenceRouteBombs(DeltaSeconds,Hero,PC)||UpdateReferenceRouteCombat(DeltaSeconds,Hero,PC)))
+    {PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::LeftShift,IE_Released,0));Elapsed-=DeltaSeconds;return;}
+    if(Phase==110&&UpdateReferenceRoadAvoidance(DeltaSeconds,Hero,PC)){Elapsed-=DeltaSeconds;return;}
     auto Sprint=[&](bool bPressed){PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::LeftShift,bPressed?IE_Pressed:IE_Released,bPressed?1:0));};
     if(Phase==110)
     {
@@ -98,6 +101,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceGround(float DeltaSeconds,A
         auto* Post=Field->GetPosts()[GroundPost].Get();
         if(Post->GetGenerationCount()==1)
         {Sprint(false);Move->StopMovementImmediately();GroundDrop=0;Phase=114;Elapsed=0;FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderPostCircles.png"),false,false);return;}
+        Sprint(true);
         const FVector Radial=(Hero->GetActorLocation()-Post->GetActorLocation()).GetSafeNormal2D();
         const float Radius=FVector::Dist2D(Hero->GetActorLocation(),Post->GetActorLocation());
         const FVector Tangent(-Radial.Y,Radial.X,0);

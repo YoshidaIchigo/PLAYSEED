@@ -44,15 +44,20 @@ void UReferencePaintingTestSubsystem::UpdateReferenceRain(float DeltaSeconds,AWi
     {
         const bool bFirst=Phase==140;
         if(Hero->RecoveryCount!=(bFirst?0:1)){Finish(false,TEXT("Rain approach recovered without the expected ordinary R input"));return;}
-        if(bFirst&&Health->GetHealth()==7&&TotalHits==1)
+        // 経路上の実敵による被弾は保ち、水玉だけの直前/直後の実差を測ります。
+        if(bFirst&&TotalHits==0)RainApproachHealth=Health->GetHealth();
+        if(bFirst&&TotalHits==1)
         {
+            if(RainApproachHealth<2||Health->GetHealth()!=RainApproachHealth-1)
+            {Finish(false,TEXT("Actual rain contact did not reduce the observed approach health by exactly one"));return;}
             for(int32 I=0;I<Rains.Num();++I)if(Rains[I]->GetConfirmedHits()==1){RainChosenIndex=I;Rain=Rains[I];break;}
             if(Health->GetLastImpulse().Size2D()<400){Finish(false,TEXT("Actual one-point rain impact did not physically knock back"));return;}
-            UE_LOG(LogTemp,Display,TEXT("RAIN QA: actual source%d contact, health7 and physical knockback"),RainChosenIndex);
+            RainContactHealth=Health->GetHealth();
+            UE_LOG(LogTemp,Display,TEXT("RAIN QA: actual source%d contact, observed health%d to%d and physical knockback"),RainChosenIndex,RainApproachHealth,RainContactHealth);
             bRainContactVerified=true;FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderRainContact.png"),false,false);Phase=141;Elapsed=0;return;
         }
-        if(Health->GetHealth()!=8)
-        {Finish(false,FString::Printf(TEXT("Unintended rain approach damage phase%d point%d health%d rainhits%d/%d/%d hero%s"),Phase,RainWaypoint,Health->GetHealth(),Rains[0]->GetConfirmedHits(),Rain->GetConfirmedHits(),Rains[2]->GetConfirmedHits(),*Hero->GetActorLocation().ToString()));return;}
+        if(Health->GetHealth()<=0||TotalHits!=(bFirst?0:1))
+        {Finish(false,FString::Printf(TEXT("Unexpected rain approach contact phase%d point%d health%d rainhits%d/%d/%d hero%s"),Phase,RainWaypoint,Health->GetHealth(),Rains[0]->GetConfirmedHits(),Rain->GetConfirmedHits(),Rains[2]->GetConfirmedHits(),*Hero->GetActorLocation().ToString()));return;}
         if(!bFirst&&Move->IsMovingOnGround()&&Rain->GetSpawnCount()>RainSpawnBaseline&&Rain->IsFalling()&&Rain->GetRainPosition().Z-Hero->GetActorLocation().Z>1000)
         {
             const FVector Feet=Hero->GetActorLocation()-FVector(0,0,82);
@@ -73,15 +78,18 @@ void UReferencePaintingTestSubsystem::UpdateReferenceRain(float DeltaSeconds,AWi
                 Best=Score;RainDodgeTarget=Floor;bFound=true;
             }
             if(!bFound){Finish(false,TEXT("No ordinary clear floor path away from the real rain shadow"));return;}
-            RainBurstBaseline=Rain->GetBurstCount();FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderRainWarning.png"),false,false);
+            RainAvoidHealth=Health->GetHealth();RainBurstBaseline=Rain->GetBurstCount();FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderRainWarning.png"),false,false);
             UE_LOG(LogTemp,Display,TEXT("RAIN QA: ordinary dodge from%s shadow%s toward actual floor%s spawn%d"),*Hero->GetActorLocation().ToString(),*Rain->GetRainTarget().ToString(),*RainDodgeTarget.ToString(),Rain->GetSpawnCount());Phase=144;Elapsed=0;return;
         }
+        if(UpdateReferenceRouteBombs(DeltaSeconds,Hero,PC)){Elapsed-=DeltaSeconds;return;}
+        if(UpdateReferenceRouteCombat(DeltaSeconds,Hero,PC)){Elapsed-=DeltaSeconds;return;}
+        if(UpdateReferenceRoadAvoidance(DeltaSeconds,Hero,PC)){Elapsed-=DeltaSeconds;return;}
         const int32 Count=UE_ARRAY_COUNT(ReferenceRainApproach);
         if(RainWaypoint>=Count)
         {
             const auto& Last=ReferenceRainApproach[Count-1];
             Walk(bFirst&&Rain->IsActive()?Rain->GetRainTarget():FVector(Last.X,Last.Y,Last.Z));
-            if(Elapsed>240)Finish(false,TEXT("Ordinary rain approach did not encounter the real drop"));return;
+            if(Elapsed>900)Finish(false,TEXT("Ordinary rain approach did not encounter the real drop"));return;
         }
         const auto& Point=ReferenceRainApproach[RainWaypoint];const FVector Target(Point.X,Point.Y,Point.Z);const FVector Delta=Target-Hero->GetActorLocation();RainLegElapsed+=DeltaSeconds;
         if(RainLegElapsed>22){Finish(false,FString::Printf(TEXT("Rain walk blocked phase%d point%d hero%s target%s floor%s"),Phase,RainWaypoint,*Hero->GetActorLocation().ToString(),*Target.ToString(),*Move->CurrentFloor.HitResult.ImpactPoint.ToString()));return;}
@@ -92,7 +100,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceRain(float DeltaSeconds,AWi
     if(Phase==141)
     {
         if(Elapsed<.85f)return;
-        if(Health->GetHealth()!=7||TotalHits!=1){Finish(false,TEXT("One real rain drop damaged more than once"));return;}
+        if(Health->GetHealth()!=RainContactHealth||TotalHits!=1){Finish(false,TEXT("One real rain drop damaged more than once"));return;}
         Tap(PC,EKeys::R);Phase=142;Elapsed=0;return;
     }
     if(Phase==142||Phase==146)
@@ -103,12 +111,13 @@ void UReferencePaintingTestSubsystem::UpdateReferenceRain(float DeltaSeconds,AWi
         {Finish(false,TEXT("Ordinary R did not restore actual rain-test hero and course entrance"));return;}
         for(AReferenceRainSpawner* Spawner:Rains)if(!Spawner->IsIdle()){Finish(false,TEXT("R did not clear every own rain drop"));return;}
         if(Elapsed<.35f)return;
+        RouteCombatTarget.Reset();RouteBombTarget.Reset();BossAvoidRemaining=0;
         if(bFirst){RainWaypoint=0;RainLegElapsed=0;RainSpawnBaseline=Rain->GetSpawnCount();Phase=143;Elapsed=0;return;}
         bRainResetVerified=true;FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderRainReset.png"),false,false);Tap(PC,EKeys::M);Phase=9;Elapsed=0;return;
     }
     if(Phase==144)
     {
-        if(Hero->RecoveryCount!=1||Health->GetHealth()!=8||TotalHits!=1)
+        if(Hero->RecoveryCount!=1||Health->GetHealth()!=RainAvoidHealth||TotalHits!=1)
         {Finish(false,TEXT("Ordinary movement did not avoid the next real rain drop"));return;}
         Walk(RainDodgeTarget);
         // 普通に離れながらカメラで振り返り、水玉の跳ね返りと影も映します。
@@ -125,7 +134,7 @@ void UReferencePaintingTestSubsystem::UpdateReferenceRain(float DeltaSeconds,AWi
     }
     if(Phase==145)
     {
-        if(Health->GetHealth()!=8||TotalHits!=1){Finish(false,TEXT("Another rain drop damaged the hero after the ordinary dodge"));return;}
+        if(Health->GetHealth()!=RainAvoidHealth||TotalHits!=1){Finish(false,TEXT("Another rain drop damaged the hero after the ordinary dodge"));return;}
         if(Elapsed>.8f){Tap(PC,EKeys::R);Phase=146;Elapsed=0;}
     }
 }

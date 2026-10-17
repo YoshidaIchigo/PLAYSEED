@@ -26,18 +26,27 @@ bool UReferencePaintingTestSubsystem::UpdateReferenceRouteCombat(float DeltaSeco
         for(TActorIterator<AReferenceWalker> It(GetWorld());It;++It)
         {
             const float Distance=FVector::Dist2D(Hero->GetActorLocation(),It->GetActorLocation());
+            FCollisionQueryParams Sight;Sight.AddIgnoredActor(Hero);Sight.AddIgnoredActor(*It);
             if(!It->IsDefeated()&&Distance<Nearest&&FMath::Abs(Hero->GetActorLocation().Z-82-It->GetActorLocation().Z)<80)
-            {Nearest=Distance;RouteCombatTarget=*It;}
+                if(!GetWorld()->LineTraceTestByChannel(Hero->GetActorLocation(),It->GetActorLocation()+FVector(0,0,65),ECC_Visibility,Sight))
+                {Nearest=Distance;RouteCombatTarget=*It;}
         }
-        if(RouteCombatTarget.IsValid()){RouteCombatElapsed=RouteAttackClock=0;UE_LOG(LogTemp,Display,TEXT("ROUTE COMBAT: ordinary approach to%s phase%d"),*RouteCombatTarget->GetActorLocation().ToString(),Phase);}
+        if(RouteCombatTarget.IsValid()){
+            // 実Rの再挑戦では実生成が一度だけ増えることを読み取ります。
+            RouteCombatExpectedDrops=RouteCombatTarget->GetDropGenerationCount()+(RouteCombatTarget->GetDropCoin()?0:1);
+            RouteCombatElapsed=RouteAttackClock=0;UE_LOG(LogTemp,Display,TEXT("ROUTE COMBAT: ordinary approach to%s phase%d"),*RouteCombatTarget->GetActorLocation().ToString(),Phase);
+        }
     }
     if(!RouteCombatTarget.IsValid())return false;
     AReferenceWalker* Enemy=RouteCombatTarget.Get();RouteCombatElapsed+=DeltaSeconds;RouteAttackClock+=DeltaSeconds;
+    FCollisionQueryParams Sight;Sight.AddIgnoredActor(Hero);Sight.AddIgnoredActor(Enemy);
+    if(FVector::Dist2D(Hero->GetActorLocation(),Enemy->GetActorLocation())>850||GetWorld()->LineTraceTestByChannel(Hero->GetActorLocation(),Enemy->GetActorLocation()+FVector(0,0,65),ECC_Visibility,Sight))
+    {RouteCombatTarget.Reset();return false;} // 実柵や壁の向こうを追わず、元経路へ戻します。
     FVector Target=Enemy->GetActorLocation();
     if(Enemy->IsDefeated())
     {
         APlayseedCoin* Coin=Enemy->GetDropCoin();
-        if(!Coin||Enemy->GetDropGenerationCount()!=1){Finish(false,TEXT("Normal route combat lost its actual enemy gold"));return true;}
+        if(!Coin||Enemy->GetDropGenerationCount()!=RouteCombatExpectedDrops){Finish(false,FString::Printf(TEXT("Normal route combat gold count%d expected%d coin%d"),Enemy->GetDropGenerationCount(),RouteCombatExpectedDrops,Coin!=nullptr));return true;}
         if(Coin->IsCollected())
         {UE_LOG(LogTemp,Display,TEXT("ROUTE COMBAT: actual normal defeat and own gold collected health%d"),Hero->GetVitality()->GetHealth());RouteCombatTarget.Reset();return true;}
         Target=FVector(Coin->GetActorLocation().X,Coin->GetActorLocation().Y,Enemy->GetActorLocation().Z);

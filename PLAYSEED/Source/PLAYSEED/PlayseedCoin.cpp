@@ -4,6 +4,7 @@
 #include "ThunderCoinLedger.h"
 #include "WindseedCharacter.h"
 #include "Components/SphereComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
@@ -56,6 +57,14 @@ int32 APlayseedCoin::ValueOf(EPlayseedCoinKind Kind)
     }
 }
 
+void APlayseedCoin::ConfigureReferenceGroundPickup()
+{
+    bReferenceGroundPickup = true;
+    // 地上の参照金貨は半径100・高さ64です。球は候補の検出だけに使い、高さは取得時に確認します。
+    // 金貨の中心は実床+30なので、この球106は円柱全体を覆います。
+    Trigger->SetSphereRadius(106);
+}
+
 void APlayseedCoin::UpdateTint()
 {
     const bool bReference=AReferenceBattlefieldTerrain::IsReferenceCourse();
@@ -92,6 +101,21 @@ void APlayseedCoin::TryCollect(AWindseedCharacter* Player)
     if (bCollected || !Player) return;
     auto* Mode = Cast<AThunderMeadowGameMode>(GetWorld()->GetAuthGameMode());
     if (!Mode) return;
+    if (bReferenceGroundPickup)
+    {
+        const auto* Capsule = Player->GetCapsuleComponent();
+        if (!Capsule) return;
+        const FVector Axis = Player->GetActorLocation();
+        const float AxisZ = static_cast<float>(Axis.Z);
+        const float Radius = Capsule->GetScaledCapsuleRadius();
+        const float HalfSegment = Capsule->GetScaledCapsuleHalfHeight() - Radius;
+        const float CoinBottom = GetActorLocation().Z - 30;
+        // 実カプセルの中心線と、実床から64cmの円柱との最短距離で接触を確かめます。
+        // 大きい候補球だけで判定すると、上や下の別の足場から拾えてしまうためです。
+        const float HorizontalGap = FMath::Max(0.f, static_cast<float>(FVector::Dist2D(Axis, GetActorLocation())) - 100.f);
+        const float VerticalGap = FMath::Max3(0.f, CoinBottom - AxisZ - HalfSegment, AxisZ - HalfSegment - CoinBottom - 64.f);
+        if (FMath::Square(HorizontalGap) + FMath::Square(VerticalGap) > FMath::Square(Radius)) return;
+    }
     // 先にガードを立て、集計側から通知が戻っても同じActorを再取得しません。
     bCollected = true;
     if (!Mode->GetCoinLedger()->TryCollect(CoinId, CoinKind))

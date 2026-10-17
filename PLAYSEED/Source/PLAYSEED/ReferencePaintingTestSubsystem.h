@@ -29,6 +29,7 @@ private:
     void UpdateReferenceBoulders(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceHundred(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateHundredFlight(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
+    void UpdateReferenceDeath(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceGround(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceSky(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
     void UpdateReferenceRed(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
@@ -43,6 +44,9 @@ private:
     void ObserveFade(APlayerController* PC);
     bool PrepareSaveFailure();
     void UpdateSaveRetry(float DeltaSeconds,AWindseedCharacter* Hero,APlayerController* PC);
+    bool bGroundOwnedReplay=false,bHundredOwnedReplay=false,bChainOwnedReplay=false,bDeathTest=false,bDeathVerified=false,bDeathStarted=false;
+    int32 HundredGroundTotal=0,HundredNeededSky=0,DeathWaypoint=0,DeathImpactBaseline=0,DeathDefeatBaseline=0,DeathHealthBaseline=0,DeathNeededHits=0;
+    float DeathLegElapsed=0;
     bool bRedOwnedReplay=false;
     bool bBossOwnedReplay=false,bBossHeartUsed=false,bBossAvoidJumped=false;
     int32 BossHeartWaypoint=0;
@@ -50,6 +54,7 @@ private:
     FVector BossAvoidTarget=FVector::ZeroVector;
     TWeakObjectPtr<AReferenceWalker> RouteCombatTarget;
     TWeakObjectPtr<AReferenceBomb> RouteBombTarget;
+    int32 RouteBombExpectedDrops=0,RouteCombatExpectedDrops=0,RouteBombExplosionBaseline=0;
     float RouteBombElapsed=0,RouteBombAttackClock=0,RouteBombAfterBurst=0;
     bool bRouteBombKicked=false,bRouteBombJumped=false;
     float RouteCombatElapsed=0,RouteAttackClock=0;
@@ -70,13 +75,14 @@ private:
     float WaterCannonLegElapsed=0;
     bool bRainTest=false,bRainContactVerified=false,bRainDodgeVerified=false,bRainResetVerified=false,bRainBounceShot=false;
     int32 RainWaypoint=0,RainSpawnBaseline=0,RainBurstBaseline=0,RainChosenIndex=1;
+    int32 RainApproachHealth=0,RainContactHealth=0,RainAvoidHealth=0;
     float RainLegElapsed=0;
     FVector RainDodgeTarget=FVector::ZeroVector;
     bool bBoulderTest=false,bBoulderPitVerified=false,bBoulderRoadVerified=false,bBoulderResetVerified=false;
     int32 BoulderWaypoint=0,BoulderRoadHitIndex=-1;
     float BoulderLegElapsed=0;
     bool bWingOwnedReplay=false;
-    bool bHundredTest=false,bSequentialChainTest=false,bAllStarReadTest=false;
+    bool bHundredTest=false,bSequentialChainTest=false,bAllStarReadTest=false,bMountainGoldTest=false;
     bool bHundredMountainGold=false,bHundredHighGold=false,bHundredSkyComplete=false;
     int32 HundredWaypoint=0,HundredFlightPoint=0;
     float HundredLegElapsed=0,RedPlatformRideSeconds=0;

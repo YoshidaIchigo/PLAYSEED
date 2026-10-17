@@ -23,6 +23,7 @@ public:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
     void ConfigureCoin(FName Id, EPlayseedCoinKind Kind);
+    void ConfigureReferenceGroundPickup();
     void ResetCoin();
     bool IsCollected() const { return bCollected; }
     FName GetCoinId() const { return CoinId; }
@@ -39,4 +40,5 @@ private:
     EPlayseedCoinKind CoinKind = EPlayseedCoinKind::Gold;
     float VisualAge = 0;
     bool bCollected = false;
+    bool bReferenceGroundPickup = false;
 };
