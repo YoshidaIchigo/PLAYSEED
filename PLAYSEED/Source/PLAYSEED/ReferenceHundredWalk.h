@@ -239,6 +239,8 @@ static constexpr FReferenceHundredPoint ReferenceHundredReturn[] = {
 // 最初の実金貨は台座のそばにあるため、取得後に台座内の同一点へ歩き直しません。
 static constexpr FReferenceHundredPoint ReferenceHundredMountain[] = {
 {1900.000,2650.000,2826.759,-1},
+{1750.000,2250.000,2917.746,-1},
+{1640.000,2220.000,2917.850,-1},
 {1550.000,2300.000,2917.925,13},
 {1700.000,2300.000,2917.790,14},
 {1700.000,2300.000,2917.790,-1},
