@@ -45,7 +45,11 @@ void UReferencePaintingTestSubsystem::UpdateReferenceHundred(float DeltaSeconds,
         {
             const int32 First=Phase==121?13:18;
             for(int32 I=First;I<First+5;++I)if(!Field->GetCoins()[I]->IsCollected()){Finish(false,TEXT("Mountain detour did not physically collect all five real golds"));return;}
-            if(Phase==121){bHundredMountainGold=true;Phase=62;CannonLegElapsed=0;}
+            if(Phase==121){
+                bHundredMountainGold=true;
+                if(bMountainGoldTest){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/ThunderMountainGold.png"),false,false);Phase=9;Elapsed=0;return;}
+                Phase=62;CannonLegElapsed=0;
+            }
             else{bHundredHighGold=true;Phase=63;}
         }
         else if(Phase==123)
@@ -61,7 +65,15 @@ void UReferencePaintingTestSubsystem::UpdateReferenceHundred(float DeltaSeconds,
         else Phase=96;
         HundredWaypoint=0;HundredLegElapsed=0;Elapsed=0;return;
     }
-    const auto& Point=Points[HundredWaypoint];FVector Target(Point.X,Point.Y,Point.Z);const FVector Delta=Target-Hero->GetActorLocation();
+    const auto& Point=Points[HundredWaypoint];FVector Target(Point.X,Point.Y,Point.Z);
+    if(Point.Coin>=0)
+    {
+        // 金貨は実Actorの接触だけで取得します。台座内の計画点へ到着する必要はありません。
+        if(Field->GetCoins()[Point.Coin]->IsCollected())
+        {UE_LOG(LogTemp,Display,TEXT("HUNDRED WALK phase%d point%d actual coin%d score%d"),Phase,HundredWaypoint,Point.Coin,Ledger->GetTotal());++HundredWaypoint;HundredLegElapsed=0;return;}
+        Target=Field->GetCoins()[Point.Coin]->GetActorLocation();
+    }
+    const FVector Delta=Target-Hero->GetActorLocation();
     HundredLegElapsed+=DeltaSeconds;
     if(HundredLegElapsed>22){Finish(false,FString::Printf(TEXT("Hundred ordinary walk blocked phase%d point%d hero%s target%s grounded%d floor%s"),Phase,HundredWaypoint,*Hero->GetActorLocation().ToString(),*Target.ToString(),Move->IsMovingOnGround(),*Move->CurrentFloor.HitResult.ImpactPoint.ToString()));return;}
     const float HeightTolerance=Move->IsMovingOnGround()?160.f:80.f;

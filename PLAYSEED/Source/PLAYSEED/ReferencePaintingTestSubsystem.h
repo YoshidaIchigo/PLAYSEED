@@ -82,7 +82,7 @@ private:
     int32 BoulderWaypoint=0,BoulderRoadHitIndex=-1;
     float BoulderLegElapsed=0;
     bool bWingOwnedReplay=false;
-    bool bHundredTest=false,bSequentialChainTest=false,bAllStarReadTest=false;
+    bool bHundredTest=false,bSequentialChainTest=false,bAllStarReadTest=false,bMountainGoldTest=false;
     bool bHundredMountainGold=false,bHundredHighGold=false,bHundredSkyComplete=false;
     int32 HundredWaypoint=0,HundredFlightPoint=0;
     float HundredLegElapsed=0,RedPlatformRideSeconds=0;
